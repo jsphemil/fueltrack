@@ -62,6 +62,25 @@ export default function HomePage() {
     return { lastMileage, averageMileage };
   }, [entries]);
 
+  const rangeAndInsight = useMemo(() => {
+    if (!mileageStats || entries.length === 0) {
+      return null;
+    }
+
+    const latestEntry = entries[0];
+    const estimatedRange = latestEntry.fuel_volume * mileageStats.averageMileage;
+    const nextRefuelOdometer = latestEntry.odometer + estimatedRange;
+
+    let insight = "Mileage stable";
+    if (mileageStats.lastMileage < mileageStats.averageMileage) {
+      insight = "Mileage decreased";
+    } else if (mileageStats.lastMileage > mileageStats.averageMileage) {
+      insight = "Mileage improved";
+    }
+
+    return { estimatedRange, nextRefuelOdometer, insight };
+  }, [entries, mileageStats]);
+
   async function fetchEntries(accessToken: string) {
     if (!accessToken) {
       setEntries([]);
@@ -206,6 +225,35 @@ export default function HomePage() {
                     {mileageStats.averageMileage.toFixed(1)} km/l
                   </span>
                 </p>
+                {rangeAndInsight ? (
+                  <>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Estimated Range:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {rangeAndInsight.estimatedRange.toFixed(1)} km
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Refuel by:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {Math.round(
+                          rangeAndInsight.nextRefuelOdometer
+                        ).toLocaleString()}{" "}
+                        km
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Insight:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {rangeAndInsight.insight}
+                      </span>
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-zinc-600">
+                    Not enough data to estimate range
+                  </p>
+                )}
               </div>
             ) : (
               <p className="mt-3 text-sm text-zinc-600">
