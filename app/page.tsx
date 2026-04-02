@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import FuelEntryForm from "@/components/FuelEntryForm";
 
 export default function HomePage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -94,6 +95,8 @@ export default function HomePage() {
         {errorMessage ? (
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
         ) : null}
+
+        <FuelEntryForm />
       </section>
     </main>
   );
