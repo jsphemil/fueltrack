@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import FuelEntryForm from "@/components/FuelEntryForm";
@@ -21,6 +21,46 @@ export default function HomePage() {
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
+
+  const mileageStats = useMemo(() => {
+    const orderedEntries = [...entries].sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    const calculations: number[] = [];
+
+    for (let index = 1; index < orderedEntries.length; index += 1) {
+      const previous = orderedEntries[index - 1];
+      const current = orderedEntries[index];
+
+      if (!previous.is_reserve || !current.is_reserve) {
+        continue;
+      }
+
+      const distance = current.odometer - previous.odometer;
+      if (distance < 20) {
+        continue;
+      }
+
+      const fuelUsed = previous.fuel_volume;
+      if (fuelUsed <= 0) {
+        continue;
+      }
+
+      calculations.push(distance / fuelUsed);
+    }
+
+    if (calculations.length === 0) {
+      return null;
+    }
+
+    const lastMileage = calculations[calculations.length - 1];
+    const averageMileage =
+      calculations.reduce((sum, value) => sum + value, 0) / calculations.length;
+
+    return { lastMileage, averageMileage };
+  }, [entries]);
 
   async function fetchEntries(accessToken: string) {
     if (!accessToken) {
@@ -150,7 +190,32 @@ export default function HomePage() {
 
         {session ? (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-zinc-900">Fuel Entries</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Mileage</h2>
+
+            {mileageStats ? (
+              <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-sm text-zinc-700">
+                  Last mileage:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {mileageStats.lastMileage.toFixed(1)} km/l
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-zinc-700">
+                  Average mileage:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {mileageStats.averageMileage.toFixed(1)} km/l
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-600">
+                Not enough data to calculate mileage
+              </p>
+            )}
+
+            <h2 className="mt-8 text-lg font-semibold text-zinc-900">
+              Fuel Entries
+            </h2>
 
             {entriesLoading ? (
               <p className="mt-3 text-sm text-zinc-600">Loading entries...</p>
