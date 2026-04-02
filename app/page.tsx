@@ -6,10 +6,48 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import FuelEntryForm from "@/components/FuelEntryForm";
 
+type FuelEntry = {
+  id: string;
+  odometer: number;
+  fuel_volume: number;
+  is_reserve: boolean;
+  created_at: string;
+};
+
 export default function HomePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [entries, setEntries] = useState<FuelEntry[]>([]);
+  const [entriesLoading, setEntriesLoading] = useState(false);
+  const [entriesError, setEntriesError] = useState("");
+
+  async function fetchEntries(accessToken: string) {
+    if (!accessToken) {
+      setEntries([]);
+      return;
+    }
+
+    setEntriesLoading(true);
+    setEntriesError("");
+
+    const response = await fetch("/api/fuel-entry", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      setEntriesError("Could not load fuel entries.");
+      setEntriesLoading(false);
+      return;
+    }
+
+    const result = (await response.json()) as { entries: FuelEntry[] };
+    setEntries(result.entries ?? []);
+    setEntriesLoading(false);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -29,6 +67,11 @@ export default function HomePage() {
 
       setSession(data.session);
       setLoading(false);
+      if (data.session) {
+        void fetchEntries(data.session.access_token);
+      } else {
+        setEntries([]);
+      }
     }
 
     void loadSession();
@@ -38,6 +81,11 @@ export default function HomePage() {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
+      if (nextSession) {
+        void fetchEntries(nextSession.access_token);
+      } else {
+        setEntries([]);
+      }
     });
 
     return () => {
@@ -96,7 +144,59 @@ export default function HomePage() {
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
         ) : null}
 
-        <FuelEntryForm />
+        {session ? (
+          <FuelEntryForm onSaved={() => fetchEntries(session.access_token)} />
+        ) : null}
+
+        {session ? (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold text-zinc-900">Fuel Entries</h2>
+
+            {entriesLoading ? (
+              <p className="mt-3 text-sm text-zinc-600">Loading entries...</p>
+            ) : entriesError ? (
+              <p className="mt-3 text-sm font-medium text-red-600">
+                {entriesError}
+              </p>
+            ) : entries.length === 0 ? (
+              <p className="mt-3 text-sm text-zinc-600">No fuel entries yet.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {entries.map((entry) => (
+                  <article
+                    key={entry.id}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <p className="text-sm text-zinc-700">
+                      Odometer:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {entry.odometer}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Fuel Volume:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {entry.fuel_volume.toFixed(2)} L
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Filled at reserve:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {entry.is_reserve ? "Yes" : "No"}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">
+                      Created at:{" "}
+                      <span className="font-medium text-zinc-900">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </span>
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
       </section>
     </main>
   );

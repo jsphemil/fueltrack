@@ -3,7 +3,11 @@
 import { FormEvent, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function FuelEntryForm() {
+type FuelEntryFormProps = {
+  onSaved?: () => void;
+};
+
+export default function FuelEntryForm({ onSaved }: FuelEntryFormProps) {
   const [odometer, setOdometer] = useState("");
   const [fuelPrice, setFuelPrice] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -62,6 +66,7 @@ export default function FuelEntryForm() {
     setFuelPrice("");
     setAmountPaid("");
     setIsReserve(false);
+    onSaved?.();
     setIsSubmitting(false);
   }
 

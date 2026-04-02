@@ -19,37 +19,72 @@ function getBearerToken(authHeader: string | null) {
   return authHeader.slice(7).trim();
 }
 
-export async function POST(request: Request) {
+async function getUserFromRequest(request: Request) {
+  const token = getBearerToken(request.headers.get("authorization"));
+  if (!token) {
+    return { user: null, error: "Unauthorized", status: 401 as const };
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return {
+      user: null,
+      error: "Missing Supabase environment variables",
+      status: 500 as const,
+    };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) {
+    return { user: null, error: "Unauthorized", status: 401 as const };
+  }
+
+  return { user: data.user, error: null, status: 200 as const };
+}
+
+export async function GET(request: Request) {
   try {
-    const token = getBearerToken(request.headers.get("authorization"));
-    if (!token) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return Response.json(
-        { error: "Missing Supabase environment variables" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
+    const entries = await prisma.fuelEntry.findMany({
+      where: { userId: user.id },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        odometer: true,
+        fuel_volume: true,
+        is_reserve: true,
+        created_at: true,
       },
     });
 
-    const { data: userData, error: userError } = await supabase.auth.getUser(
-      token
+    return Response.json({ entries }, { status: 200 });
+  } catch {
+    return Response.json(
+      { error: "Failed to fetch fuel entries" },
+      { status: 500 }
     );
+  }
+}
 
-    if (userError || !userData.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
     }
 
     const body = (await request.json()) as Partial<FuelEntryPayload>;
@@ -71,7 +106,7 @@ export async function POST(request: Request) {
 
     const savedEntry = await prisma.fuelEntry.create({
       data: {
-        userId: userData.user.id,
+        userId: user.id,
         odometer,
         fuel_price: fuelPrice,
         amount_paid: amountPaid,
