@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model FuelEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  odometer    Float
+  fuel_price  Float
+  amount_paid Float
+  fuel_volume Float
+  is_reserve  Boolean
+  created_at  DateTime @default(now())
+}
