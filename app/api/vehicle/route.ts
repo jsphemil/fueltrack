@@ -117,3 +117,25 @@ export async function POST(request: Request) {
     return Response.json({ error: "Failed to save vehicle" }, { status: 500 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
+    }
+
+    const vehicles = await prisma.vehicle.findMany({
+      where: { userId: user.id },
+      orderBy: { created_at: "asc" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    return Response.json({ vehicles }, { status: 200 });
+  } catch {
+    return Response.json({ error: "Failed to fetch vehicles" }, { status: 500 });
+  }
+}

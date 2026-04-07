@@ -15,11 +15,20 @@ type FuelEntry = {
   created_at: string;
 };
 
+type Vehicle = {
+  id: string;
+  name: string;
+};
+
 export default function HomePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [entries, setEntries] = useState<FuelEntry[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [vehiclesError, setVehiclesError] = useState("");
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
 
@@ -82,6 +91,11 @@ export default function HomePage() {
     return { estimatedRange, nextRefuelOdometer, insight };
   }, [entries, mileageStats]);
 
+  const selectedVehicle = useMemo(
+    () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
+    [selectedVehicleId, vehicles]
+  );
+
   const fetchEntries = useCallback(async (accessToken?: string) => {
     if (!accessToken) {
       setEntries([]);
@@ -112,6 +126,46 @@ export default function HomePage() {
     setEntriesLoading(false);
   }, []);
 
+  const fetchVehicles = useCallback(async (accessToken?: string) => {
+    if (!accessToken) {
+      setVehicles([]);
+      setSelectedVehicleId(null);
+      return;
+    }
+
+    setVehiclesLoading(true);
+    setVehiclesError("");
+
+    const response = await fetch("/api/vehicle", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      setVehiclesError("Could not load vehicles.");
+      setVehiclesLoading(false);
+      return;
+    }
+
+    const result = (await response.json()) as { vehicles: Vehicle[] };
+    const nextVehicles = result.vehicles ?? [];
+    setVehicles(nextVehicles);
+    setSelectedVehicleId((currentValue) => {
+      if (nextVehicles.length === 0) {
+        return null;
+      }
+
+      if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
+        return currentValue;
+      }
+
+      return nextVehicles[0].id;
+    });
+    setVehiclesLoading(false);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -132,8 +186,11 @@ export default function HomePage() {
       setLoading(false);
       if (data.session) {
         void fetchEntries(data.session.access_token);
+        void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
+        setVehicles([]);
+        setSelectedVehicleId(null);
       }
     }
 
@@ -146,8 +203,11 @@ export default function HomePage() {
       setLoading(false);
       if (nextSession) {
         void fetchEntries(nextSession.access_token);
+        void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
+        setVehicles([]);
+        setSelectedVehicleId(null);
       }
     });
 
@@ -155,7 +215,7 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchEntries]);
+  }, [fetchEntries, fetchVehicles]);
 
   async function handleSignOut() {
     setErrorMessage("");
@@ -207,6 +267,45 @@ export default function HomePage() {
 
         {errorMessage ? (
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
+        ) : null}
+
+        {isAuthenticated ? (
+          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-900">Vehicle</h2>
+
+            {vehiclesLoading ? (
+              <p className="mt-3 text-sm text-zinc-600">Loading vehicles...</p>
+            ) : vehiclesError ? (
+              <p className="mt-3 text-sm font-medium text-red-600">{vehiclesError}</p>
+            ) : vehicles.length === 0 ? (
+              <p className="mt-3 text-sm text-zinc-600">No vehicles available yet.</p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                    Select Vehicle
+                  </span>
+                  <select
+                    value={selectedVehicleId ?? ""}
+                    onChange={(event) => setSelectedVehicleId(event.target.value)}
+                    className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                  >
+                    {vehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-sm text-zinc-700">
+                  Selected vehicle:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {selectedVehicle?.name}
+                  </span>
+                </p>
+              </div>
+            )}
+          </section>
         ) : null}
 
         {isAuthenticated ? (
