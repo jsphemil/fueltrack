@@ -8,6 +8,11 @@ type VehiclePayload = {
   initial_odometer: number;
 };
 
+type AuthenticatedUser = {
+  id: string;
+  email?: string | null;
+};
+
 const DEVELOPMENT_USER_ID = "dev-local-user";
 
 function getBearerToken(authHeader: string | null) {
@@ -62,7 +67,12 @@ async function getUserFromRequest(request: Request) {
     return { user: null, error: "Unauthorized", status: 401 as const };
   }
 
-  return { user: { id: data.user.id }, error: null, status: 200 as const };
+  const user: AuthenticatedUser = {
+    id: data.user.id,
+    email: data.user.email,
+  };
+
+  return { user, error: null, status: 200 as const };
 }
 
 export async function POST(request: Request) {
@@ -80,9 +90,22 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
+    const userId = user.id;
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          id: userId,
+        },
+      });
+    }
+
     const vehicle = await prisma.vehicle.create({
       data: {
-        userId: user.id,
+        userId,
         name,
         initial_odometer: initialOdometer,
       },
