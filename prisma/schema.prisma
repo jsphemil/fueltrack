@@ -7,13 +7,30 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id       String    @id
+  vehicles Vehicle[]
+}
+
+model Vehicle {
+  id               String      @id @default(uuid())
+  userId           String
+  name             String
+  initial_odometer Float
+  created_at       DateTime    @default(now())
+  user             User        @relation(fields: [userId], references: [id])
+  fuelEntries      FuelEntry[]
+}
+
 model FuelEntry {
   id          String   @id @default(uuid())
   userId      String
+  vehicleId   String?
   odometer    Float
   fuel_price  Float
   amount_paid Float
   fuel_volume Float
   is_reserve  Boolean
   created_at  DateTime @default(now())
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 }
