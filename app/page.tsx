@@ -41,64 +41,35 @@ export default function HomePage() {
   const [editIsReserve, setEditIsReserve] = useState(false);
   const [entryActionLoading, setEntryActionLoading] = useState(false);
 
-  const mileageStats = useMemo(() => {
-    const orderedEntries = [...entries].sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-
-    const calculations: number[] = [];
+  const dashboardMetrics = useMemo(() => {
+    const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
+    const mileages: number[] = [];
 
     for (let index = 1; index < orderedEntries.length; index += 1) {
       const previous = orderedEntries[index - 1];
       const current = orderedEntries[index];
 
-      if (!previous.is_reserve || !current.is_reserve) {
-        continue;
-      }
-
       const distance = current.odometer - previous.odometer;
-      if (distance < 20) {
+      if (distance <= 0 || current.fuel_volume <= 0) {
         continue;
       }
 
-      const fuelUsed = previous.fuel_volume;
-      if (fuelUsed <= 0) {
-        continue;
-      }
-
-      calculations.push(distance / fuelUsed);
+      mileages.push(distance / current.fuel_volume);
     }
 
-    if (calculations.length === 0) {
-      return null;
-    }
-
-    const lastMileage = calculations[calculations.length - 1];
+    const latestMileage =
+      mileages.length > 0 ? mileages[mileages.length - 1] : null;
     const averageMileage =
-      calculations.reduce((sum, value) => sum + value, 0) / calculations.length;
+      mileages.length > 0
+        ? mileages.reduce((sum, value) => sum + value, 0) / mileages.length
+        : null;
+    const totalFuelSpend = entries.reduce(
+      (sum, entry) => sum + entry.amount_paid,
+      0
+    );
 
-    return { lastMileage, averageMileage };
+    return { latestMileage, averageMileage, totalFuelSpend };
   }, [entries]);
-
-  const rangeAndInsight = useMemo(() => {
-    if (!mileageStats || entries.length === 0) {
-      return null;
-    }
-
-    const latestEntry = entries[0];
-    const estimatedRange = latestEntry.fuel_volume * mileageStats.averageMileage;
-    const nextRefuelOdometer = latestEntry.odometer + estimatedRange;
-
-    let insight = "Mileage stable";
-    if (mileageStats.lastMileage < mileageStats.averageMileage) {
-      insight = "Mileage decreased";
-    } else if (mileageStats.lastMileage > mileageStats.averageMileage) {
-      insight = "Mileage improved";
-    }
-
-    return { estimatedRange, nextRefuelOdometer, insight };
-  }, [entries, mileageStats]);
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
@@ -449,57 +420,31 @@ export default function HomePage() {
 
         {isAuthenticated ? (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-zinc-900">Mileage</h2>
-
-            {mileageStats ? (
-              <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-sm text-zinc-700">
-                  Last mileage:{" "}
-                  <span className="font-medium text-zinc-900">
-                    {mileageStats.lastMileage.toFixed(1)} km/l
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-zinc-700">
-                  Average mileage:{" "}
-                  <span className="font-medium text-zinc-900">
-                    {mileageStats.averageMileage.toFixed(1)} km/l
-                  </span>
-                </p>
-                {rangeAndInsight ? (
-                  <>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Estimated Range:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {rangeAndInsight.estimatedRange.toFixed(1)} km
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Refuel by:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {Math.round(
-                          rangeAndInsight.nextRefuelOdometer
-                        ).toLocaleString()}{" "}
-                        km
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Insight:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {rangeAndInsight.insight}
-                      </span>
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-sm text-zinc-600">
-                    Not enough data to estimate range
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-zinc-600">
-                Not enough data to calculate mileage
+            <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
+            <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-sm text-zinc-700">
+                Latest mileage:{" "}
+                <span className="font-medium text-zinc-900">
+                  {dashboardMetrics.latestMileage !== null
+                    ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
+                    : "Not enough data"}
+                </span>
               </p>
-            )}
+              <p className="mt-1 text-sm text-zinc-700">
+                Average mileage:{" "}
+                <span className="font-medium text-zinc-900">
+                  {dashboardMetrics.averageMileage !== null
+                    ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
+                    : "Not enough data"}
+                </span>
+              </p>
+              <p className="mt-1 text-sm text-zinc-700">
+                Total fuel spend:{" "}
+                <span className="font-medium text-zinc-900">
+                  {dashboardMetrics.totalFuelSpend.toFixed(2)}
+                </span>
+              </p>
+            </div>
 
             <h2 className="mt-8 text-lg font-semibold text-zinc-900">
               Fuel Entries
