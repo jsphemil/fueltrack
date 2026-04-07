@@ -502,7 +502,11 @@ export default function HomePage() {
                   Recent Fuel Entries
                 </h2>
                 <Link
-                  href="/history"
+                  href={
+                    selectedVehicleId
+                      ? `/history?vehicleId=${encodeURIComponent(selectedVehicleId)}`
+                      : "/history"
+                  }
                   className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
                 >
                   View Full History
