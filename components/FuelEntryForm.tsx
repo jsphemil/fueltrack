@@ -61,7 +61,12 @@ export default function FuelEntryForm({ vehicleId, onSaved }: FuelEntryFormProps
     });
 
     if (!response.ok) {
-      setErrorMessage("Could not save fuel entry.");
+      const errorResult = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      setErrorMessage(
+        errorResult?.message ?? errorResult?.error ?? "Could not save fuel entry."
+      );
       setIsSubmitting(false);
       return;
     }

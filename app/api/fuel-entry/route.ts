@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
     if (latestEntry && odometer <= latestEntry.odometer) {
       return Response.json(
-        { error: "Odometer reading must be greater than previous reading" },
+        { message: "Odometer must be greater than previous reading" },
         { status: 400 }
       );
     }
