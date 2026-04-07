@@ -1,0 +1,53 @@
+
+> fueltrack@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.7:3000
+- Environments: .env.local, .env
+✓ Ready in 501ms
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\jsphe\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\jsphe\Codex_Projects\project_2\package-lock.json
+
+
+ GET / 200 in 2.4s (next.js: 2.2s, application-code: 218ms)
+[browser] AuthApiError: Invalid Refresh Token: Refresh Token Not Found
+ GET /login 200 in 479ms (next.js: 440ms, application-code: 39ms)
+ GET / 200 in 57ms (next.js: 7ms, application-code: 50ms)
+ GET / 200 in 66ms (next.js: 4ms, application-code: 62ms)
+ GET /login 200 in 36ms (next.js: 6ms, application-code: 29ms)
+ GET /login 200 in 165ms (next.js: 77ms, application-code: 88ms)
+ GET /login 200 in 37ms (next.js: 6ms, application-code: 31ms)
+ GET /login 200 in 39ms (next.js: 6ms, application-code: 33ms)
+ GET /login 200 in 39ms (next.js: 7ms, application-code: 33ms)
+ GET /login 200 in 42ms (next.js: 5ms, application-code: 36ms)
+ GET /login 200 in 36ms (next.js: 6ms, application-code: 30ms)
+ GET /login 200 in 37ms (next.js: 5ms, application-code: 32ms)
+ GET /login 200 in 38ms (next.js: 6ms, application-code: 33ms)
+ GET /login 200 in 40ms (next.js: 5ms, application-code: 35ms)
+ GET /login 200 in 36ms (next.js: 5ms, application-code: 31ms)
+ GET /login 200 in 37ms (next.js: 4ms, application-code: 34ms)
+ GET /login 200 in 58ms (next.js: 6ms, application-code: 52ms)
+ GET /login 200 in 35ms (next.js: 5ms, application-code: 30ms)
+ GET /login 200 in 31ms (next.js: 6ms, application-code: 25ms)
+ GET /login 200 in 26ms (next.js: 4ms, application-code: 23ms)
+ GET /login 200 in 32ms (next.js: 6ms, application-code: 27ms)
+ GET /login 200 in 32ms (next.js: 4ms, application-code: 27ms)
+ GET /login 200 in 29ms (next.js: 5ms, application-code: 24ms)
+ GET /login 200 in 39ms (next.js: 6ms, application-code: 33ms)
+ GET /login 200 in 39ms (next.js: 6ms, application-code: 34ms)
+ GET /login 200 in 37ms (next.js: 4ms, application-code: 33ms)
+ GET /login 200 in 25ms (next.js: 3ms, application-code: 23ms)
+ GET /login 200 in 28ms (next.js: 4ms, application-code: 24ms)
+ GET /login 200 in 31ms (next.js: 5ms, application-code: 27ms)
+ GET /login 200 in 31ms (next.js: 3ms, application-code: 28ms)
+ GET /login 200 in 29ms (next.js: 3ms, application-code: 25ms)
+ GET /login 200 in 39ms (next.js: 5ms, application-code: 34ms)
+ GET /login 200 in 38ms (next.js: 6ms, application-code: 32ms)
+Terminate batch job (Y/N)? [?25h
+

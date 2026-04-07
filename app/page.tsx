@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import FuelEntryForm from "@/components/FuelEntryForm";
+import VehicleForm from "@/components/VehicleForm";
 
 type FuelEntry = {
   id: string;
@@ -15,8 +16,9 @@ type FuelEntry = {
 };
 
 export default function HomePage() {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isDevelopment);
   const [errorMessage, setErrorMessage] = useState("");
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
@@ -81,8 +83,8 @@ export default function HomePage() {
     return { estimatedRange, nextRefuelOdometer, insight };
   }, [entries, mileageStats]);
 
-  async function fetchEntries(accessToken: string) {
-    if (!accessToken) {
+  const fetchEntries = useCallback(async (accessToken?: string) => {
+    if (!isDevelopment && !accessToken) {
       setEntries([]);
       return;
     }
@@ -90,11 +92,14 @@ export default function HomePage() {
     setEntriesLoading(true);
     setEntriesError("");
 
+    const headers: HeadersInit = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch("/api/fuel-entry", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -106,9 +111,16 @@ export default function HomePage() {
     const result = (await response.json()) as { entries: FuelEntry[] };
     setEntries(result.entries ?? []);
     setEntriesLoading(false);
-  }
+  }, [isDevelopment]);
 
   useEffect(() => {
+    if (isDevelopment) {
+      const timerId = window.setTimeout(() => {
+        void fetchEntries();
+      }, 0);
+      return () => window.clearTimeout(timerId);
+    }
+
     let isMounted = true;
 
     async function loadSession() {
@@ -151,15 +163,21 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchEntries, isDevelopment]);
 
   async function handleSignOut() {
+    if (isDevelopment) {
+      return;
+    }
+
     setErrorMessage("");
     const { error } = await supabase.auth.signOut();
     if (error) {
       setErrorMessage(error.message);
     }
   }
+
+  const isAuthenticated = isDevelopment || Boolean(session);
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
@@ -171,22 +189,24 @@ export default function HomePage() {
 
         {loading ? (
           <p className="mt-6 text-sm text-zinc-700">Checking session...</p>
-        ) : session ? (
+        ) : isAuthenticated ? (
           <div className="mt-6 space-y-4">
             <p className="text-sm text-zinc-700">
               Signed in as{" "}
               <span className="font-medium text-zinc-900">
-                {session.user.email}
+                {session?.user.email ?? "dev-local-user"}
               </span>
               .
             </p>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="h-11 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Sign Out
-            </button>
+            {isDevelopment ? null : (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="h-11 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+              >
+                Sign Out
+              </button>
+            )}
           </div>
         ) : (
           <div className="mt-6">
@@ -203,11 +223,15 @@ export default function HomePage() {
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
         ) : null}
 
-        {session ? (
-          <FuelEntryForm onSaved={() => fetchEntries(session.access_token)} />
+        {isAuthenticated ? (
+          <VehicleForm />
         ) : null}
 
-        {session ? (
+        {isAuthenticated ? (
+          <FuelEntryForm onSaved={() => fetchEntries(session?.access_token)} />
+        ) : null}
+
+        {isAuthenticated ? (
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-zinc-900">Mileage</h2>
 

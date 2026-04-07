@@ -3,12 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-type FuelEntryPayload = {
-  odometer: number;
-  fuel_price: number;
-  amount_paid: number;
-  fuel_volume: number;
-  is_reserve: boolean;
+type VehiclePayload = {
+  name: string;
+  initial_odometer: number;
 };
 
 const DEVELOPMENT_USER_ID = "dev-local-user";
@@ -68,34 +65,6 @@ async function getUserFromRequest(request: Request) {
   return { user: { id: data.user.id }, error: null, status: 200 as const };
 }
 
-export async function GET(request: Request) {
-  try {
-    const { user, error, status } = await getUserFromRequest(request);
-    if (!user) {
-      return Response.json({ error }, { status });
-    }
-
-    const entries = await prisma.fuelEntry.findMany({
-      where: { userId: user.id },
-      orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        odometer: true,
-        fuel_volume: true,
-        is_reserve: true,
-        created_at: true,
-      },
-    });
-
-    return Response.json({ entries }, { status: 200 });
-  } catch {
-    return Response.json(
-      { error: "Failed to fetch fuel entries" },
-      { status: 500 }
-    );
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const { user, error, status } = await getUserFromRequest(request);
@@ -103,36 +72,25 @@ export async function POST(request: Request) {
       return Response.json({ error }, { status });
     }
 
-    const body = (await request.json()) as Partial<FuelEntryPayload>;
+    const body = (await request.json()) as Partial<VehiclePayload>;
+    const name = String(body.name ?? "").trim();
+    const initialOdometer = Number(body.initial_odometer);
 
-    const odometer = Number(body.odometer);
-    const fuelPrice = Number(body.fuel_price);
-    const amountPaid = Number(body.amount_paid);
-    const fuelVolume = Number(body.fuel_volume);
-    const isReserve = Boolean(body.is_reserve);
-
-    if (
-      !Number.isFinite(odometer) ||
-      !Number.isFinite(fuelPrice) ||
-      !Number.isFinite(amountPaid) ||
-      !Number.isFinite(fuelVolume)
-    ) {
+    if (!name || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const savedEntry = await prisma.fuelEntry.create({
+    const vehicle = await prisma.vehicle.create({
       data: {
         userId: user.id,
-        odometer,
-        fuel_price: fuelPrice,
-        amount_paid: amountPaid,
-        fuel_volume: fuelVolume,
-        is_reserve: isReserve,
+        name,
+        initial_odometer: initialOdometer,
       },
+      select: { id: true },
     });
 
-    return Response.json({ id: savedEntry.id, success: true }, { status: 201 });
+    return Response.json({ id: vehicle.id, success: true }, { status: 201 });
   } catch {
-    return Response.json({ error: "Failed to save fuel entry" }, { status: 500 });
+    return Response.json({ error: "Failed to save vehicle" }, { status: 500 });
   }
 }

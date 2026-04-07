@@ -8,6 +8,7 @@ type FuelEntryFormProps = {
 };
 
 export default function FuelEntryForm({ onSaved }: FuelEntryFormProps) {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const [odometer, setOdometer] = useState("");
   const [fuelPrice, setFuelPrice] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -33,19 +34,25 @@ export default function FuelEntryForm({ onSaved }: FuelEntryFormProps) {
     setSuccessMessage("");
     setIsSubmitting(true);
 
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session) {
-      setErrorMessage("Please log in before saving an entry.");
-      setIsSubmitting(false);
-      return;
+    let accessToken = "";
+    if (!isDevelopment) {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setErrorMessage("Please log in before saving an entry.");
+        setIsSubmitting(false);
+        return;
+      }
+      accessToken = data.session.access_token;
+    }
+
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
 
     const response = await fetch("/api/fuel-entry", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${data.session.access_token}`,
-      },
+      headers,
       body: JSON.stringify({
         odometer: Number(odometer),
         fuel_price: Number(fuelPrice),
