@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,14 +25,13 @@ export default function LoginPage() {
     setSuccessMessage("");
 
     const trimmedEmail = email.trim();
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: trimmedEmail,
       password,
     });
 
-    if (!error && data.user) {
-      setSuccessMessage("Login successful.");
-      setLoading(false);
+    if (!error) {
+      router.push("/");
       return;
     }
 
