@@ -67,8 +67,22 @@ export default function HomePage() {
       (sum, entry) => sum + entry.amount_paid,
       0
     );
+    const latestEntry =
+      orderedEntries.length > 0 ? orderedEntries[orderedEntries.length - 1] : null;
+    const range =
+      latestEntry && averageMileage !== null
+        ? latestEntry.fuel_volume * averageMileage
+        : null;
+    const nextRefuelOdometer =
+      latestEntry && range !== null ? latestEntry.odometer + range : null;
 
-    return { latestMileage, averageMileage, totalFuelSpend };
+    return {
+      latestMileage,
+      averageMileage,
+      totalFuelSpend,
+      range,
+      nextRefuelOdometer,
+    };
   }, [entries]);
 
   const selectedVehicle = useMemo(
@@ -442,6 +456,22 @@ export default function HomePage() {
                 Total fuel spend:{" "}
                 <span className="font-medium text-zinc-900">
                   {dashboardMetrics.totalFuelSpend.toFixed(2)}
+                </span>
+              </p>
+              <p className="mt-1 text-sm text-zinc-700">
+                Range:{" "}
+                <span className="font-medium text-zinc-900">
+                  {dashboardMetrics.range !== null
+                    ? `${dashboardMetrics.range.toFixed(1)} km`
+                    : "Not enough data"}
+                </span>
+              </p>
+              <p className="mt-1 text-sm text-zinc-700">
+                Next Refuel Odometer:{" "}
+                <span className="font-medium text-zinc-900">
+                  {dashboardMetrics.nextRefuelOdometer !== null
+                    ? Math.round(dashboardMetrics.nextRefuelOdometer).toLocaleString()
+                    : "Not enough data"}
                 </span>
               </p>
             </div>
