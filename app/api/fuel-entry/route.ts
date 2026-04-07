@@ -115,6 +115,26 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
+    const latestEntry = await prisma.fuelEntry.findFirst({
+      where: {
+        userId: user.id,
+        vehicleId,
+      },
+      orderBy: {
+        odometer: "desc",
+      },
+      select: {
+        odometer: true,
+      },
+    });
+
+    if (latestEntry && odometer <= latestEntry.odometer) {
+      return Response.json(
+        { error: "Odometer reading must be greater than previous reading" },
+        { status: 400 }
+      );
+    }
+
     const savedEntry = await prisma.fuelEntry.create({
       data: {
         userId: user.id,
