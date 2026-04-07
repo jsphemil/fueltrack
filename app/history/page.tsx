@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -24,16 +23,12 @@ type Vehicle = {
 };
 
 export default function HistoryPage() {
-  const searchParams = useSearchParams();
-  const initialVehicleId = searchParams.get("vehicleId");
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [vehiclesError, setVehiclesError] = useState("");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    initialVehicleId
-  );
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
   const [entries, setEntries] = useState<FuelEntry[]>([]);
