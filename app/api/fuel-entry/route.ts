@@ -11,8 +11,6 @@ type FuelEntryPayload = {
   is_reserve: boolean;
 };
 
-const DEVELOPMENT_USER_ID = "dev-local-user";
-
 function getBearerToken(authHeader: string | null) {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
@@ -22,20 +20,6 @@ function getBearerToken(authHeader: string | null) {
 }
 
 async function getUserFromRequest(request: Request) {
-  if (process.env.NODE_ENV === "development") {
-    await prisma.user.upsert({
-      where: { id: DEVELOPMENT_USER_ID },
-      update: {},
-      create: { id: DEVELOPMENT_USER_ID },
-    });
-
-    return {
-      user: { id: DEVELOPMENT_USER_ID },
-      error: null,
-      status: 200 as const,
-    };
-  }
-
   const token = getBearerToken(request.headers.get("authorization"));
   if (!token) {
     return { user: null, error: "Unauthorized", status: 401 as const };

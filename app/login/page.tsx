@@ -16,9 +16,10 @@ export default function LoginPage() {
     setSuccessMessage("");
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: email.trim(),
       options: {
         emailRedirectTo: `${window.location.origin}/`,
+        shouldCreateUser: true,
       },
     });
 

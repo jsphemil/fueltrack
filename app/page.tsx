@@ -16,9 +16,8 @@ type FuelEntry = {
 };
 
 export default function HomePage() {
-  const isDevelopment = process.env.NODE_ENV === "development";
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(!isDevelopment);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
@@ -84,7 +83,7 @@ export default function HomePage() {
   }, [entries, mileageStats]);
 
   const fetchEntries = useCallback(async (accessToken?: string) => {
-    if (!isDevelopment && !accessToken) {
+    if (!accessToken) {
       setEntries([]);
       return;
     }
@@ -111,16 +110,9 @@ export default function HomePage() {
     const result = (await response.json()) as { entries: FuelEntry[] };
     setEntries(result.entries ?? []);
     setEntriesLoading(false);
-  }, [isDevelopment]);
+  }, []);
 
   useEffect(() => {
-    if (isDevelopment) {
-      const timerId = window.setTimeout(() => {
-        void fetchEntries();
-      }, 0);
-      return () => window.clearTimeout(timerId);
-    }
-
     let isMounted = true;
 
     async function loadSession() {
@@ -163,13 +155,9 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchEntries, isDevelopment]);
+  }, [fetchEntries]);
 
   async function handleSignOut() {
-    if (isDevelopment) {
-      return;
-    }
-
     setErrorMessage("");
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -177,7 +165,7 @@ export default function HomePage() {
     }
   }
 
-  const isAuthenticated = isDevelopment || Boolean(session);
+  const isAuthenticated = Boolean(session);
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
@@ -198,15 +186,13 @@ export default function HomePage() {
               </span>
               .
             </p>
-            {isDevelopment ? null : (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="h-11 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-              >
-                Sign Out
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="h-11 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+            >
+              Sign Out
+            </button>
           </div>
         ) : (
           <div className="mt-6">

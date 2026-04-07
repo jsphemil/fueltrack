@@ -8,7 +8,6 @@ type FuelEntryFormProps = {
 };
 
 export default function FuelEntryForm({ onSaved }: FuelEntryFormProps) {
-  const isDevelopment = process.env.NODE_ENV === "development";
   const [odometer, setOdometer] = useState("");
   const [fuelPrice, setFuelPrice] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -34,16 +33,13 @@ export default function FuelEntryForm({ onSaved }: FuelEntryFormProps) {
     setSuccessMessage("");
     setIsSubmitting(true);
 
-    let accessToken = "";
-    if (!isDevelopment) {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        setErrorMessage("Please log in before saving an entry.");
-        setIsSubmitting(false);
-        return;
-      }
-      accessToken = data.session.access_token;
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      setErrorMessage("Please log in before saving an entry.");
+      setIsSubmitting(false);
+      return;
     }
+    const accessToken = data.session.access_token;
 
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (accessToken) {

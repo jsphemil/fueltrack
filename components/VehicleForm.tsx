@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function VehicleForm() {
-  const isDevelopment = process.env.NODE_ENV === "development";
   const [name, setName] = useState("");
   const [initialOdometer, setInitialOdometer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,16 +16,13 @@ export default function VehicleForm() {
     setSuccessMessage("");
     setIsSubmitting(true);
 
-    let accessToken = "";
-    if (!isDevelopment) {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        setErrorMessage("Please log in before adding a vehicle.");
-        setIsSubmitting(false);
-        return;
-      }
-      accessToken = data.session.access_token;
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      setErrorMessage("Please log in before adding a vehicle.");
+      setIsSubmitting(false);
+      return;
     }
+    const accessToken = data.session.access_token;
 
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (accessToken) {
