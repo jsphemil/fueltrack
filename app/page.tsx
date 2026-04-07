@@ -10,8 +10,11 @@ import VehicleForm from "@/components/VehicleForm";
 type FuelEntry = {
   id: string;
   odometer: number;
+  fuel_price: number;
+  amount_paid: number;
   fuel_volume: number;
   is_reserve: boolean;
+  vehicleId: string | null;
   created_at: string;
 };
 
@@ -31,6 +34,12 @@ export default function HomePage() {
   const [vehiclesError, setVehiclesError] = useState("");
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editOdometer, setEditOdometer] = useState("");
+  const [editFuelPrice, setEditFuelPrice] = useState("");
+  const [editAmountPaid, setEditAmountPaid] = useState("");
+  const [editIsReserve, setEditIsReserve] = useState(false);
+  const [entryActionLoading, setEntryActionLoading] = useState(false);
 
   const mileageStats = useMemo(() => {
     const orderedEntries = [...entries].sort(
@@ -236,6 +245,106 @@ export default function HomePage() {
     return () => window.clearTimeout(timerId);
   }, [fetchEntries, selectedVehicleId, session?.access_token]);
 
+  function startEditingEntry(entry: FuelEntry) {
+    setEditingEntryId(entry.id);
+    setEditOdometer(String(entry.odometer));
+    setEditFuelPrice(String(entry.fuel_price));
+    setEditAmountPaid(String(entry.amount_paid));
+    setEditIsReserve(entry.is_reserve);
+    setEntriesError("");
+  }
+
+  function cancelEditingEntry() {
+    setEditingEntryId(null);
+    setEditOdometer("");
+    setEditFuelPrice("");
+    setEditAmountPaid("");
+    setEditIsReserve(false);
+  }
+
+  async function handleUpdateEntry(entry: FuelEntry) {
+    if (!session?.access_token) {
+      setEntriesError("Please log in before updating an entry.");
+      return;
+    }
+
+    const odometer = Number(editOdometer);
+    const fuelPrice = Number(editFuelPrice);
+    const amountPaid = Number(editAmountPaid);
+    const fuelVolume =
+      Number.isFinite(fuelPrice) && fuelPrice > 0 ? amountPaid / fuelPrice : 0;
+
+    setEntryActionLoading(true);
+    setEntriesError("");
+
+    const response = await fetch("/api/fuel-entry", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        id: entry.id,
+        vehicleId: entry.vehicleId,
+        odometer,
+        fuel_price: fuelPrice,
+        amount_paid: amountPaid,
+        fuel_volume: fuelVolume,
+        is_reserve: editIsReserve,
+      }),
+    });
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      setEntriesError(
+        result?.message ?? result?.error ?? "Could not update fuel entry."
+      );
+      setEntryActionLoading(false);
+      return;
+    }
+
+    cancelEditingEntry();
+    await fetchEntries(session.access_token, selectedVehicleId);
+    setEntryActionLoading(false);
+  }
+
+  async function handleDeleteEntry(entryId: string) {
+    if (!session?.access_token) {
+      setEntriesError("Please log in before deleting an entry.");
+      return;
+    }
+
+    setEntryActionLoading(true);
+    setEntriesError("");
+
+    const response = await fetch(`/api/fuel-entry?id=${encodeURIComponent(entryId)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      setEntriesError(
+        result?.message ?? result?.error ?? "Could not delete fuel entry."
+      );
+      setEntryActionLoading(false);
+      return;
+    }
+
+    if (editingEntryId === entryId) {
+      cancelEditingEntry();
+    }
+
+    await fetchEntries(session.access_token, selectedVehicleId);
+    setEntryActionLoading(false);
+  }
+
   async function handleSignOut() {
     setErrorMessage("");
     const { error } = await supabase.auth.signOut();
@@ -411,30 +520,136 @@ export default function HomePage() {
                     key={entry.id}
                     className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
                   >
-                    <p className="text-sm text-zinc-700">
-                      Odometer:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {entry.odometer}
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Fuel Volume:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {entry.fuel_volume.toFixed(2)} L
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Filled at reserve:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {entry.is_reserve ? "Yes" : "No"}
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      Created at:{" "}
-                      <span className="font-medium text-zinc-900">
-                        {new Date(entry.created_at).toLocaleString()}
-                      </span>
-                    </p>
+                    {editingEntryId === entry.id ? (
+                      <div className="space-y-3">
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                            Odometer
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.1"
+                            value={editOdometer}
+                            onChange={(event) => setEditOdometer(event.target.value)}
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                            Fuel Price
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            value={editFuelPrice}
+                            onChange={(event) => setEditFuelPrice(event.target.value)}
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                            Amount Paid
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            value={editAmountPaid}
+                            onChange={(event) => setEditAmountPaid(event.target.value)}
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-zinc-700">
+                          <input
+                            type="checkbox"
+                            checked={editIsReserve}
+                            onChange={(event) => setEditIsReserve(event.target.checked)}
+                            className="h-4 w-4 accent-zinc-900"
+                          />
+                          Filled at reserve
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateEntry(entry)}
+                            disabled={entryActionLoading}
+                            className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditingEntry}
+                            disabled={entryActionLoading}
+                            className="h-9 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-zinc-700">
+                          Odometer:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {entry.odometer}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-700">
+                          Fuel Price:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {entry.fuel_price.toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-700">
+                          Amount Paid:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {entry.amount_paid.toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-700">
+                          Fuel Volume:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {entry.fuel_volume.toFixed(2)} L
+                          </span>
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-700">
+                          Filled at reserve:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {entry.is_reserve ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-700">
+                          Created at:{" "}
+                          <span className="font-medium text-zinc-900">
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditingEntry(entry)}
+                            disabled={entryActionLoading}
+                            className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEntry(entry.id)}
+                            disabled={entryActionLoading}
+                            className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </article>
                 ))}
               </div>

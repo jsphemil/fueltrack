@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 
 type FuelEntryPayload = {
+  id?: string;
   odometer: number;
   fuel_price: number;
   amount_paid: number;
@@ -11,6 +12,36 @@ type FuelEntryPayload = {
   is_reserve: boolean;
   vehicleId?: string | null;
 };
+
+async function validateOdometerForVehicle(params: {
+  userId: string;
+  vehicleId: string | null;
+  odometer: number;
+  excludeId?: string;
+}) {
+  const latestEntry = await prisma.fuelEntry.findFirst({
+    where: {
+      userId: params.userId,
+      vehicleId: params.vehicleId,
+      ...(params.excludeId ? { id: { not: params.excludeId } } : {}),
+    },
+    orderBy: {
+      odometer: "desc",
+    },
+    select: {
+      odometer: true,
+    },
+  });
+
+  if (latestEntry && params.odometer <= latestEntry.odometer) {
+    return {
+      valid: false as const,
+      message: "Odometer must be greater than previous reading",
+    };
+  }
+
+  return { valid: true as const };
+}
 
 function getBearerToken(authHeader: string | null) {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -72,8 +103,11 @@ export async function GET(request: Request) {
       select: {
         id: true,
         odometer: true,
+        fuel_price: true,
+        amount_paid: true,
         fuel_volume: true,
         is_reserve: true,
+        vehicleId: true,
         created_at: true,
       },
     });
@@ -115,22 +149,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const latestEntry = await prisma.fuelEntry.findFirst({
-      where: {
-        userId: user.id,
-        vehicleId,
-      },
-      orderBy: {
-        odometer: "desc",
-      },
-      select: {
-        odometer: true,
-      },
+    const odometerValidation = await validateOdometerForVehicle({
+      userId: user.id,
+      vehicleId,
+      odometer,
     });
-
-    if (latestEntry && odometer <= latestEntry.odometer) {
+    if (!odometerValidation.valid) {
       return Response.json(
-        { message: "Odometer must be greater than previous reading" },
+        { message: odometerValidation.message },
         { status: 400 }
       );
     }
@@ -150,5 +176,122 @@ export async function POST(request: Request) {
     return Response.json({ id: savedEntry.id, success: true }, { status: 201 });
   } catch {
     return Response.json({ error: "Failed to save fuel entry" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
+    }
+
+    const body = (await request.json()) as Partial<FuelEntryPayload>;
+    const id = String(body.id ?? "").trim();
+    const odometer = Number(body.odometer);
+    const fuelPrice = Number(body.fuel_price);
+    const amountPaid = Number(body.amount_paid);
+    const fuelVolume = Number(body.fuel_volume);
+    const isReserve = Boolean(body.is_reserve);
+
+    if (
+      !id ||
+      !Number.isFinite(odometer) ||
+      !Number.isFinite(fuelPrice) ||
+      !Number.isFinite(amountPaid) ||
+      !Number.isFinite(fuelVolume)
+    ) {
+      return Response.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    const existingEntry = await prisma.fuelEntry.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        vehicleId: true,
+      },
+    });
+
+    if (!existingEntry) {
+      return Response.json({ error: "Fuel entry not found" }, { status: 404 });
+    }
+
+    const odometerValidation = await validateOdometerForVehicle({
+      userId: user.id,
+      vehicleId: existingEntry.vehicleId,
+      odometer,
+      excludeId: existingEntry.id,
+    });
+    if (!odometerValidation.valid) {
+      return Response.json(
+        { message: odometerValidation.message },
+        { status: 400 }
+      );
+    }
+
+    await prisma.fuelEntry.update({
+      where: {
+        id: existingEntry.id,
+      },
+      data: {
+        odometer,
+        fuel_price: fuelPrice,
+        amount_paid: amountPaid,
+        fuel_volume: fuelVolume,
+        is_reserve: isReserve,
+      },
+    });
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch {
+    return Response.json(
+      { error: "Failed to update fuel entry" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = (searchParams.get("id") ?? "").trim();
+    if (!id) {
+      return Response.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const existingEntry = await prisma.fuelEntry.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingEntry) {
+      return Response.json({ error: "Fuel entry not found" }, { status: 404 });
+    }
+
+    await prisma.fuelEntry.delete({
+      where: {
+        id: existingEntry.id,
+      },
+    });
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch {
+    return Response.json(
+      { error: "Failed to delete fuel entry" },
+      { status: 500 }
+    );
   }
 }
