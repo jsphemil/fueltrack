@@ -89,6 +89,7 @@ export default function HomePage() {
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
     [selectedVehicleId, vehicles]
   );
+  const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
 
   const fetchEntries = useCallback(
     async (accessToken?: string, vehicleId?: string | null) => {
@@ -433,15 +434,21 @@ export default function HomePage() {
         ) : null}
 
         {isAuthenticated ? (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Vehicle Dashboard
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600">
-              {selectedVehicle ? selectedVehicle.name : "No vehicle selected"}
-            </p>
-            <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <div className="space-y-2 text-sm">
+          <section className="mt-8 space-y-6">
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Selected Vehicle Name
+              </h2>
+              <p className="mt-2 text-sm text-zinc-700">
+                <span className="font-medium text-zinc-900">
+                  {selectedVehicle ? selectedVehicle.name : "No vehicle selected"}
+                </span>
+              </p>
+            </section>
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
+              <div className="mt-3 space-y-2 text-sm">
                 <p className="text-zinc-700">
                   Latest Mileage:{" "}
                   <span className="font-medium text-zinc-900">
@@ -483,23 +490,32 @@ export default function HomePage() {
                   </span>
                 </p>
               </div>
-            </div>
+            </section>
 
-            <h2 className="mt-8 text-lg font-semibold text-zinc-900">
-              Fuel Entries
-            </h2>
+            <section>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  Recent Fuel Entries
+                </h2>
+                <Link
+                  href="/history"
+                  className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+                >
+                  View Full History
+                </Link>
+              </div>
 
-            {entriesLoading ? (
-              <p className="mt-3 text-sm text-zinc-600">Loading entries...</p>
-            ) : entriesError ? (
-              <p className="mt-3 text-sm font-medium text-red-600">
-                {entriesError}
-              </p>
-            ) : entries.length === 0 ? (
-              <p className="mt-3 text-sm text-zinc-600">No fuel entries yet.</p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {entries.map((entry) => (
+              {entriesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">Loading entries...</p>
+              ) : entriesError ? (
+                <p className="mt-3 text-sm font-medium text-red-600">
+                  {entriesError}
+                </p>
+              ) : recentEntries.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">No fuel entries yet.</p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {recentEntries.map((entry) => (
                   <article
                     key={entry.id}
                     className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
@@ -636,8 +652,9 @@ export default function HomePage() {
                     )}
                   </article>
                 ))}
-              </div>
-            )}
+                </div>
+              )}
+            </section>
           </section>
         ) : null}
       </section>
