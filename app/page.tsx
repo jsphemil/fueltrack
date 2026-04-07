@@ -448,47 +448,51 @@ export default function HomePage() {
 
             <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
-              <div className="mt-3 space-y-2 text-sm">
-                <p className="text-zinc-700">
-                  Latest Mileage:{" "}
-                  <span className="font-medium text-zinc-900">
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <article className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <p className="text-sm text-zinc-600">Latest Mileage</p>
+                  <p className="mt-1 text-base font-semibold text-zinc-900">
                     {dashboardMetrics.latestMileage !== null
                       ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
                       : "Not enough data"}
-                  </span>
-                </p>
-                <p className="text-zinc-700">
-                  Average Mileage:{" "}
-                  <span className="font-medium text-zinc-900">
+                  </p>
+                </article>
+
+                <article className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <p className="text-sm text-zinc-600">Average Mileage</p>
+                  <p className="mt-1 text-base font-semibold text-zinc-900">
                     {dashboardMetrics.averageMileage !== null
                       ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
                       : "Not enough data"}
-                  </span>
-                </p>
-                <p className="text-zinc-700">
-                  Range:{" "}
-                  <span className="font-medium text-zinc-900">
+                  </p>
+                </article>
+
+                <article className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <p className="text-sm text-zinc-600">Range</p>
+                  <p className="mt-1 text-base font-semibold text-zinc-900">
                     {dashboardMetrics.range !== null
                       ? `${dashboardMetrics.range.toFixed(1)} km`
                       : "Not enough data"}
-                  </span>
-                </p>
-                <p className="text-zinc-700">
-                  Next Refuel Odometer:{" "}
-                  <span className="font-medium text-zinc-900">
+                  </p>
+                </article>
+
+                <article className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <p className="text-sm text-zinc-600">Next Refuel Odometer</p>
+                  <p className="mt-1 text-base font-semibold text-zinc-900">
                     {dashboardMetrics.nextRefuelOdometer !== null
                       ? Math.round(
                           dashboardMetrics.nextRefuelOdometer
                         ).toLocaleString()
                       : "Not enough data"}
-                  </span>
-                </p>
-                <p className="text-zinc-700">
-                  Total Spend:{" "}
-                  <span className="font-medium text-zinc-900">
+                  </p>
+                </article>
+
+                <article className="rounded-lg border border-zinc-200 bg-white p-3 sm:col-span-2">
+                  <p className="text-sm text-zinc-600">Total Spend</p>
+                  <p className="mt-1 text-base font-semibold text-zinc-900">
                     {dashboardMetrics.totalFuelSpend.toFixed(2)}
-                  </span>
-                </p>
+                  </p>
+                </article>
               </div>
             </section>
 
