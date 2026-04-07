@@ -20,50 +20,70 @@ export default function LoginPage() {
 
     const trimmedEmail = email.trim();
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: trimmedEmail,
       password,
     });
 
-    if (!signInError) {
-      router.push("/");
+    if (!error && data.user) {
+      router.push("/dashboard");
       setLoading(false);
       return;
     }
 
-    const signInMessage = signInError.message.toLowerCase();
+    if (!error) {
+      setErrorMessage("Something went wrong. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    const signInMessage = error.message.toLowerCase();
     if (
       signInMessage.includes("user not found") ||
       signInMessage.includes("invalid login credentials")
     ) {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password,
-      });
+      const { data: signupData, error: signupError } = await supabase.auth.signUp(
+        {
+          email: trimmedEmail,
+          password,
+        }
+      );
 
-      if (!signUpError) {
-        setSuccessMessage("Account created, you can now login");
+      if (!signupError && signupData.user) {
+        setSuccessMessage("Account created successfully. Please login again.");
         setLoading(false);
         return;
       }
 
-      const signUpMessage = signUpError.message.toLowerCase();
-      if (
-        signUpMessage.includes("already") ||
-        signUpMessage.includes("registered") ||
-        signUpMessage.includes("exists")
-      ) {
-        setErrorMessage("Wrong password");
+      if (signupError) {
+        const signUpMessage = signupError.message.toLowerCase();
+        if (
+          signUpMessage.includes("already") ||
+          signUpMessage.includes("registered") ||
+          signUpMessage.includes("exists")
+        ) {
+          setErrorMessage("Wrong password");
+          setLoading(false);
+          return;
+        }
+
+        setErrorMessage(signupError.message);
         setLoading(false);
         return;
       }
 
-      setErrorMessage("User not found");
+      setErrorMessage("Something went wrong. Please try again.");
       setLoading(false);
       return;
     }
 
-    setErrorMessage("Wrong password");
+    if (signInMessage.includes("password")) {
+      setErrorMessage("Wrong password");
+      setLoading(false);
+      return;
+    }
+
+    setErrorMessage(error.message);
     setLoading(false);
   }
 
