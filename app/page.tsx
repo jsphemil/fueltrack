@@ -434,46 +434,55 @@ export default function HomePage() {
 
         {isAuthenticated ? (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">
+              Vehicle Dashboard
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              {selectedVehicle ? selectedVehicle.name : "No vehicle selected"}
+            </p>
             <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-sm text-zinc-700">
-                Latest mileage:{" "}
-                <span className="font-medium text-zinc-900">
-                  {dashboardMetrics.latestMileage !== null
-                    ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
-                    : "Not enough data"}
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-700">
-                Average mileage:{" "}
-                <span className="font-medium text-zinc-900">
-                  {dashboardMetrics.averageMileage !== null
-                    ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
-                    : "Not enough data"}
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-700">
-                Total fuel spend:{" "}
-                <span className="font-medium text-zinc-900">
-                  {dashboardMetrics.totalFuelSpend.toFixed(2)}
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-700">
-                Range:{" "}
-                <span className="font-medium text-zinc-900">
-                  {dashboardMetrics.range !== null
-                    ? `${dashboardMetrics.range.toFixed(1)} km`
-                    : "Not enough data"}
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-700">
-                Next Refuel Odometer:{" "}
-                <span className="font-medium text-zinc-900">
-                  {dashboardMetrics.nextRefuelOdometer !== null
-                    ? Math.round(dashboardMetrics.nextRefuelOdometer).toLocaleString()
-                    : "Not enough data"}
-                </span>
-              </p>
+              <div className="space-y-2 text-sm">
+                <p className="text-zinc-700">
+                  Latest Mileage:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {dashboardMetrics.latestMileage !== null
+                      ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
+                      : "Not enough data"}
+                  </span>
+                </p>
+                <p className="text-zinc-700">
+                  Average Mileage:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {dashboardMetrics.averageMileage !== null
+                      ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
+                      : "Not enough data"}
+                  </span>
+                </p>
+                <p className="text-zinc-700">
+                  Range:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {dashboardMetrics.range !== null
+                      ? `${dashboardMetrics.range.toFixed(1)} km`
+                      : "Not enough data"}
+                  </span>
+                </p>
+                <p className="text-zinc-700">
+                  Next Refuel Odometer:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {dashboardMetrics.nextRefuelOdometer !== null
+                      ? Math.round(
+                          dashboardMetrics.nextRefuelOdometer
+                        ).toLocaleString()
+                      : "Not enough data"}
+                  </span>
+                </p>
+                <p className="text-zinc-700">
+                  Total Spend:{" "}
+                  <span className="font-medium text-zinc-900">
+                    {dashboardMetrics.totalFuelSpend.toFixed(2)}
+                  </span>
+                </p>
+              </div>
             </div>
 
             <h2 className="mt-8 text-lg font-semibold text-zinc-900">
