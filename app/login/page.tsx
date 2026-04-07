@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -15,23 +16,46 @@ export default function LoginPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        shouldCreateUser: true,
-      },
+    const trimmedEmail = email.trim();
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password,
     });
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!signInError) {
+      setSuccessMessage("Logged in successfully.");
       setLoading(false);
       return;
     }
 
-    setSuccessMessage("Check your email");
+    if (signInError.message.toLowerCase().includes("invalid login credentials")) {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+        {
+          email: trimmedEmail,
+          password,
+        }
+      );
+
+      if (!signUpError && signUpData.user) {
+        setSuccessMessage("User not found. Account created successfully.");
+        setLoading(false);
+        return;
+      }
+
+      if (signUpError?.message.toLowerCase().includes("already registered")) {
+        setErrorMessage("Invalid login.");
+        setLoading(false);
+        return;
+      }
+
+      setErrorMessage("User not found.");
+      setLoading(false);
+      return;
+    }
+
+    setErrorMessage("Invalid login.");
     setLoading(false);
-    setEmail("");
   }
 
   return (
@@ -39,7 +63,7 @@ export default function LoginPage() {
       <section className="mx-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-900">FuelTrack Login</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Enter your email to receive a magic login link.
+          Enter your email and password to sign in.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -57,12 +81,26 @@ export default function LoginPage() {
             />
           </label>
 
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-zinc-700">
+              Password
+            </span>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter password"
+              className="h-12 w-full rounded-lg border border-zinc-300 px-4 text-base outline-none transition focus:border-zinc-500"
+            />
+          </label>
+
           <button
             type="submit"
             disabled={loading}
             className="h-12 w-full rounded-lg bg-zinc-900 px-4 text-base font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Sending..." : "Send Magic Link"}
+            {loading ? "Please wait..." : "Sign In"}
           </button>
         </form>
 
