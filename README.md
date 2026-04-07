@@ -4,7 +4,7 @@ FuelTrack is a web app to track motorcycle fuel usage, mileage, and range using 
 
 ## Features
 
-* Email login (magic link)
+* Email and Password login
 * Fuel entry tracking
 * Mileage calculation
 * Range estimation

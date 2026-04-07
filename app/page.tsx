@@ -172,7 +172,7 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-900">FuelTrack</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Track your fuel usage once you sign in with your magic link.
+          Track your fuel usage once you sign in with Email and Password.
         </p>
 
         {loading ? (
@@ -182,7 +182,7 @@ export default function HomePage() {
             <p className="text-sm text-zinc-700">
               Signed in as{" "}
               <span className="font-medium text-zinc-900">
-                {session?.user.email ?? "dev-local-user"}
+                {session?.user.email}
               </span>
               .
             </p>
