@@ -1,6 +1,8 @@
 # FuelTrack Roadmap
 
-## ✅ Completed Features
+## ? Completed Features
+
+### Core Functionality
 
 * Authentication (email + password)
 * Vehicle creation and selection
@@ -9,6 +11,14 @@
 * Mileage calculation (correct model)
 * Range prediction
 * Next refuel calculation
+* Vehicle-specific fuel history
+
+### Dashboard & History
+
+* Dashboard cleanup (basic structure)
+* Metric cards layout
+* Recent entries (limit to 3)
+* Separate history page
 
 ## In Progress Improvements
 
@@ -18,10 +28,7 @@
 
 ### UI / UX Improvements
 
-* Clean dashboard layout with metric cards
 * Show user name in app header
-* Limit entries on main dashboard (show last 3 only)
-* Create separate "Fuel History" page (rename appropriately)
 * Navigation system (tabs or swipe)
 * Better layout separation (Dashboard / Entry / History)
 
