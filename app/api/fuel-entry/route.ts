@@ -9,6 +9,7 @@ type FuelEntryPayload = {
   amount_paid: number;
   fuel_volume: number;
   is_reserve: boolean;
+  vehicleId?: string | null;
 };
 
 function getBearerToken(authHeader: string | null) {
@@ -59,8 +60,14 @@ export async function GET(request: Request) {
       return Response.json({ error }, { status });
     }
 
+    const { searchParams } = new URL(request.url);
+    const vehicleId = searchParams.get("vehicleId");
+
     const entries = await prisma.fuelEntry.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        ...(vehicleId ? { vehicleId } : {}),
+      },
       orderBy: { created_at: "desc" },
       select: {
         id: true,
@@ -94,6 +101,10 @@ export async function POST(request: Request) {
     const amountPaid = Number(body.amount_paid);
     const fuelVolume = Number(body.fuel_volume);
     const isReserve = Boolean(body.is_reserve);
+    const vehicleId =
+      typeof body.vehicleId === "string" && body.vehicleId.trim().length > 0
+        ? body.vehicleId.trim()
+        : null;
 
     if (
       !Number.isFinite(odometer) ||
@@ -107,6 +118,7 @@ export async function POST(request: Request) {
     const savedEntry = await prisma.fuelEntry.create({
       data: {
         userId: user.id,
+        vehicleId,
         odometer,
         fuel_price: fuelPrice,
         amount_paid: amountPaid,

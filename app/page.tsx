@@ -96,7 +96,8 @@ export default function HomePage() {
     [selectedVehicleId, vehicles]
   );
 
-  const fetchEntries = useCallback(async (accessToken?: string) => {
+  const fetchEntries = useCallback(
+    async (accessToken?: string, vehicleId?: string | null) => {
     if (!accessToken) {
       setEntries([]);
       return;
@@ -110,7 +111,11 @@ export default function HomePage() {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch("/api/fuel-entry", {
+      const query = vehicleId
+        ? `?vehicleId=${encodeURIComponent(vehicleId)}`
+        : "";
+
+      const response = await fetch(`/api/fuel-entry${query}`, {
       method: "GET",
       headers,
     });
@@ -121,10 +126,12 @@ export default function HomePage() {
       return;
     }
 
-    const result = (await response.json()) as { entries: FuelEntry[] };
-    setEntries(result.entries ?? []);
-    setEntriesLoading(false);
-  }, []);
+      const result = (await response.json()) as { entries: FuelEntry[] };
+      setEntries(result.entries ?? []);
+      setEntriesLoading(false);
+    },
+    []
+  );
 
   const fetchVehicles = useCallback(async (accessToken?: string) => {
     if (!accessToken) {
@@ -185,7 +192,7 @@ export default function HomePage() {
       setSession(data.session);
       setLoading(false);
       if (data.session) {
-        void fetchEntries(data.session.access_token);
+        void fetchEntries(data.session.access_token, selectedVehicleId);
         void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
@@ -202,7 +209,7 @@ export default function HomePage() {
       setSession(nextSession);
       setLoading(false);
       if (nextSession) {
-        void fetchEntries(nextSession.access_token);
+        void fetchEntries(nextSession.access_token, selectedVehicleId);
         void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
@@ -215,7 +222,19 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchEntries, fetchVehicles]);
+  }, [fetchEntries, fetchVehicles, selectedVehicleId]);
+
+  useEffect(() => {
+    if (!session?.access_token) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      void fetchEntries(session.access_token, selectedVehicleId);
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [fetchEntries, selectedVehicleId, session?.access_token]);
 
   async function handleSignOut() {
     setErrorMessage("");
@@ -313,7 +332,10 @@ export default function HomePage() {
         ) : null}
 
         {isAuthenticated ? (
-          <FuelEntryForm onSaved={() => fetchEntries(session?.access_token)} />
+          <FuelEntryForm
+            vehicleId={selectedVehicleId}
+            onSaved={() => fetchEntries(session?.access_token, selectedVehicleId)}
+          />
         ) : null}
 
         {isAuthenticated ? (
