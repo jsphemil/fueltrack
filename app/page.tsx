@@ -50,11 +50,11 @@ export default function HomePage() {
       const current = orderedEntries[index];
 
       const distance = current.odometer - previous.odometer;
-      if (distance <= 0 || current.fuel_volume <= 0) {
+      if (distance <= 0 || previous.fuel_volume <= 0) {
         continue;
       }
 
-      mileages.push(distance / current.fuel_volume);
+      mileages.push(distance / previous.fuel_volume);
     }
 
     const latestMileage =
