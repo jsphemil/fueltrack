@@ -1,9 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,37 +26,44 @@ export default function LoginPage() {
     });
 
     if (!signInError) {
-      setSuccessMessage("Logged in successfully.");
+      router.push("/");
       setLoading(false);
       return;
     }
 
-    if (signInError.message.toLowerCase().includes("invalid login credentials")) {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-        {
-          email: trimmedEmail,
-          password,
-        }
-      );
+    const signInMessage = signInError.message.toLowerCase();
+    if (
+      signInMessage.includes("user not found") ||
+      signInMessage.includes("invalid login credentials")
+    ) {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+      });
 
-      if (!signUpError && signUpData.user) {
-        setSuccessMessage("User not found. Account created successfully.");
+      if (!signUpError) {
+        setSuccessMessage("Account created, you can now login");
         setLoading(false);
         return;
       }
 
-      if (signUpError?.message.toLowerCase().includes("already registered")) {
-        setErrorMessage("Invalid login.");
+      const signUpMessage = signUpError.message.toLowerCase();
+      if (
+        signUpMessage.includes("already") ||
+        signUpMessage.includes("registered") ||
+        signUpMessage.includes("exists")
+      ) {
+        setErrorMessage("Wrong password");
         setLoading(false);
         return;
       }
 
-      setErrorMessage("User not found.");
+      setErrorMessage("User not found");
       setLoading(false);
       return;
     }
 
-    setErrorMessage("Invalid login.");
+    setErrorMessage("Wrong password");
     setLoading(false);
   }
 
