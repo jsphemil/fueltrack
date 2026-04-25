@@ -32,6 +32,7 @@ export default function HomePage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [vehiclesError, setVehiclesError] = useState("");
+  const [vehicleActionLoading, setVehicleActionLoading] = useState(false);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
@@ -132,7 +133,7 @@ export default function HomePage() {
     if (!accessToken) {
       setVehicles([]);
       setSelectedVehicleId(null);
-      return;
+      return null;
     }
 
     setVehiclesLoading(true);
@@ -148,12 +149,22 @@ export default function HomePage() {
     if (!response.ok) {
       setVehiclesError("Could not load vehicles.");
       setVehiclesLoading(false);
-      return;
+      return null;
     }
 
     const result = (await response.json()) as { vehicles: Vehicle[] };
     const nextVehicles = result.vehicles ?? [];
     setVehicles(nextVehicles);
+    const nextSelectedVehicleId = (() => {
+      if (
+        selectedVehicleId &&
+        nextVehicles.some((vehicle) => vehicle.id === selectedVehicleId)
+      ) {
+        return selectedVehicleId;
+      }
+
+      return nextVehicles[0]?.id ?? null;
+    })();
     setSelectedVehicleId((currentValue) => {
       if (nextVehicles.length === 0) {
         return null;
@@ -166,7 +177,8 @@ export default function HomePage() {
       return nextVehicles[0].id;
     });
     setVehiclesLoading(false);
-  }, []);
+    return nextSelectedVehicleId;
+  }, [selectedVehicleId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -331,6 +343,46 @@ export default function HomePage() {
     setEntryActionLoading(false);
   }
 
+  async function handleDeleteVehicle() {
+    if (!session?.access_token || !selectedVehicleId) {
+      setVehiclesError("Please select a vehicle to delete.");
+      return;
+    }
+
+    setVehicleActionLoading(true);
+    setVehiclesError("");
+    setEntriesError("");
+
+    const response = await fetch(
+      `/api/vehicle?id=${encodeURIComponent(selectedVehicleId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      setVehiclesError(
+        result?.message ?? result?.error ?? "Could not delete vehicle."
+      );
+      setVehicleActionLoading(false);
+      return;
+    }
+
+    if (editingEntryId) {
+      cancelEditingEntry();
+    }
+
+    const nextSelectedId = await fetchVehicles(session.access_token);
+    await fetchEntries(session.access_token, nextSelectedId);
+    setVehicleActionLoading(false);
+  }
+
   const isAuthenticated = Boolean(session);
 
   return (
@@ -392,6 +444,14 @@ export default function HomePage() {
                     {selectedVehicle?.name}
                   </span>
                 </p>
+                <button
+                  type="button"
+                  onClick={handleDeleteVehicle}
+                  disabled={vehicleActionLoading || entryActionLoading}
+                  className="h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {vehicleActionLoading ? "Deleting..." : "Delete Vehicle"}
+                </button>
               </div>
             )}
           </section>
