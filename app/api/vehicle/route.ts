@@ -139,3 +139,51 @@ export async function GET(request: Request) {
     return Response.json({ error: "Failed to fetch vehicles" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = (searchParams.get("id") ?? "").trim();
+
+    if (!id) {
+      return Response.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const existingVehicle = await prisma.vehicle.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingVehicle) {
+      return Response.json({ error: "Vehicle not found" }, { status: 404 });
+    }
+
+    await prisma.$transaction([
+      prisma.fuelEntry.deleteMany({
+        where: {
+          userId: user.id,
+          vehicleId: existingVehicle.id,
+        },
+      }),
+      prisma.vehicle.delete({
+        where: {
+          id: existingVehicle.id,
+        },
+      }),
+    ]);
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch {
+    return Response.json({ error: "Failed to delete vehicle" }, { status: 500 });
+  }
+}
