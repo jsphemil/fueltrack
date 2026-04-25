@@ -1,50 +1,42 @@
 # FuelTrack Roadmap
 
-## ? Completed Features
+## Completed
 
-### Core Functionality
+### Core Features
 
-* Authentication (email + password)
-* Vehicle creation and selection
-* Fuel entry CRUD
-* Odometer validation
-* Mileage calculation (correct model)
-* Range prediction
-* Next refuel calculation
-* Vehicle-specific fuel history
+- Authentication (email/password)
+- Vehicle creation and selection
+- Fuel entry CRUD
+- Odometer validation
+- Correct mileage calculation
+- Range prediction
+- Next refuel prediction
+- Dashboard metrics
+- Separate history page
+- Vehicle-specific history
+- Navigation system (basic)
 
-### Dashboard & History
+### Current UI Baseline
 
-* Dashboard cleanup (basic structure)
-* Metric cards layout
-* Recent entries (limit to 3)
-* Separate history page
+- Basic dashboard layout with metric cards
+- Recent entries preview on dashboard
 
-## In Progress Improvements
-
-* Basic dashboard layout (needs refinement)
-
-## Planned Improvements
+## Planned
 
 ### UI / UX Improvements
 
-* Show user name in app header
-* Navigation system (tabs or swipe)
-* Better layout separation (Dashboard / Entry / History)
+- Show user name in app header
+- Better layout separation (Dashboard / Entry / History)
 
 ### Feature Enhancements
 
-* Delete vehicle option
-* Reset account option
-* Monthly fuel spend tracking
-* Calendar-based entry view
+- Delete vehicle option
+- Reset account option
+- Monthly fuel spend tracking
+- Calendar-based entry view
 
 ### Future Enhancements
 
-* Multi-vehicle analytics comparison
-* Data visualization (charts)
-* Theme customization (dark/light)
-
-## Next Step
-
-* Improve dashboard UI with proper structure (cards)
+- Multi-vehicle analytics comparison
+- Data visualization (charts)
+- Theme customization (dark/light)
