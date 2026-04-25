@@ -35,6 +35,14 @@
 - Monthly fuel spend tracking
 - Calendar-based entry view
 
+### User Profile System
+
+- User profile table (name, country, state, age, gender)
+- First-time profile setup flow after signup
+- Profile page (view/edit)
+- Show user name instead of email in header
+- Profile validation and persistence
+
 ### Future Enhancements
 
 - Multi-vehicle analytics comparison
