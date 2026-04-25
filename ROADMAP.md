@@ -14,7 +14,7 @@
 - Dashboard metrics
 - Separate history page
 - Vehicle-specific history
-- Navigation system (basic)
+- Navigation system (basic, layout-safe implementation)
 
 ### Current UI Baseline
 
