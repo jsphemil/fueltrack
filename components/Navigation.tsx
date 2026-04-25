@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 const navigationItems = [
   { label: "Dashboard", href: "/" },
-  { label: "Add Entry", href: "/" },
   { label: "History", href: "/history" },
 ];
 
@@ -16,7 +15,10 @@ export default function Navigation() {
     <nav className="border-b border-zinc-200 bg-white px-4 py-3">
       <ul className="mx-auto flex w-full max-w-5xl items-center gap-4">
         {navigationItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <li key={`${item.label}-${item.href}`}>
