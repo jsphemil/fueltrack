@@ -331,14 +331,6 @@ export default function HomePage() {
     setEntryActionLoading(false);
   }
 
-  async function handleSignOut() {
-    setErrorMessage("");
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      setErrorMessage(error.message);
-    }
-  }
-
   const isAuthenticated = Boolean(session);
 
   return (
@@ -351,24 +343,7 @@ export default function HomePage() {
 
         {loading ? (
           <p className="mt-6 text-sm text-zinc-700">Checking session...</p>
-        ) : isAuthenticated ? (
-          <div className="mt-6 space-y-4">
-            <p className="text-sm text-zinc-700">
-              Signed in as{" "}
-              <span className="font-medium text-zinc-900">
-                {session?.user.email}
-              </span>
-              .
-            </p>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="h-11 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
+        ) : !isAuthenticated ? (
           <div className="mt-6">
             <Link
               href="/login"
@@ -377,7 +352,7 @@ export default function HomePage() {
               Go to Login
             </Link>
           </div>
-        )}
+        ) : null}
 
         {errorMessage ? (
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
