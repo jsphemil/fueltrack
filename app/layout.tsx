@@ -28,9 +28,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-screen flex flex-col">
+        {/*
+          // IMPORTANT:
+          // Layout must not block pointer events.
+          // Always use flex column with flex-1 content area.
+        */}
         <Navigation />
-        {children}
+        <div className="flex-1">{children}</div>
       </body>
     </html>
   );
