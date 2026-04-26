@@ -5,7 +5,8 @@ export const runtime = "nodejs";
 
 type VehiclePayload = {
   name: string;
-  type: string;
+  vehicleType?: string;
+  type?: string;
   initial_odometer: number;
 };
 
@@ -85,10 +86,10 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as Partial<VehiclePayload>;
     const name = String(body.name ?? "").trim();
-    const type = String(body.type ?? "").trim();
+    const vehicleType = String(body.vehicleType ?? body.type ?? "").trim();
     const initialOdometer = Number(body.initial_odometer);
 
-    if (!name || !type || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
+    if (!name || !vehicleType || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
@@ -109,14 +110,15 @@ export async function POST(request: Request) {
       data: {
         userId,
         name,
-        type,
+        vehicleType,
         initial_odometer: initialOdometer,
       },
-      select: { id: true, name: true, type: true, initial_odometer: true },
+      select: { id: true, name: true, vehicleType: true, initial_odometer: true },
     });
 
     return Response.json({ vehicle, success: true }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Failed to save vehicle", error);
     return Response.json({ error: "Failed to save vehicle" }, { status: 500 });
   }
 }
@@ -134,13 +136,14 @@ export async function GET(request: Request) {
       select: {
         id: true,
         name: true,
-        type: true,
+        vehicleType: true,
         initial_odometer: true,
       },
     });
 
     return Response.json({ vehicles }, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch vehicles", error);
     return Response.json({ error: "Failed to fetch vehicles" }, { status: 500 });
   }
 }
@@ -188,7 +191,8 @@ export async function DELETE(request: Request) {
     ]);
 
     return Response.json({ success: true }, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("Failed to delete vehicle", error);
     return Response.json({ error: "Failed to delete vehicle" }, { status: 500 });
   }
 }

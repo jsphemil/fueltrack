@@ -35,7 +35,7 @@ export default function VehicleForm() {
       headers,
       body: JSON.stringify({
         name: name.trim(),
-        type: type.trim(),
+        vehicleType: type.trim(),
         initial_odometer: Number(initialOdometer),
       }),
     });

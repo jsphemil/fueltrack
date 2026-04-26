@@ -16,7 +16,7 @@ model Vehicle {
   id               String      @id @default(uuid())
   userId           String
   name             String
-  type             String?
+  vehicleType      String      @default("Unknown")
   initial_odometer Float
   created_at       DateTime    @default(now())
   user             User        @relation(fields: [userId], references: [id])
