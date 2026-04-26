@@ -11,6 +11,7 @@ const navigationItems = [
   { label: "Dashboard", href: "/" },
   { label: "History", href: "/history" },
   { label: "Vehicle", href: "/vehicle" },
+  { label: "Account", href: "/account" },
 ];
 
 const hideNavRoutes = ["/login"];

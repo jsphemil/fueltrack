@@ -21,6 +21,8 @@
 - Add confirmation before resetting account
 - Validate first fuel entry against initial vehicle odometer
 - Dedicated vehicle page navigation
+- Add Account page navigation
+- Create Account page (/account)
 - Create a dedicated /vehicle page listing all user vehicles
 - Capture vehicle type during vehicle creation
 - Display vehicle type in vehicle page
@@ -42,13 +44,11 @@
 
 ### Application Structure
 
-- Introduce Account page (/account)
 - Separate Dashboard and Account responsibilities
 - Move management actions out of dashboard
 
 #### Account Page
 
-- Add Account page navigation
 - Move "Add Vehicle" to Account page
 - Move "Reset Account" to Account page
 - Add vehicle management:
