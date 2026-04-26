@@ -39,7 +39,6 @@
 - Reset account option
 - Monthly fuel spend tracking
 - Calendar-based entry view
-- Validate first fuel entry against initial vehicle odometer
 
 ### Vehicle Management Page
 
