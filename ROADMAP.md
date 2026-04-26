@@ -41,6 +41,7 @@
 
 - Show user name in app header
 - Better layout separation (Dashboard / Entry / History)
+- Improve vehicle card readability and layout
 
 ### Feature Enhancements
 

@@ -93,44 +93,71 @@ export default function VehiclePage() {
 
   return (
     <main className="px-4 py-6">
-      <h1 className="text-xl font-semibold">Vehicles</h1>
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-xl font-semibold text-zinc-900">Vehicles</h1>
 
-      {!session ? <p className="mt-4">Please log in to view your vehicles.</p> : null}
+        {!session ? (
+          <p className="mt-4 text-sm text-zinc-600">Please log in to view your vehicles.</p>
+        ) : null}
 
-      {loading ? <p className="mt-4">Loading vehicles...</p> : null}
+        {loading ? <p className="mt-4 text-sm text-zinc-600">Loading vehicles...</p> : null}
 
-      {errorMessage ? <p className="mt-4">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
+        ) : null}
 
-      {!loading && !errorMessage && session ? (
-        vehicles.length > 0 ? (
-          <ul className="mt-4 space-y-4">
-            {vehicles.map((vehicle) => (
-              <li
-                key={vehicle.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              >
-                <p className="text-lg font-semibold">{vehicle.name}</p>
-                <p className="mt-2">Type: {vehicle.vehicleType || "Not specified"}</p>
-                <p>Initial odometer: {vehicle.initial_odometer}</p>
-                <p>Last odometer: {vehicle.lastOdometer}</p>
-                <p>Total fuel spend: {vehicle.totalFuelSpend.toFixed(2)}</p>
-                <p>
-                  Average mileage:{" "}
-                  {vehicle.averageMileage !== null
-                    ? vehicle.averageMileage.toFixed(2)
-                    : "N/A"}
-                </p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-4">No vehicles found.</p>
-        )
-      ) : null}
+        {!loading && !errorMessage && session ? (
+          vehicles.length > 0 ? (
+            <ul className="mt-4 space-y-6">
+              {vehicles.map((vehicle) => (
+                <li key={vehicle.id} className="rounded-lg bg-white p-6 shadow-md">
+                  <p className="text-xl font-bold text-zinc-900">{vehicle.name}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-sm text-zinc-500">Type</p>
+                      <p className="text-base font-medium text-zinc-900">
+                        {vehicle.vehicleType || "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-zinc-500">Initial odometer</p>
+                      <p className="text-base font-medium text-zinc-900">
+                        {vehicle.initial_odometer}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-zinc-500">Last odometer</p>
+                      <p className="text-base font-medium text-zinc-900">
+                        {vehicle.lastOdometer}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-zinc-500">Total fuel spend</p>
+                      <p className="text-base font-medium text-zinc-900">
+                        {vehicle.totalFuelSpend.toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-zinc-500">Average mileage</p>
+                      <p className="text-base font-medium text-zinc-900">
+                        {vehicle.averageMileage !== null
+                          ? vehicle.averageMileage.toFixed(2)
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-600">No vehicles found.</p>
+          )
+        ) : null}
 
-      <Link href="/" className="mt-6 inline-block">
-        Back to Dashboard
-      </Link>
+        <Link href="/" className="mt-6 inline-block text-sm font-medium text-zinc-700">
+          Back to Dashboard
+        </Link>
+      </div>
     </main>
   );
 }
