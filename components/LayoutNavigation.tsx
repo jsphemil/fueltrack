@@ -12,10 +12,13 @@ const navigationItems = [
   { label: "History", href: "/history" },
 ];
 
+const hideNavRoutes = ["/login"];
+
 export default function LayoutNavigation() {
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
-  const showNavigation = pathname !== "/login";
+  const isAuthenticated = Boolean(session?.user);
+  const showNavigation = !hideNavRoutes.includes(pathname) && isAuthenticated;
 
   useEffect(() => {
     let isMounted = true;
@@ -30,8 +33,15 @@ export default function LayoutNavigation() {
 
     void loadSession();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
