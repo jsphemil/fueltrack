@@ -158,16 +158,6 @@ export default function HomePage() {
       const result = (await response.json()) as { vehicles: Vehicle[] };
       const nextVehicles = result.vehicles ?? [];
       setVehicles(nextVehicles);
-      const nextSelectedVehicleId = (() => {
-        if (
-          selectedVehicleId &&
-          nextVehicles.some((vehicle) => vehicle.id === selectedVehicleId)
-        ) {
-          return selectedVehicleId;
-        }
-
-        return nextVehicles[0]?.id ?? null;
-      })();
       setSelectedVehicleId((currentValue) => {
         if (nextVehicles.length === 0) {
           return null;
@@ -180,9 +170,9 @@ export default function HomePage() {
         return nextVehicles[0].id;
       });
       setVehiclesLoading(false);
-      return nextSelectedVehicleId;
+      return nextVehicles[0]?.id ?? null;
     },
-    [selectedVehicleId]
+    []
   );
 
   useEffect(() => {
@@ -204,7 +194,6 @@ export default function HomePage() {
       setSession(data.session);
       setLoading(false);
       if (data.session) {
-        void fetchEntries(data.session.access_token, selectedVehicleId);
         void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
@@ -221,7 +210,6 @@ export default function HomePage() {
       setSession(nextSession);
       setLoading(false);
       if (nextSession) {
-        void fetchEntries(nextSession.access_token, selectedVehicleId);
         void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
@@ -234,18 +222,14 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchEntries, fetchVehicles, selectedVehicleId]);
+  }, [fetchVehicles]);
 
   useEffect(() => {
     if (!session?.access_token) {
       return;
     }
-
-    const timerId = window.setTimeout(() => {
-      void fetchEntries(session.access_token, selectedVehicleId);
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchEntries(session.access_token, selectedVehicleId);
   }, [fetchEntries, selectedVehicleId, session?.access_token]);
 
   function startEditingEntry(entry: FuelEntry) {
