@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 type Vehicle = {
   id: string;
   name: string;
-  type?: string | null;
+  vehicleType?: string | null;
   initial_odometer: number;
 };
 
@@ -104,7 +104,7 @@ export default function VehiclePage() {
             {vehicles.map((vehicle) => (
               <li key={vehicle.id}>
                 <p>Vehicle name: {vehicle.name}</p>
-                <p>Type: {vehicle.type ?? "Not specified"}</p>
+                <p>Type: {vehicle.vehicleType || "Not specified"}</p>
                 <p>Initial odometer: {vehicle.initial_odometer}</p>
               </li>
             ))}
