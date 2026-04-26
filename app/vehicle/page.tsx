@@ -103,11 +103,14 @@ export default function VehiclePage() {
 
       {!loading && !errorMessage && session ? (
         vehicles.length > 0 ? (
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-4">
             {vehicles.map((vehicle) => (
-              <li key={vehicle.id}>
-                <p>Vehicle name: {vehicle.name}</p>
-                <p>Type: {vehicle.vehicleType || "Not specified"}</p>
+              <li
+                key={vehicle.id}
+                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              >
+                <p className="text-lg font-semibold">{vehicle.name}</p>
+                <p className="mt-2">Type: {vehicle.vehicleType || "Not specified"}</p>
                 <p>Initial odometer: {vehicle.initial_odometer}</p>
                 <p>Last odometer: {vehicle.lastOdometer}</p>
                 <p>Total fuel spend: {vehicle.totalFuelSpend.toFixed(2)}</p>

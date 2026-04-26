@@ -28,6 +28,7 @@
   - average mileage
   - last odometer reading
   - total fuel spend
+- Convert vehicle list into card-based UI with vehicle stats
 
 ### Current UI Baseline
 
@@ -43,7 +44,6 @@
 
 ### Feature Enhancements
 
-- Reset account option
 - Monthly fuel spend tracking
 - Calendar-based entry view
 
@@ -64,4 +64,3 @@
 - Multi-vehicle analytics comparison
 - Data visualization (charts)
 - Theme customization (dark/light)
-- Convert vehicle list into card-based UI with vehicle stats
