@@ -25,19 +25,43 @@ async function validateOdometerForVehicle(params: {
       vehicleId: params.vehicleId,
       ...(params.excludeId ? { id: { not: params.excludeId } } : {}),
     },
-    orderBy: {
-      odometer: "desc",
-    },
+    orderBy: [
+      { created_at: "desc" },
+      { id: "desc" },
+    ],
     select: {
       odometer: true,
     },
   });
 
-  if (latestEntry && params.odometer <= latestEntry.odometer) {
-    return {
-      valid: false as const,
-      message: "Odometer must be greater than previous reading",
-    };
+  if (latestEntry) {
+    if (params.odometer <= latestEntry.odometer) {
+      return {
+        valid: false as const,
+        message: "Odometer must be greater than previous reading",
+      };
+    }
+
+    return { valid: true as const };
+  }
+
+  if (params.vehicleId) {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: {
+        id: params.vehicleId,
+        userId: params.userId,
+      },
+      select: {
+        initial_odometer: true,
+      },
+    });
+
+    if (vehicle && params.odometer <= vehicle.initial_odometer) {
+      return {
+        valid: false as const,
+        message: "Odometer must be greater than initial reading",
+      };
+    }
   }
 
   return { valid: true as const };
