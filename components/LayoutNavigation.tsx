@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 const navigationItems = [
   { label: "Dashboard", href: "/" },
   { label: "History", href: "/history" },
+  { label: "Vehicle", href: "/vehicle" },
 ];
 
 const hideNavRoutes = ["/login"];

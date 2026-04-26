@@ -20,6 +20,8 @@
 - Add confirmation before deleting a vehicle
 - Add confirmation before resetting account
 - Validate first fuel entry against initial vehicle odometer
+- Dedicated vehicle page navigation
+- Create a dedicated /vehicle page listing all user vehicles
 
 ### Current UI Baseline
 
@@ -32,7 +34,6 @@
 
 - Show user name in app header
 - Better layout separation (Dashboard / Entry / History)
-- Dedicated vehicle page navigation
 
 ### Feature Enhancements
 
@@ -42,7 +43,6 @@
 
 ### Vehicle Management Page
 
-- Create a dedicated /vehicle page listing all user vehicles
 - Display vehicle details:
   - vehicle name
   - type
