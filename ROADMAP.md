@@ -40,6 +40,30 @@
 
 ## Planned
 
+### Application Structure
+
+- Introduce Account page (/account)
+- Separate Dashboard and Account responsibilities
+- Move management actions out of dashboard
+
+#### Account Page
+
+- Add Account page navigation
+- Move "Add Vehicle" to Account page
+- Move "Reset Account" to Account page
+- Add vehicle management:
+  - delete vehicle
+  - edit vehicle details
+
+### Dashboard Improvements
+
+- Limit dashboard to:
+  - vehicle selection
+  - add fuel entry
+  - vehicle-specific metrics
+  - last 3 entries
+- Prepare dashboard for future analytics
+
 ### UI / UX Improvements
 
 - Show user name in app header
