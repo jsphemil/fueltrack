@@ -15,6 +15,7 @@
 - Separate history page
 - Vehicle-specific history
 - Navigation system (basic, layout-safe implementation)
+- Delete vehicle option
 
 ### Current UI Baseline
 
@@ -30,7 +31,6 @@
 
 ### Feature Enhancements
 
-- Delete vehicle option
 - Reset account option
 - Monthly fuel spend tracking
 - Calendar-based entry view
