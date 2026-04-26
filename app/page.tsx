@@ -337,6 +337,12 @@ export default function HomePage() {
       setVehiclesError("Please select a vehicle to delete.");
       return;
     }
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this vehicle? This will also delete all associated fuel entries."
+    );
+    if (!confirmed) {
+      return;
+    }
 
     setVehicleActionLoading(true);
     setVehiclesError("");
@@ -375,6 +381,12 @@ export default function HomePage() {
   async function handleResetAccount() {
     if (!session?.access_token) {
       setResetError("Please log in before resetting your account.");
+      return;
+    }
+    const confirmed = window.confirm(
+      "Are you sure you want to reset your account? This will delete all your data and cannot be undone."
+    );
+    if (!confirmed) {
       return;
     }
 
