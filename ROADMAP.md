@@ -30,6 +30,10 @@
 - Basic dashboard layout with metric cards
 - Recent entries preview on dashboard
 
+## Roadmap hygiene
+
+- Deduplicated vehicle type roadmap items (capture + display)
+
 ## Planned
 
 ### UI / UX Improvements
