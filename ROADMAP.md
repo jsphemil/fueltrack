@@ -31,6 +31,8 @@
 - Hide navigation bar on login/signup page
 - Add confirmation before deleting a vehicle
 - Add confirmation before resetting account
+- Add "Vehicle" to navigation menu
+- Dedicated vehicle page navigation
 
 ### Feature Enhancements
 
@@ -38,6 +40,19 @@
 - Monthly fuel spend tracking
 - Calendar-based entry view
 - Validate first fuel entry against initial vehicle odometer
+
+### Vehicle Management Page
+
+- Create a dedicated /vehicle page listing all user vehicles
+- Display vehicle details:
+  - vehicle name
+  - type
+  - initial odometer reading
+  - last odometer reading
+  - total fuel spend
+  - average mileage
+- Add navigation from vehicle page back to dashboard
+- Support vehicle selection from this page
 
 ### User Profile System
 
@@ -52,3 +67,4 @@
 - Multi-vehicle analytics comparison
 - Data visualization (charts)
 - Theme customization (dark/light)
+- Convert vehicle list into card-based UI with vehicle stats
