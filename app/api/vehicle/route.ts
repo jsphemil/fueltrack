@@ -15,6 +15,59 @@ type AuthenticatedUser = {
   email?: string | null;
 };
 
+type VehicleStatistics = {
+  lastOdometer: number;
+  totalFuelSpend: number;
+  averageMileage: number | null;
+};
+
+function calculateVehicleStatistics(params: {
+  initialOdometer: number;
+  entries: Array<{
+    odometer: number;
+    amount_paid: number;
+    fuel_volume: number;
+  }>;
+}): VehicleStatistics {
+  const { initialOdometer, entries } = params;
+
+  if (entries.length === 0) {
+    return {
+      lastOdometer: initialOdometer,
+      totalFuelSpend: 0,
+      averageMileage: null,
+    };
+  }
+
+  const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
+  const mileages: number[] = [];
+
+  for (let index = 1; index < orderedEntries.length; index += 1) {
+    const previous = orderedEntries[index - 1];
+    const current = orderedEntries[index];
+    const distance = current.odometer - previous.odometer;
+
+    if (distance <= 0 || previous.fuel_volume <= 0) {
+      continue;
+    }
+
+    mileages.push(distance / previous.fuel_volume);
+  }
+
+  const averageMileage =
+    mileages.length > 0
+      ? mileages.reduce((sum, value) => sum + value, 0) / mileages.length
+      : null;
+  const totalFuelSpend = entries.reduce((sum, entry) => sum + entry.amount_paid, 0);
+  const lastOdometer = orderedEntries[orderedEntries.length - 1].odometer;
+
+  return {
+    lastOdometer,
+    totalFuelSpend,
+    averageMileage,
+  };
+}
+
 const DEVELOPMENT_USER_ID = "dev-local-user";
 
 function getBearerToken(authHeader: string | null) {
@@ -141,7 +194,58 @@ export async function GET(request: Request) {
       },
     });
 
-    return Response.json({ vehicles }, { status: 200 });
+    const fuelEntries = await prisma.fuelEntry.findMany({
+      where: {
+        userId: user.id,
+        vehicleId: {
+          not: null,
+        },
+      },
+      select: {
+        vehicleId: true,
+        odometer: true,
+        amount_paid: true,
+        fuel_volume: true,
+      },
+    });
+
+    const entriesByVehicleId = new Map<
+      string,
+      Array<{
+        odometer: number;
+        amount_paid: number;
+        fuel_volume: number;
+      }>
+    >();
+
+    for (const entry of fuelEntries) {
+      if (!entry.vehicleId) {
+        continue;
+      }
+
+      const existingEntries = entriesByVehicleId.get(entry.vehicleId) ?? [];
+      existingEntries.push({
+        odometer: entry.odometer,
+        amount_paid: entry.amount_paid,
+        fuel_volume: entry.fuel_volume,
+      });
+      entriesByVehicleId.set(entry.vehicleId, existingEntries);
+    }
+
+    const vehiclesWithStatistics = vehicles.map((vehicle) => {
+      const vehicleEntries = entriesByVehicleId.get(vehicle.id) ?? [];
+      const statistics = calculateVehicleStatistics({
+        initialOdometer: vehicle.initial_odometer,
+        entries: vehicleEntries,
+      });
+
+      return {
+        ...vehicle,
+        ...statistics,
+      };
+    });
+
+    return Response.json({ vehicles: vehiclesWithStatistics }, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch vehicles", error);
     return Response.json({ error: "Failed to fetch vehicles" }, { status: 500 });

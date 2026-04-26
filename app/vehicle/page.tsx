@@ -11,6 +11,9 @@ type Vehicle = {
   name: string;
   vehicleType?: string | null;
   initial_odometer: number;
+  lastOdometer: number;
+  totalFuelSpend: number;
+  averageMileage: number | null;
 };
 
 export default function VehiclePage() {
@@ -106,6 +109,14 @@ export default function VehiclePage() {
                 <p>Vehicle name: {vehicle.name}</p>
                 <p>Type: {vehicle.vehicleType || "Not specified"}</p>
                 <p>Initial odometer: {vehicle.initial_odometer}</p>
+                <p>Last odometer: {vehicle.lastOdometer}</p>
+                <p>Total fuel spend: {vehicle.totalFuelSpend.toFixed(2)}</p>
+                <p>
+                  Average mileage:{" "}
+                  {vehicle.averageMileage !== null
+                    ? vehicle.averageMileage.toFixed(2)
+                    : "N/A"}
+                </p>
               </li>
             ))}
           </ul>

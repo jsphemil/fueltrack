@@ -24,6 +24,10 @@
 - Create a dedicated /vehicle page listing all user vehicles
 - Capture vehicle type during vehicle creation
 - Display vehicle type in vehicle page
+- Add vehicle-level statistics:
+  - average mileage
+  - last odometer reading
+  - total fuel spend
 
 ### Current UI Baseline
 
@@ -45,11 +49,6 @@
 
 ### Vehicle Management Page
 
-- Add vehicle-level statistics:
-  - average mileage
-  - last odometer reading
-  - total fuel spend
-- Add navigation from vehicle page back to dashboard
 - Support vehicle selection from this page
 
 ### User Profile System
