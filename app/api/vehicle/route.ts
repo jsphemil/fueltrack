@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 
 type VehiclePayload = {
   name: string;
+  type: string;
   initial_odometer: number;
 };
 
@@ -84,9 +85,10 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as Partial<VehiclePayload>;
     const name = String(body.name ?? "").trim();
+    const type = String(body.type ?? "").trim();
     const initialOdometer = Number(body.initial_odometer);
 
-    if (!name || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
+    if (!name || !type || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
       return Response.json({ error: "Invalid request body" }, { status: 400 });
     }
 
@@ -107,12 +109,13 @@ export async function POST(request: Request) {
       data: {
         userId,
         name,
+        type,
         initial_odometer: initialOdometer,
       },
-      select: { id: true },
+      select: { id: true, name: true, type: true, initial_odometer: true },
     });
 
-    return Response.json({ id: vehicle.id, success: true }, { status: 201 });
+    return Response.json({ vehicle, success: true }, { status: 201 });
   } catch {
     return Response.json({ error: "Failed to save vehicle" }, { status: 500 });
   }
@@ -131,6 +134,7 @@ export async function GET(request: Request) {
       select: {
         id: true,
         name: true,
+        type: true,
         initial_odometer: true,
       },
     });

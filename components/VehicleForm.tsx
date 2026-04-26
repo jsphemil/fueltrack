@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function VehicleForm() {
   const [name, setName] = useState("");
+  const [type, setType] = useState("");
   const [initialOdometer, setInitialOdometer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,6 +35,7 @@ export default function VehicleForm() {
       headers,
       body: JSON.stringify({
         name: name.trim(),
+        type: type.trim(),
         initial_odometer: Number(initialOdometer),
       }),
     });
@@ -46,6 +48,7 @@ export default function VehicleForm() {
 
     setSuccessMessage("Vehicle saved.");
     setName("");
+    setType("");
     setInitialOdometer("");
     setIsSubmitting(false);
   }
@@ -68,6 +71,20 @@ export default function VehicleForm() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="e.g. Honda City"
+            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+            Vehicle Type
+          </span>
+          <input
+            type="text"
+            required
+            value={type}
+            onChange={(event) => setType(event.target.value)}
+            placeholder="e.g. Car, Bike"
             className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
           />
         </label>
