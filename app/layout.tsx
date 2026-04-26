@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
+import LayoutNavigation from "@/components/LayoutNavigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +34,7 @@ export default function RootLayout({
           // Layout must not block pointer events.
           // Always use flex column with flex-1 content area.
         */}
-        <Navigation />
+        <LayoutNavigation />
         <div className="flex-1">{children}</div>
       </body>
     </html>

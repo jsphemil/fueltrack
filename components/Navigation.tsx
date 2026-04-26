@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -11,33 +10,12 @@ const navigationItems = [
   { label: "History", href: "/history" },
 ];
 
-export default function Navigation() {
+type NavigationProps = {
+  session: Session;
+};
+
+export default function Navigation({ session }: NavigationProps) {
   const pathname = usePathname();
-  const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
-      if (isMounted) {
-        setSession(data.session);
-      }
-    }
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -70,7 +48,7 @@ export default function Navigation() {
           })}
         </ul>
 
-        {session?.user.email ? (
+        {session.user.email ? (
           <div className="flex items-center gap-2 text-xs text-zinc-600">
             <span className="truncate">{session.user.email}</span>
             <button
