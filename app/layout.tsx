@@ -31,10 +31,11 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         {/*
           // IMPORTANT:
-          // Layout must not block pointer events.
-          // Always use flex column with flex-1 content area.
+          // Layout structure must remain constant to prevent UI blocking issues.
         */}
-        <LayoutNavigation />
+        <div className="flex-shrink-0">
+          <LayoutNavigation />
+        </div>
         <div className="flex-1">{children}</div>
       </body>
     </html>
