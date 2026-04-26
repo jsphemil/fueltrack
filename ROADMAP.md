@@ -29,6 +29,9 @@
   - last odometer reading
   - total fuel spend
 - Convert vehicle list into card-based UI with vehicle stats
+- Improve vehicle card readability and layout
+- Improve dashboard layout with card-based metrics
+- Monthly fuel spend tracking
 
 ### Current UI Baseline
 
@@ -41,12 +44,9 @@
 
 - Show user name in app header
 - Better layout separation (Dashboard / Entry / History)
-- Improve vehicle card readability and layout
-- Improve dashboard layout with card-based metrics
 
 ### Feature Enhancements
 
-- Monthly fuel spend tracking
 - Calendar-based entry view
 
 ### Vehicle Management Page

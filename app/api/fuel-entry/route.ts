@@ -13,6 +13,33 @@ type FuelEntryPayload = {
   vehicleId?: string | null;
 };
 
+type MonthlySpendSummary = {
+  month: string;
+  total_spend: number;
+};
+
+function formatMonthKey(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function buildMonthlySpend(entries: Array<{ created_at: Date; amount_paid: number }>) {
+  const monthlyTotals = new Map<string, number>();
+
+  for (const entry of entries) {
+    const monthKey = formatMonthKey(entry.created_at);
+    monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) ?? 0) + entry.amount_paid);
+  }
+
+  return [...monthlyTotals.entries()]
+    .sort(([monthA], [monthB]) => (monthA < monthB ? 1 : monthA > monthB ? -1 : 0))
+    .map(([month, totalSpend]) => ({
+      month,
+      total_spend: Number(totalSpend.toFixed(2)),
+    })) satisfies MonthlySpendSummary[];
+}
+
 async function validateOdometerForVehicle(params: {
   userId: string;
   vehicleId: string | null;
@@ -136,7 +163,20 @@ export async function GET(request: Request) {
       },
     });
 
-    return Response.json({ entries }, { status: 200 });
+    const spendEntries = await prisma.fuelEntry.findMany({
+      where: {
+        userId: user.id,
+        ...(vehicleId ? { vehicleId } : {}),
+      },
+      select: {
+        amount_paid: true,
+        created_at: true,
+      },
+    });
+
+    const monthly_spend = buildMonthlySpend(spendEntries);
+
+    return Response.json({ entries, monthly_spend }, { status: 200 });
   } catch {
     return Response.json(
       { error: "Failed to fetch fuel entries" },
