@@ -23,6 +23,11 @@ type Vehicle = {
   name: string;
 };
 
+type MonthlySpend = {
+  month: string;
+  total_spend: number;
+};
+
 export default function HomePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,7 @@ export default function HomePage() {
   const [vehicleActionLoading, setVehicleActionLoading] = useState(false);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
+  const [monthlySpend, setMonthlySpend] = useState<MonthlySpend[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editOdometer, setEditOdometer] = useState("");
   const [editFuelPrice, setEditFuelPrice] = useState("");
@@ -93,6 +99,7 @@ export default function HomePage() {
     async (accessToken?: string, vehicleId?: string | null) => {
       if (!accessToken) {
         setEntries([]);
+        setMonthlySpend([]);
         return;
       }
 
@@ -119,8 +126,12 @@ export default function HomePage() {
         return;
       }
 
-      const result = (await response.json()) as { entries: FuelEntry[] };
+      const result = (await response.json()) as {
+        entries: FuelEntry[];
+        monthly_spend?: MonthlySpend[];
+      };
       setEntries(result.entries ?? []);
+      setMonthlySpend(result.monthly_spend ?? []);
       setEntriesLoading(false);
     },
     []
@@ -192,6 +203,7 @@ export default function HomePage() {
         void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
+        setMonthlySpend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
       }
@@ -208,6 +220,7 @@ export default function HomePage() {
         void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
+        setMonthlySpend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
       }
@@ -409,9 +422,29 @@ export default function HomePage() {
     cancelEditingEntry();
     setVehicles([]);
     setEntries([]);
+    setMonthlySpend([]);
     setSelectedVehicleId(null);
     setResetLoading(false);
   }
+
+  const monthlySpendFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }),
+    []
+  );
+
+  const monthLabelFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }),
+    []
+  );
 
   const isAuthenticated = Boolean(session);
 
@@ -575,6 +608,41 @@ export default function HomePage() {
                 </article>
 
               </div>
+            </section>
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Monthly Fuel Spend
+              </h2>
+              {entriesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">
+                  Loading monthly spend...
+                </p>
+              ) : monthlySpend.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">
+                  No monthly fuel spend data yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {monthlySpend.map((item) => {
+                    const [year, month] = item.month.split("-");
+                    const monthDate = new Date(
+                      Date.UTC(Number(year), Number(month) - 1, 1)
+                    );
+                    return (
+                      <li
+                        key={item.month}
+                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm text-zinc-700"
+                      >
+                        <span>{monthLabelFormatter.format(monthDate)}</span>
+                        <span className="font-semibold text-zinc-900">
+                          {monthlySpendFormatter.format(item.total_spend)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
 
             <section>
