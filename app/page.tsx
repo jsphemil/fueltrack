@@ -66,10 +66,6 @@ export default function HomePage() {
       mileages.length > 0
         ? mileages.reduce((sum, value) => sum + value, 0) / mileages.length
         : null;
-    const totalFuelSpend = entries.reduce(
-      (sum, entry) => sum + entry.amount_paid,
-      0
-    );
     const latestEntry =
       orderedEntries.length > 0 ? orderedEntries[orderedEntries.length - 1] : null;
     const range =
@@ -82,7 +78,6 @@ export default function HomePage() {
     return {
       latestMileage,
       averageMileage,
-      totalFuelSpend,
       range,
       nextRefuelOdometer,
     };
@@ -422,7 +417,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-900">FuelTrack</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Track your fuel usage once you sign in with Email and Password.
@@ -540,37 +535,37 @@ export default function HomePage() {
 
             <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <article className="rounded-lg border border-zinc-200 bg-white p-3">
-                  <p className="text-sm text-zinc-600">Latest Mileage</p>
-                  <p className="mt-1 text-base font-semibold text-zinc-900">
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <article className="rounded-xl bg-white p-4 shadow-sm">
+                  <p className="text-sm text-zinc-500">Latest mileage</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
                     {dashboardMetrics.latestMileage !== null
                       ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
                       : "Not enough data"}
                   </p>
                 </article>
 
-                <article className="rounded-lg border border-zinc-200 bg-white p-3">
-                  <p className="text-sm text-zinc-600">Average Mileage</p>
-                  <p className="mt-1 text-base font-semibold text-zinc-900">
+                <article className="rounded-xl bg-white p-4 shadow-sm">
+                  <p className="text-sm text-zinc-500">Average mileage</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
                     {dashboardMetrics.averageMileage !== null
                       ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
                       : "Not enough data"}
                   </p>
                 </article>
 
-                <article className="rounded-lg border border-zinc-200 bg-white p-3">
-                  <p className="text-sm text-zinc-600">Range</p>
-                  <p className="mt-1 text-base font-semibold text-zinc-900">
+                <article className="rounded-xl bg-white p-4 shadow-sm">
+                  <p className="text-sm text-zinc-500">Range</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
                     {dashboardMetrics.range !== null
                       ? `${dashboardMetrics.range.toFixed(1)} km`
                       : "Not enough data"}
                   </p>
                 </article>
 
-                <article className="rounded-lg border border-zinc-200 bg-white p-3">
-                  <p className="text-sm text-zinc-600">Next Refuel Odometer</p>
-                  <p className="mt-1 text-base font-semibold text-zinc-900">
+                <article className="rounded-xl bg-white p-4 shadow-sm">
+                  <p className="text-sm text-zinc-500">Next refuel</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
                     {dashboardMetrics.nextRefuelOdometer !== null
                       ? Math.round(
                           dashboardMetrics.nextRefuelOdometer
@@ -579,12 +574,6 @@ export default function HomePage() {
                   </p>
                 </article>
 
-                <article className="rounded-lg border border-zinc-200 bg-white p-3 sm:col-span-2">
-                  <p className="text-sm text-zinc-600">Total Spend</p>
-                  <p className="mt-1 text-base font-semibold text-zinc-900">
-                    {dashboardMetrics.totalFuelSpend.toFixed(2)}
-                  </p>
-                </article>
               </div>
             </section>
 
