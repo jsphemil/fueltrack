@@ -16,6 +16,10 @@
 - Vehicle-specific history
 - Navigation system (basic, layout-safe implementation)
 - Delete vehicle option
+- Hide navigation bar on login/signup page
+- Add confirmation before deleting a vehicle
+- Add confirmation before resetting account
+- Validate first fuel entry against initial vehicle odometer
 
 ### Current UI Baseline
 
@@ -28,10 +32,6 @@
 
 - Show user name in app header
 - Better layout separation (Dashboard / Entry / History)
-- Hide navigation bar on login/signup page
-- Add confirmation before deleting a vehicle
-- Add confirmation before resetting account
-- Add "Vehicle" to navigation menu
 - Dedicated vehicle page navigation
 
 ### Feature Enhancements
