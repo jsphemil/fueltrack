@@ -22,6 +22,8 @@
 - Validate first fuel entry against initial vehicle odometer
 - Dedicated vehicle page navigation
 - Create a dedicated /vehicle page listing all user vehicles
+- Capture vehicle type during vehicle creation
+- Display vehicle type in vehicle page
 
 ### Current UI Baseline
 
@@ -43,8 +45,6 @@
 
 ### Vehicle Management Page
 
-- Capture vehicle type during vehicle creation
-- Display vehicle type in vehicle page
 - Add vehicle-level statistics:
   - average mileage
   - last odometer reading
