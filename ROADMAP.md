@@ -28,12 +28,16 @@
 
 - Show user name in app header
 - Better layout separation (Dashboard / Entry / History)
+- Hide navigation bar on login/signup page
+- Add confirmation before deleting a vehicle
+- Add confirmation before resetting account
 
 ### Feature Enhancements
 
 - Reset account option
 - Monthly fuel spend tracking
 - Calendar-based entry view
+- Validate first fuel entry against initial vehicle odometer
 
 ### User Profile System
 
