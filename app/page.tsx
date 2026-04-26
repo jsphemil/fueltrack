@@ -41,6 +41,8 @@ export default function HomePage() {
   const [editAmountPaid, setEditAmountPaid] = useState("");
   const [editIsReserve, setEditIsReserve] = useState(false);
   const [entryActionLoading, setEntryActionLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   const dashboardMetrics = useMemo(() => {
     const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
@@ -94,33 +96,33 @@ export default function HomePage() {
 
   const fetchEntries = useCallback(
     async (accessToken?: string, vehicleId?: string | null) => {
-    if (!accessToken) {
-      setEntries([]);
-      return;
-    }
+      if (!accessToken) {
+        setEntries([]);
+        return;
+      }
 
-    setEntriesLoading(true);
-    setEntriesError("");
+      setEntriesLoading(true);
+      setEntriesError("");
 
-    const headers: HeadersInit = {};
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
 
       const query = vehicleId
         ? `?vehicleId=${encodeURIComponent(vehicleId)}`
         : "";
 
       const response = await fetch(`/api/fuel-entry${query}`, {
-      method: "GET",
-      headers,
-    });
+        method: "GET",
+        headers,
+      });
 
-    if (!response.ok) {
-      setEntriesError("Could not load fuel entries.");
-      setEntriesLoading(false);
-      return;
-    }
+      if (!response.ok) {
+        setEntriesError("Could not load fuel entries.");
+        setEntriesLoading(false);
+        return;
+      }
 
       const result = (await response.json()) as { entries: FuelEntry[] };
       setEntries(result.entries ?? []);
@@ -129,56 +131,59 @@ export default function HomePage() {
     []
   );
 
-  const fetchVehicles = useCallback(async (accessToken?: string) => {
-    if (!accessToken) {
-      setVehicles([]);
-      setSelectedVehicleId(null);
-      return null;
-    }
-
-    setVehiclesLoading(true);
-    setVehiclesError("");
-
-    const response = await fetch("/api/vehicle", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setVehiclesError("Could not load vehicles.");
-      setVehiclesLoading(false);
-      return null;
-    }
-
-    const result = (await response.json()) as { vehicles: Vehicle[] };
-    const nextVehicles = result.vehicles ?? [];
-    setVehicles(nextVehicles);
-    const nextSelectedVehicleId = (() => {
-      if (
-        selectedVehicleId &&
-        nextVehicles.some((vehicle) => vehicle.id === selectedVehicleId)
-      ) {
-        return selectedVehicleId;
-      }
-
-      return nextVehicles[0]?.id ?? null;
-    })();
-    setSelectedVehicleId((currentValue) => {
-      if (nextVehicles.length === 0) {
+  const fetchVehicles = useCallback(
+    async (accessToken?: string) => {
+      if (!accessToken) {
+        setVehicles([]);
+        setSelectedVehicleId(null);
         return null;
       }
 
-      if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
-        return currentValue;
+      setVehiclesLoading(true);
+      setVehiclesError("");
+
+      const response = await fetch("/api/vehicle", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        setVehiclesError("Could not load vehicles.");
+        setVehiclesLoading(false);
+        return null;
       }
 
-      return nextVehicles[0].id;
-    });
-    setVehiclesLoading(false);
-    return nextSelectedVehicleId;
-  }, [selectedVehicleId]);
+      const result = (await response.json()) as { vehicles: Vehicle[] };
+      const nextVehicles = result.vehicles ?? [];
+      setVehicles(nextVehicles);
+      const nextSelectedVehicleId = (() => {
+        if (
+          selectedVehicleId &&
+          nextVehicles.some((vehicle) => vehicle.id === selectedVehicleId)
+        ) {
+          return selectedVehicleId;
+        }
+
+        return nextVehicles[0]?.id ?? null;
+      })();
+      setSelectedVehicleId((currentValue) => {
+        if (nextVehicles.length === 0) {
+          return null;
+        }
+
+        if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
+          return currentValue;
+        }
+
+        return nextVehicles[0].id;
+      });
+      setVehiclesLoading(false);
+      return nextSelectedVehicleId;
+    },
+    [selectedVehicleId]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -383,6 +388,40 @@ export default function HomePage() {
     setVehicleActionLoading(false);
   }
 
+  async function handleResetAccount() {
+    if (!session?.access_token) {
+      setResetError("Please log in before resetting your account.");
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError("");
+    setVehiclesError("");
+    setEntriesError("");
+
+    const response = await fetch("/api/account/reset", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      setResetError(result?.message ?? result?.error ?? "Could not reset account.");
+      setResetLoading(false);
+      return;
+    }
+
+    cancelEditingEntry();
+    setVehicles([]);
+    setEntries([]);
+    setSelectedVehicleId(null);
+    setResetLoading(false);
+  }
+
   const isAuthenticated = Boolean(session);
 
   return (
@@ -447,13 +486,35 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleDeleteVehicle}
-                  disabled={vehicleActionLoading || entryActionLoading}
+                  disabled={vehicleActionLoading || entryActionLoading || resetLoading}
                   className="h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {vehicleActionLoading ? "Deleting..." : "Delete Vehicle"}
                 </button>
               </div>
             )}
+          </section>
+        ) : null}
+
+        {isAuthenticated ? (
+          <section className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <h2 className="text-base font-semibold text-red-900">Reset Account</h2>
+            <p className="mt-1 text-sm text-red-800">
+              Warning: this permanently deletes all your vehicles and fuel entries.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void handleResetAccount();
+              }}
+              disabled={resetLoading || vehicleActionLoading || entryActionLoading}
+              className="mt-3 h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resetLoading ? "Resetting..." : "Reset Account"}
+            </button>
+            {resetError ? (
+              <p className="mt-2 text-sm font-medium text-red-700">{resetError}</p>
+            ) : null}
           </section>
         ) : null}
 
@@ -559,142 +620,142 @@ export default function HomePage() {
               ) : (
                 <div className="mt-4 space-y-3">
                   {recentEntries.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
-                  >
-                    {editingEntryId === entry.id ? (
-                      <div className="space-y-3">
-                        <label className="block">
-                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                            Odometer
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.1"
-                            value={editOdometer}
-                            onChange={(event) => setEditOdometer(event.target.value)}
-                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                            Fuel Price
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.01"
-                            value={editFuelPrice}
-                            onChange={(event) => setEditFuelPrice(event.target.value)}
-                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                            Amount Paid
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.01"
-                            value={editAmountPaid}
-                            onChange={(event) => setEditAmountPaid(event.target.value)}
-                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                          />
-                        </label>
-                        <label className="flex items-center gap-2 text-sm text-zinc-700">
-                          <input
-                            type="checkbox"
-                            checked={editIsReserve}
-                            onChange={(event) => setEditIsReserve(event.target.checked)}
-                            className="h-4 w-4 accent-zinc-900"
-                          />
-                          Filled at reserve
-                        </label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateEntry(entry)}
-                            disabled={entryActionLoading}
-                            className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={cancelEditingEntry}
-                            disabled={entryActionLoading}
-                            className="h-9 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Cancel
-                          </button>
+                    <article
+                      key={entry.id}
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                    >
+                      {editingEntryId === entry.id ? (
+                        <div className="space-y-3">
+                          <label className="block">
+                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                              Odometer
+                            </span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.1"
+                              value={editOdometer}
+                              onChange={(event) => setEditOdometer(event.target.value)}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                              Fuel Price
+                            </span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              value={editFuelPrice}
+                              onChange={(event) => setEditFuelPrice(event.target.value)}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
+                              Amount Paid
+                            </span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              value={editAmountPaid}
+                              onChange={(event) => setEditAmountPaid(event.target.value)}
+                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                            />
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-zinc-700">
+                            <input
+                              type="checkbox"
+                              checked={editIsReserve}
+                              onChange={(event) => setEditIsReserve(event.target.checked)}
+                              className="h-4 w-4 accent-zinc-900"
+                            />
+                            Filled at reserve
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateEntry(entry)}
+                              disabled={entryActionLoading}
+                              className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEditingEntry}
+                              disabled={entryActionLoading}
+                              className="h-9 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-sm text-zinc-700">
-                          Odometer:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {entry.odometer}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-700">
-                          Fuel Price:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {entry.fuel_price.toFixed(2)}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-700">
-                          Amount Paid:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {entry.amount_paid.toFixed(2)}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-700">
-                          Fuel Volume:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {entry.fuel_volume.toFixed(2)} L
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-700">
-                          Filled at reserve:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {entry.is_reserve ? "Yes" : "No"}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-700">
-                          Created at:{" "}
-                          <span className="font-medium text-zinc-900">
-                            {new Date(entry.created_at).toLocaleString()}
-                          </span>
-                        </p>
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditingEntry(entry)}
-                            disabled={entryActionLoading}
-                            className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteEntry(entry.id)}
-                            disabled={entryActionLoading}
-                            className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </article>
-                ))}
+                      ) : (
+                        <>
+                          <p className="text-sm text-zinc-700">
+                            Odometer:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {entry.odometer}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Fuel Price:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {entry.fuel_price.toFixed(2)}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Amount Paid:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {entry.amount_paid.toFixed(2)}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Fuel Volume:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {entry.fuel_volume.toFixed(2)} L
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Filled at reserve:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {entry.is_reserve ? "Yes" : "No"}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700">
+                            Created at:{" "}
+                            <span className="font-medium text-zinc-900">
+                              {new Date(entry.created_at).toLocaleString()}
+                            </span>
+                          </p>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditingEntry(entry)}
+                              disabled={entryActionLoading}
+                              className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              disabled={entryActionLoading}
+                              className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </article>
+                  ))}
                 </div>
               )}
             </section>
