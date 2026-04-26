@@ -43,13 +43,12 @@
 
 ### Vehicle Management Page
 
-- Display vehicle details:
-  - vehicle name
-  - type
-  - initial odometer reading
+- Capture vehicle type during vehicle creation
+- Display vehicle type in vehicle page
+- Add vehicle-level statistics:
+  - average mileage
   - last odometer reading
   - total fuel spend
-  - average mileage
 - Add navigation from vehicle page back to dashboard
 - Support vehicle selection from this page
 
