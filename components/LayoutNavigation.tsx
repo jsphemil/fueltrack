@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+
+import { supabase } from "@/lib/supabase";
 
 const navigationItems = [
   { label: "Dashboard", href: "/" },
@@ -10,7 +14,31 @@ const navigationItems = [
 
 export default function LayoutNavigation() {
   const pathname = usePathname();
+  const [session, setSession] = useState<Session | null>(null);
   const showNavigation = pathname !== "/login";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (isMounted) {
+        setSession(data.session ?? null);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
 
   if (!showNavigation) {
     return null;
@@ -42,6 +70,19 @@ export default function LayoutNavigation() {
             </Link>
           );
         })}
+
+        {session?.user?.email ? (
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-sm text-zinc-600">{session.user.email}</span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+            >
+              Logout
+            </button>
+          </div>
+        ) : null}
       </div>
     </nav>
   );
