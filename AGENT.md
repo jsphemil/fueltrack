@@ -40,3 +40,10 @@ Location: /skills/debug-ui.md
 ### API and Data Logic
 Use: API and Business Logic Handling
 Location: /skills/api-logic.md
+
+## Decision Rules
+
+- If the issue is related to UI rendering, layout, or visual behavior → use UI Issues skill
+- If the issue involves calculations, data processing, validation, or API behavior → use API and Data Logic skill
+- If both UI and data are involved → solve data logic first, then UI
+- Always prefer minimal changes and avoid rewriting existing working code
