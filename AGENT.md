@@ -59,3 +59,16 @@ Location: /skills/validation.md
 
 - If both UI and data are involved → solve data logic first, then UI
 - Prefer minimal changes and avoid rewriting existing working code
+
+## Full-Stack Requirements
+
+For any feature or bug fix, always consider:
+
+- Frontend changes (UI, forms, display)
+- Backend/API changes (data handling, calculations)
+- Data validation (input correctness, constraints)
+- Data consistency (ensure no mismatch across app)
+
+Do NOT implement partial solutions that fix only one layer.
+
+Ensure all related layers are aligned before completing the task.
