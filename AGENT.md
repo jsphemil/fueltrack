@@ -45,9 +45,17 @@ Location: /skills/debug-ui.md
 Use: API and Business Logic Handling
 Location: /skills/api-logic.md
 
+### Data Validation
+Use: Data Validation and Integrity
+Location: /skills/validation.md
+
 ## Decision Rules
 
 - If the issue is related to UI rendering, layout, or visual behavior → use UI Issues skill
 - If the issue involves calculations, data processing, validation, or API behavior → use API and Data Logic skill
+
+- ALWAYS validate data before applying any business logic
+- ALWAYS use Data Validation skill when handling inputs or calculations
+
 - If both UI and data are involved → solve data logic first, then UI
-- Always prefer minimal changes and avoid rewriting existing working code
+- Prefer minimal changes and avoid rewriting existing working code
