@@ -27,3 +27,8 @@ Build a simple, reliable mileage tracking app that tracks fuel, distance, and ex
 
 ## MCP Usage (future-ready)
 - Prefer filesystem access before making assumptions
+
+## Skills
+
+### UI Issues
+Use: Debug UI Issue
