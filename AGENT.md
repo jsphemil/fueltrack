@@ -106,3 +106,11 @@ Before completing any task, ensure:
 - Changes are consistent with existing project patterns
 
 Do NOT mark a task as complete unless all the above are satisfied.
+
+## Scope Control
+
+- Focus only on files directly related to the task
+- Do NOT scan or modify unrelated parts of the codebase
+- Prefer small, targeted changes over broad refactoring
+- Avoid rewriting existing working logic unless necessary
+- Keep responses concise and implementation-focused
