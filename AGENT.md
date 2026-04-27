@@ -36,3 +36,7 @@ Always refer to the relevant skill before solving a problem.
 ### UI Issues
 Use: Debug UI Issue
 Location: /skills/debug-ui.md
+
+### API and Data Logic
+Use: API and Business Logic Handling
+Location: /skills/api-logic.md
