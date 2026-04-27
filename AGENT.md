@@ -30,5 +30,9 @@ Build a simple, reliable mileage tracking app that tracks fuel, distance, and ex
 
 ## Skills
 
+Skills are stored in /skills directory.
+Always refer to the relevant skill before solving a problem.
+
 ### UI Issues
 Use: Debug UI Issue
+Location: /skills/debug-ui.md
