@@ -114,3 +114,9 @@ Do NOT mark a task as complete unless all the above are satisfied.
 - Prefer small, targeted changes over broad refactoring
 - Avoid rewriting existing working logic unless necessary
 - Keep responses concise and implementation-focused
+
+## Response Guidelines
+
+- Provide concise, implementation-focused answers
+- Avoid long explanations unless explicitly asked
+- Prefer code changes over descriptive text
