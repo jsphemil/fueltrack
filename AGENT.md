@@ -25,8 +25,12 @@ Build a simple, reliable mileage tracking app that tracks fuel, distance, and ex
 - All required inputs must be present
 - Calculations must be consistent across app
 
-## MCP Usage (future-ready)
-- Prefer filesystem access before making assumptions
+## File Usage Rules
+
+- Always read relevant project files before making changes
+- Do NOT assume code structure without checking files
+- Prefer modifying existing code instead of creating new files
+- Ensure consistency with existing project patterns
 
 ## Skills
 
