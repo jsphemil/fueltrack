@@ -72,3 +72,23 @@ For any feature or bug fix, always consider:
 Do NOT implement partial solutions that fix only one layer.
 
 Ensure all related layers are aligned before completing the task.
+
+
+## Roadmap Rules
+
+- Always refer to ROADMAP.md before starting any feature or change
+
+- Only pick tasks from the "Planned" section unless explicitly instructed otherwise
+
+- When starting a task:
+  - Move it from Planned → In Progress
+
+- When completed:
+  - Move it from In Progress → Completed
+
+- Do NOT duplicate tasks that already exist in the roadmap
+
+- If a new requirement is discovered:
+  - Add it under the appropriate section in Planned before implementation
+
+- Maintain the existing roadmap structure and grouping (do not reorganize unnecessarily)
