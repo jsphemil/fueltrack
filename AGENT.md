@@ -92,3 +92,17 @@ Ensure all related layers are aligned before completing the task.
   - Add it under the appropriate section in Planned before implementation
 
 - Maintain the existing roadmap structure and grouping (do not reorganize unnecessarily)
+
+
+## Implementation Checklist
+
+Before completing any task, ensure:
+
+- Frontend is updated (UI reflects the change correctly)
+- Backend/API logic is implemented or updated
+- Data validation is applied consistently
+- No existing functionality is broken
+- Edge cases are handled (empty inputs, invalid values)
+- Changes are consistent with existing project patterns
+
+Do NOT mark a task as complete unless all the above are satisfied.
