@@ -38,6 +38,7 @@
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
+* Add vehicle edit option from Account page vehicle list
 
 ### Current UI Baseline
 
@@ -62,7 +63,6 @@
 * Add vehicle management:
 
   * delete vehicle
-  * edit vehicle details
 
 ### Dashboard Improvements
 

@@ -10,6 +10,8 @@ import VehicleForm from "@/components/VehicleForm";
 type Vehicle = {
   id: string;
   name: string;
+  vehicleType: string;
+  initial_odometer: number;
 };
 
 export default function AccountPage() {
@@ -20,6 +22,12 @@ export default function AccountPage() {
   const [vehiclesError, setVehiclesError] = useState("");
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [editVehicleId, setEditVehicleId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editVehicleType, setEditVehicleType] = useState("");
+  const [editInitialOdometer, setEditInitialOdometer] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
 
@@ -156,6 +164,63 @@ export default function AccountPage() {
     setDeleteLoadingId(null);
   }
 
+  function startVehicleEdit(vehicle: Vehicle) {
+    setEditVehicleId(vehicle.id);
+    setEditName(vehicle.name);
+    setEditVehicleType(vehicle.vehicleType ?? "");
+    setEditInitialOdometer(String(vehicle.initial_odometer ?? 0));
+    setEditError("");
+  }
+
+  function cancelVehicleEdit() {
+    setEditVehicleId(null);
+    setEditName("");
+    setEditVehicleType("");
+    setEditInitialOdometer("");
+    setEditError("");
+  }
+
+  async function handleSaveVehicleEdit() {
+    if (!session?.access_token || !editVehicleId || editLoading) {
+      return;
+    }
+
+    const name = editName.trim();
+    const vehicleType = editVehicleType.trim();
+    const initialOdometer = Number(editInitialOdometer);
+    if (!name || !vehicleType || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
+      setEditError("Please enter valid vehicle details.");
+      return;
+    }
+
+    setEditLoading(true);
+    setEditError("");
+
+    const response = await fetch("/api/vehicle", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        id: editVehicleId,
+        name,
+        vehicleType,
+        initial_odometer: initialOdometer,
+      }),
+    });
+
+    if (!response.ok) {
+      setEditError("Could not update vehicle.");
+      setEditLoading(false);
+      return;
+    }
+
+    await fetchVehicles(session.access_token);
+    setEditLoading(false);
+    cancelVehicleEdit();
+  }
+
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
       <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
@@ -193,18 +258,84 @@ export default function AccountPage() {
               ) : (
                 <ul className="mt-2 space-y-2 text-sm text-zinc-700">
                   {vehicles.map((vehicle) => (
-                    <li key={vehicle.id} className="flex items-center justify-between gap-3">
-                      <span>{vehicle.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void handleDeleteVehicle(vehicle.id, vehicle.name);
-                        }}
-                        disabled={deleteLoadingId !== null}
-                        className="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
-                      </button>
+                    <li key={vehicle.id} className="rounded-lg border border-zinc-200 bg-white p-3">
+                      {editVehicleId === vehicle.id ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(event) => setEditName(event.target.value)}
+                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
+                            placeholder="Vehicle name"
+                            required
+                          />
+                          <input
+                            type="text"
+                            value={editVehicleType}
+                            onChange={(event) => setEditVehicleType(event.target.value)}
+                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
+                            placeholder="Vehicle type"
+                            required
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editInitialOdometer}
+                            onChange={(event) => setEditInitialOdometer(event.target.value)}
+                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
+                            placeholder="Initial odometer"
+                            required
+                          />
+                          {editError ? <p className="text-xs font-medium text-red-600">{editError}</p> : null}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleSaveVehicleEdit();
+                              }}
+                              disabled={editLoading}
+                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {editLoading ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelVehicleEdit}
+                              disabled={editLoading}
+                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <span>
+                            {vehicle.name} ({vehicle.vehicleType}) - Odometer: {vehicle.initial_odometer}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startVehicleEdit(vehicle)}
+                              disabled={deleteLoadingId !== null}
+                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleDeleteVehicle(vehicle.id, vehicle.name);
+                              }}
+                              disabled={deleteLoadingId !== null}
+                              className="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
