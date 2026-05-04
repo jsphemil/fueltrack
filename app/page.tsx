@@ -36,7 +36,6 @@ export default function HomePage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [vehiclesError, setVehiclesError] = useState("");
-  const [vehicleActionLoading, setVehicleActionLoading] = useState(false);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
   const [monthlySpend, setMonthlySpend] = useState<MonthlySpend[]>([]);
@@ -86,10 +85,6 @@ export default function HomePage() {
     };
   }, [entries]);
 
-  const selectedVehicle = useMemo(
-    () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
-    [selectedVehicleId, vehicles]
-  );
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
 
   const fetchEntries = useCallback(
@@ -337,51 +332,6 @@ export default function HomePage() {
     setEntryActionLoading(false);
   }
 
-  async function handleDeleteVehicle() {
-    if (!session?.access_token || !selectedVehicleId) {
-      setVehiclesError("Please select a vehicle to delete.");
-      return;
-    }
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this vehicle? This will also delete all associated fuel entries."
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setVehicleActionLoading(true);
-    setVehiclesError("");
-    setEntriesError("");
-
-    const response = await fetch(
-      `/api/vehicle?id=${encodeURIComponent(selectedVehicleId)}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as
-        | { message?: string; error?: string }
-        | null;
-      setVehiclesError(
-        result?.message ?? result?.error ?? "Could not delete vehicle."
-      );
-      setVehicleActionLoading(false);
-      return;
-    }
-
-    if (editingEntryId) {
-      cancelEditingEntry();
-    }
-
-    const nextSelectedId = await fetchVehicles(session.access_token);
-    await fetchEntries(session.access_token, nextSelectedId);
-    setVehicleActionLoading(false);
-  }
 
 
   const monthlySpendFormatter = useMemo(
@@ -432,7 +382,7 @@ export default function HomePage() {
 
         {isAuthenticated ? (
           <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-900">Vehicle</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Vehicle Selection</h2>
 
             {vehiclesLoading ? (
               <p className="mt-3 text-sm text-zinc-600">Loading vehicles...</p>
@@ -458,44 +408,23 @@ export default function HomePage() {
                     ))}
                   </select>
                 </label>
-                <p className="text-sm text-zinc-700">
-                  Selected vehicle:{" "}
-                  <span className="font-medium text-zinc-900">
-                    {selectedVehicle?.name}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={handleDeleteVehicle}
-                  disabled={vehicleActionLoading || entryActionLoading}
-                  className="h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {vehicleActionLoading ? "Deleting..." : "Delete Vehicle"}
-                </button>
               </div>
             )}
           </section>
         ) : null}
 
         {isAuthenticated ? (
-          <FuelEntryForm
+          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-900">Add Fuel Entry</h2>
+            <FuelEntryForm
             vehicleId={selectedVehicleId}
             onSaved={() => fetchEntries(session?.access_token, selectedVehicleId)}
           />
+          </section>
         ) : null}
 
         {isAuthenticated ? (
           <section className="mt-8 space-y-6">
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Selected Vehicle Name
-              </h2>
-              <p className="mt-2 text-sm text-zinc-700">
-                <span className="font-medium text-zinc-900">
-                  {selectedVehicle ? selectedVehicle.name : "No vehicle selected"}
-                </span>
-              </p>
-            </section>
 
             <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
@@ -538,48 +467,30 @@ export default function HomePage() {
                   </p>
                 </article>
 
+                <article className="rounded-xl bg-white p-4 shadow-sm">
+                  <p className="text-sm text-zinc-500">Monthly spend</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
+                    {entriesLoading
+                      ? "Loading..."
+                      : monthlySpend.length > 0
+                        ? (() => {
+                            const latestMonth = monthlySpend[0];
+                            const [year, month] = latestMonth.month.split("-");
+                            const monthDate = new Date(
+                              Date.UTC(Number(year), Number(month) - 1, 1)
+                            );
+                            return `${monthLabelFormatter.format(monthDate)}: ${monthlySpendFormatter.format(latestMonth.total_spend)}`;
+                          })()
+                        : "No data"}
+                  </p>
+                </article>
+
               </div>
             </section>
-
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Monthly Fuel Spend
-              </h2>
-              {entriesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">
-                  Loading monthly spend...
-                </p>
-              ) : monthlySpend.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">
-                  No monthly fuel spend data yet.
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {monthlySpend.map((item) => {
-                    const [year, month] = item.month.split("-");
-                    const monthDate = new Date(
-                      Date.UTC(Number(year), Number(month) - 1, 1)
-                    );
-                    return (
-                      <li
-                        key={item.month}
-                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm text-zinc-700"
-                      >
-                        <span>{monthLabelFormatter.format(monthDate)}</span>
-                        <span className="font-semibold text-zinc-900">
-                          {monthlySpendFormatter.format(item.total_spend)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-
             <section>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-zinc-900">
-                  Recent Fuel Entries
+                  Recent Entries
                 </h2>
                 <Link
                   href={
