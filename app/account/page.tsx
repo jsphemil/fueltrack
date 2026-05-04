@@ -18,6 +18,8 @@ export default function AccountPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [vehiclesError, setVehiclesError] = useState("");
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
 
@@ -121,6 +123,39 @@ export default function AccountPage() {
     setResetLoading(false);
   }
 
+  async function handleDeleteVehicle(vehicleId: string, vehicleName: string) {
+    if (!session?.access_token || deleteLoadingId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${vehicleName}"? This will delete all its fuel entries.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteLoadingId(vehicleId);
+    setDeleteError("");
+
+    const response = await fetch(`/api/vehicle?id=${encodeURIComponent(vehicleId)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      setDeleteError("Could not delete vehicle.");
+      setDeleteLoadingId(null);
+      return;
+    }
+
+    await fetchVehicles(session.access_token);
+    setDeleteLoadingId(null);
+  }
+
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
       <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
@@ -156,12 +191,27 @@ export default function AccountPage() {
               ) : vehicles.length === 0 ? (
                 <p className="mt-2 text-sm text-zinc-600">No vehicles added yet.</p>
               ) : (
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
+                <ul className="mt-2 space-y-2 text-sm text-zinc-700">
                   {vehicles.map((vehicle) => (
-                    <li key={vehicle.id}>{vehicle.name}</li>
+                    <li key={vehicle.id} className="flex items-center justify-between gap-3">
+                      <span>{vehicle.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleDeleteVehicle(vehicle.id, vehicle.name);
+                        }}
+                        disabled={deleteLoadingId !== null}
+                        className="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               )}
+              {deleteError ? (
+                <p className="mt-2 text-sm font-medium text-red-600">{deleteError}</p>
+              ) : null}
             </section>
 
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">

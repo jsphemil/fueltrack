@@ -37,6 +37,7 @@
 * Monthly fuel spend tracking
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
+* Provide vehicle deletion from Account page vehicle list
 
 ### Current UI Baseline
 
@@ -62,7 +63,6 @@
 
   * delete vehicle
   * edit vehicle details
-* Provide vehicle deletion from Account page vehicle list
 
 ### Dashboard Improvements
 
