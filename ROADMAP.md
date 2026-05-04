@@ -41,6 +41,11 @@
 
 - Basic dashboard layout with metric cards
 - Recent entries preview on dashboard
+- Limit dashboard to:
+  - vehicle selection
+  - add fuel entry
+  - vehicle-specific metrics
+  - last 3 entries
 
 ## Planned
 
@@ -57,11 +62,6 @@
 
 ### Dashboard Improvements
 
-- Limit dashboard to:
-  - vehicle selection
-  - add fuel entry
-  - vehicle-specific metrics
-  - last 3 entries
 - Prepare dashboard for future analytics
 
 ### UI / UX Improvements
