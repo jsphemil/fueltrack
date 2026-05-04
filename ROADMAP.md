@@ -39,6 +39,7 @@
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
 * Add vehicle edit option from Account page vehicle list
+* Provide vehicle deletion option in each vehicle card
 
 ### Current UI Baseline
 
@@ -80,7 +81,6 @@
 ### Vehicle Management Page
 
 * Support vehicle selection from this page
-* Provide vehicle deletion option in each vehicle card
 
 ### User Profile System
 

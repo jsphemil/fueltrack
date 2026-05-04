@@ -21,6 +21,30 @@ export default function VehiclePage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+
+  async function fetchVehicles(accessToken?: string) {
+    if (!accessToken) {
+      setVehicles([]);
+      return;
+    }
+
+    const response = await fetch("/api/vehicle", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      setErrorMessage("Could not load vehicles.");
+      setVehicles([]);
+      return;
+    }
+
+    const result = (await response.json()) as { vehicles: Vehicle[] };
+    setVehicles(result.vehicles ?? []);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -34,26 +58,7 @@ export default function VehiclePage() {
         return;
       }
 
-      const response = await fetch("/api/vehicle", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${nextSession.access_token}`,
-        },
-      });
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (!response.ok) {
-        setErrorMessage("Could not load vehicles.");
-        setVehicles([]);
-        setLoading(false);
-        return;
-      }
-
-      const result = (await response.json()) as { vehicles: Vehicle[] };
-      setVehicles(result.vehicles ?? []);
+      await fetchVehicles(nextSession.access_token);
       setLoading(false);
     }
 
@@ -90,6 +95,39 @@ export default function VehiclePage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  async function handleDeleteVehicle(vehicleId: string) {
+    if (!session?.access_token || deleteLoadingId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this vehicle? This will also delete all associated fuel entries."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteLoadingId(vehicleId);
+    setErrorMessage("");
+
+    const response = await fetch(`/api/vehicle?id=${encodeURIComponent(vehicleId)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      setErrorMessage("Could not delete vehicle.");
+      setDeleteLoadingId(null);
+      return;
+    }
+
+    await fetchVehicles(session.access_token);
+    setDeleteLoadingId(null);
+  }
 
   return (
     <main className="px-4 py-6">
@@ -145,6 +183,18 @@ export default function VehiclePage() {
                           : "N/A"}
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-5 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleDeleteVehicle(vehicle.id);
+                      }}
+                      disabled={deleteLoadingId !== null}
+                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                    </button>
                   </div>
                 </li>
               ))}
