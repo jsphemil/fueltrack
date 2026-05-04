@@ -34,6 +34,8 @@
 - Improve vehicle card readability and layout
 - Improve dashboard layout with card-based metrics
 - Monthly fuel spend tracking
+- Move "Add Vehicle" to Account page
+- Move "Reset Account" to Account page
 
 ### Current UI Baseline
 
@@ -49,8 +51,6 @@
 
 #### Account Page
 
-- Move "Add Vehicle" to Account page
-- Move "Reset Account" to Account page
 - Add vehicle management:
   - delete vehicle
   - edit vehicle details

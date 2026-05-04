@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
+import VehicleForm from "@/components/VehicleForm";
 
 type Vehicle = {
   id: string;
@@ -166,12 +167,7 @@ export default function AccountPage() {
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Actions</h2>
               <div className="mt-3 flex flex-wrap gap-3">
-                <Link
-                  href="/"
-                  className="inline-flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-                >
-                  Add Vehicle
-                </Link>
+                <VehicleForm />
                 <button
                   type="button"
                   onClick={() => {

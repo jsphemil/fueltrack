@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import FuelEntryForm from "@/components/FuelEntryForm";
-import VehicleForm from "@/components/VehicleForm";
 
 type FuelEntry = {
   id: string;
@@ -47,8 +46,6 @@ export default function HomePage() {
   const [editAmountPaid, setEditAmountPaid] = useState("");
   const [editIsReserve, setEditIsReserve] = useState(false);
   const [entryActionLoading, setEntryActionLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState("");
 
   const dashboardMetrics = useMemo(() => {
     const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
@@ -386,46 +383,6 @@ export default function HomePage() {
     setVehicleActionLoading(false);
   }
 
-  async function handleResetAccount() {
-    if (!session?.access_token) {
-      setResetError("Please log in before resetting your account.");
-      return;
-    }
-    const confirmed = window.confirm(
-      "Are you sure you want to reset your account? This will delete all your data and cannot be undone."
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setResetLoading(true);
-    setResetError("");
-    setVehiclesError("");
-    setEntriesError("");
-
-    const response = await fetch("/api/account/reset", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as
-        | { message?: string; error?: string }
-        | null;
-      setResetError(result?.message ?? result?.error ?? "Could not reset account.");
-      setResetLoading(false);
-      return;
-    }
-
-    cancelEditingEntry();
-    setVehicles([]);
-    setEntries([]);
-    setMonthlySpend([]);
-    setSelectedVehicleId(null);
-    setResetLoading(false);
-  }
 
   const monthlySpendFormatter = useMemo(
     () =>
@@ -510,7 +467,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleDeleteVehicle}
-                  disabled={vehicleActionLoading || entryActionLoading || resetLoading}
+                  disabled={vehicleActionLoading || entryActionLoading}
                   className="h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {vehicleActionLoading ? "Deleting..." : "Delete Vehicle"}
@@ -518,32 +475,6 @@ export default function HomePage() {
               </div>
             )}
           </section>
-        ) : null}
-
-        {isAuthenticated ? (
-          <section className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
-            <h2 className="text-base font-semibold text-red-900">Reset Account</h2>
-            <p className="mt-1 text-sm text-red-800">
-              Warning: this permanently deletes all your vehicles and fuel entries.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void handleResetAccount();
-              }}
-              disabled={resetLoading || vehicleActionLoading || entryActionLoading}
-              className="mt-3 h-10 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {resetLoading ? "Resetting..." : "Reset Account"}
-            </button>
-            {resetError ? (
-              <p className="mt-2 text-sm font-medium text-red-700">{resetError}</p>
-            ) : null}
-          </section>
-        ) : null}
-
-        {isAuthenticated ? (
-          <VehicleForm />
         ) : null}
 
         {isAuthenticated ? (
