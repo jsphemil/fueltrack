@@ -252,6 +252,55 @@ export async function GET(request: Request) {
   }
 }
 
+
+export async function PUT(request: Request) {
+  try {
+    const { user, error, status } = await getUserFromRequest(request);
+    if (!user) {
+      return Response.json({ error }, { status });
+    }
+
+    const body = (await request.json()) as Partial<VehiclePayload> & { id?: string };
+    const id = String(body.id ?? "").trim();
+    const name = String(body.name ?? "").trim();
+    const vehicleType = String(body.vehicleType ?? body.type ?? "").trim();
+    const initialOdometer = Number(body.initial_odometer);
+
+    if (!id || !name || !vehicleType || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
+      return Response.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    const existingVehicle = await prisma.vehicle.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingVehicle) {
+      return Response.json({ error: "Vehicle not found" }, { status: 404 });
+    }
+
+    const vehicle = await prisma.vehicle.update({
+      where: { id: existingVehicle.id },
+      data: {
+        name,
+        vehicleType,
+        initial_odometer: initialOdometer,
+      },
+      select: { id: true, name: true, vehicleType: true, initial_odometer: true },
+    });
+
+    return Response.json({ vehicle, success: true }, { status: 200 });
+  } catch (error) {
+    console.error("Failed to update vehicle", error);
+    return Response.json({ error: "Failed to update vehicle" }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { user, error, status } = await getUserFromRequest(request);
