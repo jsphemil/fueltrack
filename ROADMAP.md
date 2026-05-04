@@ -4,89 +4,94 @@
 
 ### Core Features
 
-- Authentication (email/password)
-- Vehicle creation and selection
-- Fuel entry CRUD
-- Odometer validation
-- Correct mileage calculation
-- Range prediction
-- Next refuel prediction
-- Dashboard metrics
-- Separate history page
-- Vehicle-specific history
-- Navigation system (basic, layout-safe implementation)
-- Delete vehicle option
-- Hide navigation bar on login/signup page
-- Add confirmation before deleting a vehicle
-- Add confirmation before resetting account
-- Validate first fuel entry against initial vehicle odometer
-- Dedicated vehicle page navigation
-- Add Account page navigation
-- Create Account page (/account)
-- Create a dedicated /vehicle page listing all user vehicles
-- Capture vehicle type during vehicle creation
-- Display vehicle type in vehicle page
-- Add vehicle-level statistics:
-  - average mileage
-  - last odometer reading
-  - total fuel spend
-- Convert vehicle list into card-based UI with vehicle stats
-- Improve vehicle card readability and layout
-- Improve dashboard layout with card-based metrics
-- Monthly fuel spend tracking
-- Move "Add Vehicle" to Account page
-- Move "Reset Account" to Account page
+* Authentication (email/password)
+* Vehicle creation and selection
+* Fuel entry CRUD
+* Odometer validation
+* Correct mileage calculation
+* Range prediction
+* Next refuel prediction
+* Dashboard metrics
+* Separate history page
+* Vehicle-specific history
+* Navigation system (basic, layout-safe implementation)
+* Delete vehicle option
+* Hide navigation bar on login/signup page
+* Add confirmation before deleting a vehicle
+* Add confirmation before resetting account
+* Validate first fuel entry against initial vehicle odometer
+* Dedicated vehicle page navigation
+* Add Account page navigation
+* Create Account page (/account)
+* Create a dedicated /vehicle page listing all user vehicles
+* Capture vehicle type during vehicle creation
+* Display vehicle type in vehicle page
+* Add vehicle-level statistics:
+
+  * average mileage
+  * last odometer reading
+  * total fuel spend
+* Convert vehicle list into card-based UI with vehicle stats
+* Improve vehicle card readability and layout
+* Improve dashboard layout with card-based metrics
+* Monthly fuel spend tracking
+* Move "Add Vehicle" to Account page
+* Move "Reset Account" to Account page
 
 ### Current UI Baseline
 
-- Basic dashboard layout with metric cards
-- Recent entries preview on dashboard
-- Limit dashboard to:
-  - vehicle selection
-  - add fuel entry
-  - vehicle-specific metrics
-  - last 3 entries
+* Basic dashboard layout with metric cards
+* Recent entries preview on dashboard
+* Limit dashboard to:
+
+  * vehicle selection
+  * add fuel entry
+  * vehicle-specific metrics
+  * last 3 entries
 
 ## Planned
 
 ### Application Structure
 
-- Separate Dashboard and Account responsibilities
-- Move management actions out of dashboard
+* Separate Dashboard and Account responsibilities
+* Move management actions out of dashboard
 
 #### Account Page
 
-- Add vehicle management:
-  - delete vehicle
-  - edit vehicle details
+* Add vehicle management:
+
+  * delete vehicle
+  * edit vehicle details
+* Provide vehicle deletion from Account page vehicle list
 
 ### Dashboard Improvements
 
-- Prepare dashboard for future analytics
+* Prepare dashboard for future analytics
 
 ### UI / UX Improvements
 
-- Show user name in app header
-- Better layout separation (Dashboard / Entry / History)
+* Show user name in app header
+* Better layout separation (Dashboard / Entry / History)
 
 ### Feature Enhancements
 
-- Calendar-based entry view
+* Calendar-based entry view
 
 ### Vehicle Management Page
 
-- Support vehicle selection from this page
+* Support vehicle selection from this page
+* Provide vehicle deletion option in each vehicle card
 
 ### User Profile System
 
-- User profile table (name, country, state, age, gender)
-- First-time profile setup flow after signup
-- Profile page (view/edit)
-- Show user name instead of email in header
-- Profile validation and persistence
+* User profile table (name, country, state, age, gender)
+* First-time profile setup flow after signup
+* Profile page (view/edit)
+* Show user name instead of email in header
+* Profile validation and persistence
 
 ### Future Enhancements
 
-- Multi-vehicle analytics comparison
-- Data visualization (charts)
-- Theme customization (dark/light)
+* Multi-vehicle analytics comparison
+* Data visualization (charts)
+* Theme customization (dark/light)
