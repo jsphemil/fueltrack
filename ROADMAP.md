@@ -58,6 +58,7 @@
   * last 3 entries
 * Account page for vehicle and account management
 * Vehicle page with card-based layout and stats
+* Show user name in app header
 
 ---
 
@@ -65,7 +66,6 @@
 
 ### UI / UX Improvements
 
-* Show user name in app header
 * Better layout separation (Dashboard / Entry / History)
 
 ### Dashboard Improvements
