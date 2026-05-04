@@ -22,6 +22,12 @@ export default function LayoutNavigation() {
   const isAuthenticated = Boolean(session?.user);
   const showNavigation = !hideNavRoutes.includes(pathname) && isAuthenticated;
 
+  const userDisplayName =
+    session?.user?.user_metadata?.name ||
+    (session?.user as { name?: string } | null)?.name ||
+    session?.user?.email || "";
+
+
   useEffect(() => {
     let isMounted = true;
 
@@ -83,9 +89,9 @@ export default function LayoutNavigation() {
           );
         })}
 
-        {session?.user?.email ? (
+        {userDisplayName ? (
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-zinc-600">{session.user.email}</span>
+            <span className="text-sm text-zinc-600">{userDisplayName}</span>
             <button
               type="button"
               onClick={handleLogout}

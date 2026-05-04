@@ -16,6 +16,10 @@ const navigationItems = [
 export default function Navigation() {
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
+  const userDisplayName =
+    session?.user?.user_metadata?.name ||
+    (session?.user as { name?: string } | null)?.name ||
+    session?.user?.email || "";
 
   useEffect(() => {
     let isMounted = true;
@@ -72,9 +76,9 @@ export default function Navigation() {
           })}
         </ul>
 
-        {session?.user.email ? (
+        {userDisplayName ? (
           <div className="flex items-center gap-2 text-xs text-zinc-600">
-            <span className="truncate">{session.user.email}</span>
+            <span className="truncate">{userDisplayName}</span>
             <button
               type="button"
               onClick={() => {
