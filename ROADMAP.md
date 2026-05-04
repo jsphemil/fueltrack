@@ -41,38 +41,36 @@
 * Add vehicle edit option from Account page vehicle list
 * Provide vehicle deletion option in each vehicle card
 
-### Current UI Baseline
-
-* Basic dashboard layout with metric cards
-* Recent entries preview on dashboard
-* Limit dashboard to:
-
-  * vehicle selection
-  * add fuel entry
-  * vehicle-specific metrics
-  * last 3 entries
-
-## Planned
-
 ### Application Structure
 
 * Separate Dashboard and Account responsibilities
 * Move management actions out of dashboard
 
-#### Account Page
+### Current UI State
 
-* Add vehicle management:
+* Dashboard layout with metric cards
+* Recent entries preview on dashboard
+* Dashboard limited to:
 
-  * delete vehicle
+  * vehicle selection
+  * add fuel entry
+  * vehicle-specific metrics
+  * last 3 entries
+* Account page for vehicle and account management
+* Vehicle page with card-based layout and stats
 
-### Dashboard Improvements
+---
 
-* Prepare dashboard for future analytics
+## Planned
 
 ### UI / UX Improvements
 
 * Show user name in app header
 * Better layout separation (Dashboard / Entry / History)
+
+### Dashboard Improvements
+
+* Prepare dashboard for future analytics
 
 ### Feature Enhancements
 
