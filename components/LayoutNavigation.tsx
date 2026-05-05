@@ -19,23 +19,42 @@ const hideNavRoutes = ["/login"];
 export default function LayoutNavigation() {
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
+  const [profileName, setProfileName] = useState("");
   const isAuthenticated = Boolean(session?.user);
   const showNavigation = !hideNavRoutes.includes(pathname) && isAuthenticated;
 
-  const userDisplayName =
-    session?.user?.user_metadata?.name ||
-    (session?.user as { name?: string } | null)?.name ||
-    session?.user?.email || "";
-
+  const userDisplayName = profileName || session?.user?.email || "";
 
   useEffect(() => {
     let isMounted = true;
+
+    const loadProfile = async (accessToken?: string) => {
+      if (!accessToken) {
+        setProfileName("");
+        return;
+      }
+
+      const response = await fetch("/api/profile", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok || !isMounted) {
+        return;
+      }
+
+      const result = (await response.json()) as { profile: { name: string } | null };
+      setProfileName(result.profile?.name ?? "");
+    };
 
     const loadSession = async () => {
       const { data } = await supabase.auth.getSession();
 
       if (isMounted) {
         setSession(data.session ?? null);
+        void loadProfile(data.session?.access_token);
       }
     };
 
@@ -45,13 +64,21 @@ export default function LayoutNavigation() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
+      void loadProfile(nextSession?.access_token);
     });
+
+    const handleProfileUpdated = () => {
+      void loadProfile(session?.access_token);
+    };
+
+    window.addEventListener("profile-updated", handleProfileUpdated);
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      window.removeEventListener("profile-updated", handleProfileUpdated);
     };
-  }, []);
+  }, [session?.access_token]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

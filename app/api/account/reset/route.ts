@@ -52,6 +52,11 @@ export async function POST(request: Request) {
     }
 
     await prisma.$transaction([
+      prisma.userProfile.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      }),
       prisma.fuelEntry.deleteMany({
         where: {
           userId: user.id,

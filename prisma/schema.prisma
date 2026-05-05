@@ -8,8 +8,9 @@ datasource db {
 }
 
 model User {
-  id       String    @id
-  vehicles Vehicle[]
+  id          String       @id
+  vehicles    Vehicle[]
+  userProfile UserProfile?
 }
 
 model Vehicle {
@@ -34,4 +35,12 @@ model FuelEntry {
   is_reserve  Boolean
   created_at  DateTime @default(now())
   vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+}
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
