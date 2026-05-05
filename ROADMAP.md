@@ -59,6 +59,8 @@
 * Account page for vehicle and account management
 * Vehicle page with card-based layout and stats
 * Show user name in app header
+* User profile table (name)
+* Show user name instead of email in header
 
 ---
 
@@ -82,10 +84,8 @@
 
 ### User Profile System
 
-* User profile table (name, country, state, age, gender)
 * First-time profile setup flow after signup
 * Profile page (view/edit)
-* Show user name instead of email in header
 * Profile validation and persistence
 
 ### Future Enhancements

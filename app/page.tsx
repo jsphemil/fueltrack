@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import FuelEntryForm from "@/components/FuelEntryForm";
@@ -27,6 +28,11 @@ type MonthlySpend = {
   total_spend: number;
 };
 
+type UserProfile = {
+  id: string;
+  name: string;
+};
+
 export default function HomePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +51,11 @@ export default function HomePage() {
   const [editAmountPaid, setEditAmountPaid] = useState("");
   const [editIsReserve, setEditIsReserve] = useState(false);
   const [entryActionLoading, setEntryActionLoading] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const dashboardMetrics = useMemo(() => {
     const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
@@ -86,6 +97,78 @@ export default function HomePage() {
   }, [entries]);
 
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
+
+
+  const fetchProfile = useCallback(async (accessToken?: string) => {
+    if (!accessToken) {
+      setProfile(null);
+      setProfileName("");
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError("");
+
+    const response = await fetch("/api/profile", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      setProfileError("Could not load profile.");
+      setProfileLoading(false);
+      return;
+    }
+
+    const result = (await response.json()) as { profile: UserProfile | null };
+    setProfile(result.profile);
+    setProfileName(result.profile?.name ?? "");
+    setProfileLoading(false);
+  }, []);
+
+  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!session?.access_token) {
+      setProfileError("Please log in before saving your profile.");
+      return;
+    }
+
+    const name = profileName.trim();
+    if (!name) {
+      setProfileError("Name is required.");
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileError("");
+
+    const response = await fetch("/api/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+      setProfileError(result?.error ?? "Could not save profile.");
+      setProfileSaving(false);
+      return;
+    }
+
+    const result = (await response.json()) as { profile: UserProfile };
+    setProfile(result.profile);
+    setProfileName(result.profile.name);
+    window.dispatchEvent(new Event("profile-updated"));
+    setProfileSaving(false);
+  }
 
   const fetchEntries = useCallback(
     async (accessToken?: string, vehicleId?: string | null) => {
@@ -192,12 +275,15 @@ export default function HomePage() {
       setSession(data.session);
       setLoading(false);
       if (data.session) {
+        void fetchProfile(data.session.access_token);
         void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
         setMonthlySpend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
+        setProfile(null);
+        setProfileName("");
       }
     }
 
@@ -209,12 +295,15 @@ export default function HomePage() {
       setSession(nextSession);
       setLoading(false);
       if (nextSession) {
+        void fetchProfile(nextSession.access_token);
         void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
         setMonthlySpend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
+        setProfile(null);
+        setProfileName("");
       }
     });
 
@@ -222,7 +311,7 @@ export default function HomePage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchVehicles]);
+  }, [fetchProfile, fetchVehicles]);
 
   useEffect(() => {
     if (!session?.access_token) {
@@ -378,6 +467,32 @@ export default function HomePage() {
 
         {errorMessage ? (
           <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
+        ) : null}
+
+        {isAuthenticated && !profileLoading && !profile ? (
+          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-900">Enter your name</h2>
+            <form onSubmit={handleSaveProfile} className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                type="text"
+                value={profileName}
+                onChange={(event) => setProfileName(event.target.value)}
+                className="h-10 flex-1 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
+                placeholder="Enter your name"
+                required
+              />
+              <button
+                type="submit"
+                disabled={profileSaving}
+                className="h-10 rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-400"
+              >
+                {profileSaving ? "Saving..." : "Save"}
+              </button>
+            </form>
+            {profileError ? (
+              <p className="mt-3 text-sm font-medium text-red-600">{profileError}</p>
+            ) : null}
+          </section>
         ) : null}
 
         {isAuthenticated ? (
