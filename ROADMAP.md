@@ -61,6 +61,7 @@
 * Show user name in app header
 * User profile table (name)
 * Show user name instead of email in header
+* Profile page (view/edit)
 
 ---
 
@@ -85,7 +86,6 @@
 ### User Profile System
 
 * First-time profile setup flow after signup
-* Profile page (view/edit)
 * Profile validation and persistence
 
 ### Future Enhancements
