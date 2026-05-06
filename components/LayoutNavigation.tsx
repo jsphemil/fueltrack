@@ -11,6 +11,7 @@ const navigationItems = [
   { label: "Dashboard", href: "/" },
   { label: "Add Entry", href: "/entry" },
   { label: "History", href: "/history" },
+  { label: "Calendar", href: "/calendar" },
   { label: "Vehicle", href: "/vehicle" },
   { label: "Account", href: "/account" },
 ];

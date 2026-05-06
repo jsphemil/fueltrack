@@ -56,6 +56,8 @@
 
 ### Current UI State
 
+* Calendar-based entry view
+
 * Dashboard layout with metric cards
 * Dashboard limited to:
 
@@ -76,8 +78,6 @@
 * Prepare dashboard for future analytics
 
 ### Feature Enhancements
-
-* Calendar-based entry view
 
 ### Vehicle Management Page
 
