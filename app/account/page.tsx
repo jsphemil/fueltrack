@@ -7,6 +7,10 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import VehicleForm from "@/components/VehicleForm";
 
+type Profile = {
+  name: string;
+};
+
 type Vehicle = {
   id: string;
   name: string;
@@ -30,6 +34,42 @@ export default function AccountPage() {
   const [editError, setEditError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileNameInput, setProfileNameInput] = useState("");
+  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState("");
+
+
+  async function fetchProfile(accessToken?: string) {
+    if (!accessToken) {
+      setProfile(null);
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError("");
+
+    const response = await fetch("/api/profile", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      setProfileError("Could not load profile.");
+      setProfileLoading(false);
+      return;
+    }
+
+    const result = (await response.json()) as { profile: Profile | null };
+    setProfile(result.profile);
+    setProfileNameInput(result.profile?.name ?? "");
+    setProfileLoading(false);
+  }
 
   async function fetchVehicles(accessToken?: string) {
     if (!accessToken) {
@@ -73,6 +113,7 @@ export default function AccountPage() {
 
       if (data.session?.access_token) {
         void fetchVehicles(data.session.access_token);
+        void fetchProfile(data.session.access_token);
       }
     }
 
@@ -87,8 +128,12 @@ export default function AccountPage() {
 
       if (nextSession?.access_token) {
         void fetchVehicles(nextSession.access_token);
+        void fetchProfile(nextSession.access_token);
       } else {
         setVehicles([]);
+        setProfile(null);
+        setEditingProfile(false);
+        setProfileNameInput("");
       }
     });
 
@@ -180,6 +225,43 @@ export default function AccountPage() {
     setEditError("");
   }
 
+
+  async function handleSaveProfile() {
+    if (!session?.access_token || profileSaveLoading) {
+      return;
+    }
+
+    const name = profileNameInput.trim();
+    if (!name) {
+      setProfileSaveError("Name is required.");
+      return;
+    }
+
+    setProfileSaveLoading(true);
+    setProfileSaveError("");
+
+    const response = await fetch("/api/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok) {
+      setProfileSaveError("Could not update profile.");
+      setProfileSaveLoading(false);
+      return;
+    }
+
+    const result = (await response.json()) as { profile: Profile };
+    setProfile(result.profile);
+    setProfileNameInput(result.profile?.name ?? "");
+    setEditingProfile(false);
+    setProfileSaveLoading(false);
+  }
+
   async function handleSaveVehicleEdit() {
     if (!session?.access_token || !editVehicleId || editLoading) {
       return;
@@ -245,6 +327,70 @@ export default function AccountPage() {
               <p className="mt-2 text-sm text-zinc-700">
                 Email: <span className="font-medium text-zinc-900">{session.user.email}</span>
               </p>
+            </section>
+
+
+            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Profile</h2>
+              {profileLoading ? (
+                <p className="mt-2 text-sm text-zinc-600">Loading profile...</p>
+              ) : editingProfile ? (
+                <div className="mt-3 space-y-2">
+                  <input
+                    type="text"
+                    value={profileNameInput}
+                    onChange={(event) => setProfileNameInput(event.target.value)}
+                    className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
+                    placeholder="Name"
+                    required
+                  />
+                  {profileSaveError ? (
+                    <p className="text-xs font-medium text-red-600">{profileSaveError}</p>
+                  ) : null}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleSaveProfile();
+                      }}
+                      disabled={profileSaveLoading}
+                      className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {profileSaveLoading ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProfile(false);
+                        setProfileNameInput(profile?.name ?? "");
+                        setProfileSaveError("");
+                      }}
+                      disabled={profileSaveLoading}
+                      className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-sm text-zinc-700">
+                    Name: <span className="font-medium text-zinc-900">{profile?.name ?? "Not set"}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProfile(true);
+                      setProfileNameInput(profile?.name ?? "");
+                      setProfileSaveError("");
+                    }}
+                    className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+              {profileError ? <p className="mt-2 text-sm font-medium text-red-600">{profileError}</p> : null}
             </section>
 
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
