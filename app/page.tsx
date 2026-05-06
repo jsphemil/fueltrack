@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import FuelEntryForm from "@/components/FuelEntryForm";
 
 type FuelEntry = {
   id: string;
@@ -525,16 +524,6 @@ export default function HomePage() {
                 </label>
               </div>
             )}
-          </section>
-        ) : null}
-
-        {isAuthenticated ? (
-          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-900">Add Fuel Entry</h2>
-            <FuelEntryForm
-            vehicleId={selectedVehicleId}
-            onSaved={() => fetchEntries(session?.access_token, selectedVehicleId)}
-          />
           </section>
         ) : null}
 

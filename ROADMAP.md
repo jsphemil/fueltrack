@@ -43,6 +43,7 @@
 
 ### Application Structure
 
+* Better layout separation (Dashboard / Entry / History)
 * Separate Dashboard and Account responsibilities
 * Move management actions out of dashboard
 
@@ -50,10 +51,10 @@
 
 * Dashboard layout with metric cards
 * Recent entries preview on dashboard
+* Dedicated /entry page for adding fuel entries
 * Dashboard limited to:
 
   * vehicle selection
-  * add fuel entry
   * vehicle-specific metrics
   * last 3 entries
 * Account page for vehicle and account management
@@ -69,7 +70,6 @@
 
 ### UI / UX Improvements
 
-* Better layout separation (Dashboard / Entry / History)
 
 ### Dashboard Improvements
 
