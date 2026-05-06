@@ -22,9 +22,11 @@ type Vehicle = {
   name: string;
 };
 
-type MonthlySpend = {
+type MonthlySummary = {
   month: string;
   total_spend: number;
+  total_distance: number;
+  average_mileage: number | null;
 };
 
 type UserProfile = {
@@ -43,7 +45,7 @@ export default function HomePage() {
   const [vehiclesError, setVehiclesError] = useState("");
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
-  const [monthlySpend, setMonthlySpend] = useState<MonthlySpend[]>([]);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editOdometer, setEditOdometer] = useState("");
   const [editFuelPrice, setEditFuelPrice] = useState("");
@@ -173,7 +175,7 @@ export default function HomePage() {
     async (accessToken?: string, vehicleId?: string | null) => {
       if (!accessToken) {
         setEntries([]);
-        setMonthlySpend([]);
+        setMonthlySummary([]);
         return;
       }
 
@@ -189,23 +191,33 @@ export default function HomePage() {
         ? `?vehicleId=${encodeURIComponent(vehicleId)}`
         : "";
 
-      const response = await fetch(`/api/fuel-entry${query}`, {
-        method: "GET",
-        headers,
-      });
+      const [entriesResponse, monthlyResponse] = await Promise.all([
+        fetch(`/api/fuel-entry${query}`, {
+          method: "GET",
+          headers,
+        }),
+        fetch(`/api/analytics/monthly${query}`, {
+          method: "GET",
+          headers,
+        }),
+      ]);
 
-      if (!response.ok) {
+      if (!entriesResponse.ok || !monthlyResponse.ok) {
         setEntriesError("Could not load fuel entries.");
         setEntriesLoading(false);
         return;
       }
 
-      const result = (await response.json()) as {
+      const entriesResult = (await entriesResponse.json()) as {
         entries: FuelEntry[];
-        monthly_spend?: MonthlySpend[];
       };
-      setEntries(result.entries ?? []);
-      setMonthlySpend(result.monthly_spend ?? []);
+      const monthlyResult = (await monthlyResponse.json()) as {
+        monthly: Array<{ vehicleId: string; monthly: MonthlySummary[] }>;
+      };
+
+      setEntries(entriesResult.entries ?? []);
+      const selectedVehicleMonthly = monthlyResult.monthly?.[0]?.monthly ?? [];
+      setMonthlySummary(selectedVehicleMonthly);
       setEntriesLoading(false);
     },
     []
@@ -278,7 +290,7 @@ export default function HomePage() {
         void fetchVehicles(data.session.access_token);
       } else {
         setEntries([]);
-        setMonthlySpend([]);
+        setMonthlySummary([]);
         setVehicles([]);
         setSelectedVehicleId(null);
         setProfile(null);
@@ -298,7 +310,7 @@ export default function HomePage() {
         void fetchVehicles(nextSession.access_token);
       } else {
         setEntries([]);
-        setMonthlySpend([]);
+        setMonthlySummary([]);
         setVehicles([]);
         setSelectedVehicleId(null);
         setProfile(null);
@@ -422,7 +434,7 @@ export default function HomePage() {
 
 
 
-  const monthlySpendFormatter = useMemo(
+  const currencyFormatter = useMemo(
     () =>
       new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -572,18 +584,18 @@ export default function HomePage() {
                 </article>
 
                 <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Monthly spend</p>
+                  <p className="text-sm text-zinc-500">Latest monthly spend</p>
                   <p className="mt-1 text-lg font-semibold text-zinc-900">
                     {entriesLoading
                       ? "Loading..."
-                      : monthlySpend.length > 0
+                      : monthlySummary.length > 0
                         ? (() => {
-                            const latestMonth = monthlySpend[0];
+                            const latestMonth = monthlySummary[0];
                             const [year, month] = latestMonth.month.split("-");
                             const monthDate = new Date(
                               Date.UTC(Number(year), Number(month) - 1, 1)
                             );
-                            return `${monthLabelFormatter.format(monthDate)}: ${monthlySpendFormatter.format(latestMonth.total_spend)}`;
+                            return `${monthLabelFormatter.format(monthDate)}: ${currencyFormatter.format(latestMonth.total_spend)}`;
                           })()
                         : "No data"}
                   </p>
@@ -591,6 +603,28 @@ export default function HomePage() {
 
               </div>
             </section>
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Monthly Analytics</h2>
+              {entriesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">Loading monthly analytics...</p>
+              ) : monthlySummary.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">No monthly analytics yet.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {monthlySummary.map((item) => {
+                    const [year, month] = item.month.split("-");
+                    const monthDate = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+                    return (
+                      <li key={item.month} className="rounded-lg bg-white px-3 py-2 text-sm text-zinc-900">
+                        {monthLabelFormatter.format(monthDate)} → {currencyFormatter.format(item.total_spend)} | {item.total_distance.toFixed(1)} km | {item.average_mileage !== null ? `${item.average_mileage.toFixed(1)} km/l` : "N/A"}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
             <section>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-zinc-900">
