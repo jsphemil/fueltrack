@@ -43,33 +43,33 @@
 
 ### Application Structure
 
-* Better layout separation (Dashboard / Entry / History)
 * Separate Dashboard and Account responsibilities
 * Move management actions out of dashboard
+* Separate Add Entry into dedicated page
+
+### Profile System (Basic)
+
+* User profile table (name)
+* First-time profile capture on login
+* Profile page (view/edit)
+* Show user name in app header (fallback to email)
 
 ### Current UI State
 
 * Dashboard layout with metric cards
-* Recent entries preview on dashboard
-* Dedicated /entry page for adding fuel entries
 * Dashboard limited to:
 
   * vehicle selection
   * vehicle-specific metrics
   * last 3 entries
-* Account page for vehicle and account management
+* Entry page for fuel input
+* History page for full entry list
+* Account page for vehicle and profile management
 * Vehicle page with card-based layout and stats
-* Show user name in app header
-* User profile table (name)
-* Show user name instead of email in header
-* Profile page (view/edit)
 
 ---
 
 ## Planned
-
-### UI / UX Improvements
-
 
 ### Dashboard Improvements
 
@@ -83,10 +83,10 @@
 
 * Support vehicle selection from this page
 
-### User Profile System
+### User Profile System (Enhancements)
 
-* First-time profile setup flow after signup
-* Profile validation and persistence
+* Improve first-time profile setup UX
+* Profile validation and persistence enhancements
 
 ### Future Enhancements
 
