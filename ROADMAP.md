@@ -35,6 +35,7 @@
 * Improve vehicle card readability and layout
 * Improve dashboard layout with card-based metrics
 * Monthly fuel spend tracking
+* Monthly analytics summary (spend, distance, mileage)
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
