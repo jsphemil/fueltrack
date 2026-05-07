@@ -86,6 +86,20 @@
 ### Dashboard Improvements
 
 * Extend dashboard with additional analytics insights
+* Add vehicle-wise average mileage chart
+
+  * Show only vehicles with sufficient data (>= 2 valid entries)
+  * Compare mileage across vehicles
+
+---
+
+### UI / UX Improvements
+
+* Implement responsive layout for desktop screens
+
+  * Introduce grid-based layout system
+  * Optimize dashboard for horizontal layout
+  * Ensure consistency across all pages
 
 ---
 
@@ -105,5 +119,8 @@
 ### Future Enhancements
 
 * Multi-vehicle analytics comparison
-* Additional charts (mileage trend, consumption patterns)
+* Additional charts:
+
+  * mileage trend over time
+  * consumption patterns
 * Theme customization (dark/light)
