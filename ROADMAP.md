@@ -36,6 +36,7 @@
 * Improve dashboard layout with card-based metrics
 * Monthly fuel spend tracking
 * Monthly analytics summary (spend, distance, mileage)
+* Data visualization (charts)
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
@@ -92,5 +93,4 @@
 ### Future Enhancements
 
 * Multi-vehicle analytics comparison
-* Data visualization (charts)
 * Theme customization (dark/light)
