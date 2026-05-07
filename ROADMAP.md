@@ -36,18 +36,23 @@
 * Improve dashboard layout with card-based metrics
 * Monthly fuel spend tracking
 * Monthly analytics summary (spend, distance, mileage)
-* Data visualization (charts)
+* Monthly spend trend chart
+* Calendar-based entry view
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
 * Add vehicle edit option from Account page vehicle list
 * Provide vehicle deletion option in each vehicle card
 
+---
+
 ### Application Structure
 
 * Separate Dashboard and Account responsibilities
 * Move management actions out of dashboard
 * Separate Add Entry into dedicated page
+
+---
 
 ### Profile System (Basic)
 
@@ -56,20 +61,23 @@
 * Profile page (view/edit)
 * Show user name in app header (fallback to email)
 
+---
+
 ### Current UI State
 
-* Calendar-based entry view
-
-* Dashboard layout with metric cards
+* Dashboard layout with metric cards and analytics section
 * Dashboard limited to:
 
   * vehicle selection
   * vehicle-specific metrics
   * last 3 entries
+  * monthly analytics summary
+  * monthly spend chart
 * Entry page for fuel input
 * History page for full entry list
 * Account page for vehicle and profile management
 * Vehicle page with card-based layout and stats
+* Calendar page for date-based entry exploration
 
 ---
 
@@ -77,20 +85,25 @@
 
 ### Dashboard Improvements
 
-* Prepare dashboard for future analytics
+* Extend dashboard with additional analytics insights
 
-### Feature Enhancements
+---
 
 ### Vehicle Management Page
 
 * Support vehicle selection from this page
+
+---
 
 ### User Profile System (Enhancements)
 
 * Improve first-time profile setup UX
 * Profile validation and persistence enhancements
 
+---
+
 ### Future Enhancements
 
 * Multi-vehicle analytics comparison
+* Additional charts (mileage trend, consumption patterns)
 * Theme customization (dark/light)
