@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { supabase } from "@/lib/supabase";
 
 type FuelEntry = {
@@ -98,6 +106,18 @@ export default function HomePage() {
   }, [entries]);
 
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
+
+  const monthlySpendChartData = useMemo(
+    () =>
+      [...monthlySummary]
+        .reverse()
+        .map((item) => ({
+          month: item.month,
+          label: item.month,
+          totalSpend: item.total_spend,
+        })),
+    [monthlySummary]
+  );
 
 
   const fetchProfile = useCallback(async (accessToken?: string) => {
@@ -622,6 +642,26 @@ export default function HomePage() {
                     );
                   })}
                 </ul>
+              )}
+            </section>
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Monthly Spend Trend</h2>
+              {entriesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">Loading monthly spend trend...</p>
+              ) : monthlySpendChartData.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">No monthly spend data yet.</p>
+              ) : (
+                <div className="mt-4 h-64 rounded-lg bg-white p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlySpendChartData}>
+                      <XAxis dataKey="label" />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
+                      <Line type="monotone" dataKey="totalSpend" stroke="#2563eb" dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </section>
 
