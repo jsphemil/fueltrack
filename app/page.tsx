@@ -492,7 +492,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-6xl rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-900">FuelTrack</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Track your fuel usage once you sign in with Email and Password.
@@ -579,7 +579,7 @@ export default function HomePage() {
 
             <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <article className="rounded-xl bg-white p-4 shadow-sm">
                   <p className="text-sm text-zinc-500">Latest mileage</p>
                   <p className="mt-1 text-lg font-semibold text-zinc-900">
@@ -639,47 +639,48 @@ export default function HomePage() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Monthly Analytics</h2>
-              {entriesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">Loading monthly analytics...</p>
-              ) : monthlySummary.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">No monthly analytics yet.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {monthlySummary.map((item) => {
-                    const [year, month] = item.month.split("-");
-                    const monthDate = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
-                    return (
-                      <li key={item.month} className="rounded-lg bg-white px-3 py-2 text-sm text-zinc-900">
-                        {monthLabelFormatter.format(monthDate)} → {currencyFormatter.format(item.total_spend)} | {item.total_distance.toFixed(1)} km | {item.average_mileage !== null ? `${item.average_mileage.toFixed(1)} km/l` : "N/A"}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <h2 className="text-lg font-semibold text-zinc-900">Monthly Analytics</h2>
+                {entriesLoading ? (
+                  <p className="mt-3 text-sm text-zinc-600">Loading monthly analytics...</p>
+                ) : monthlySummary.length === 0 ? (
+                  <p className="mt-3 text-sm text-zinc-600">No monthly analytics yet.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {monthlySummary.map((item) => {
+                      const [year, month] = item.month.split("-");
+                      const monthDate = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+                      return (
+                        <li key={item.month} className="rounded-lg bg-white px-3 py-2 text-sm text-zinc-900">
+                          {monthLabelFormatter.format(monthDate)} → {currencyFormatter.format(item.total_spend)} | {item.total_distance.toFixed(1)} km | {item.average_mileage !== null ? `${item.average_mileage.toFixed(1)} km/l` : "N/A"}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
 
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Monthly Spend Trend</h2>
-              {entriesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">Loading monthly spend trend...</p>
-              ) : monthlySpendChartData.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">No monthly spend data yet.</p>
-              ) : (
-                <div className="mt-4 h-64 rounded-lg bg-white p-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlySpendChartData}>
-                      <XAxis dataKey="label" />
-                      <YAxis />
-                      <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
-                      <Line type="monotone" dataKey="totalSpend" stroke="#2563eb" dot />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </section>
-
+              <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <h2 className="text-lg font-semibold text-zinc-900">Monthly Spend Trend</h2>
+                {entriesLoading ? (
+                  <p className="mt-3 text-sm text-zinc-600">Loading monthly spend trend...</p>
+                ) : monthlySpendChartData.length === 0 ? (
+                  <p className="mt-3 text-sm text-zinc-600">No monthly spend data yet.</p>
+                ) : (
+                  <div className="mt-4 h-64 rounded-lg bg-white p-3">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlySpendChartData}>
+                        <XAxis dataKey="label" />
+                        <YAxis />
+                        <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
+                        <Line type="monotone" dataKey="totalSpend" stroke="#2563eb" dot />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </section>
+            </div>
 
             <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Mileage Comparison</h2>
@@ -727,7 +728,7 @@ export default function HomePage() {
               ) : recentEntries.length === 0 ? (
                 <p className="mt-3 text-sm text-zinc-600">No fuel entries yet.</p>
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
                   {recentEntries.map((entry) => (
                     <article
                       key={entry.id}

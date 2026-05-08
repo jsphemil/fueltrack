@@ -96,6 +96,7 @@
 
   * Introduce grid-based layout system
   * Optimize dashboard for horizontal layout
+  * Introduce responsive layout foundation (dashboard)
   * Ensure consistency across all pages
 
 ---
