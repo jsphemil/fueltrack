@@ -38,6 +38,7 @@
 * Monthly analytics summary (spend, distance, mileage)
 * Monthly spend trend chart
 * Calendar-based entry view
+* Add vehicle-wise average mileage chart
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
@@ -86,10 +87,6 @@
 ### Dashboard Improvements
 
 * Extend dashboard with additional analytics insights
-* Add vehicle-wise average mileage chart
-
-  * Show only vehicles with sufficient data (>= 2 valid entries)
-  * Compare mileage across vehicles
 
 ---
 
