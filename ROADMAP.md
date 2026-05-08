@@ -79,6 +79,7 @@
 * Account page for vehicle and profile management
 * Vehicle page with card-based layout and stats
 * Calendar page for date-based entry exploration
+* Implement responsive layout for desktop screens across dashboard, entry, history, vehicle, and account pages
 
 ---
 
@@ -92,12 +93,6 @@
 
 ### UI / UX Improvements
 
-* Implement responsive layout for desktop screens
-
-  * Introduce grid-based layout system
-  * Optimize dashboard for horizontal layout
-  * Introduce responsive layout foundation (dashboard)
-  * Ensure consistency across all pages
 
 ---
 

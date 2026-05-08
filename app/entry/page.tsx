@@ -112,7 +112,7 @@ export default function EntryPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
         <h1 className="text-2xl font-semibold text-zinc-900">Add Fuel Entry</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Select your vehicle and add a new fuel entry.

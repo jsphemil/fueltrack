@@ -156,8 +156,8 @@ export default function HistoryPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold text-zinc-900">Fuel History</h1>
           <Link
             href="/"
@@ -187,7 +187,7 @@ export default function HistoryPage() {
           <p className="mt-4 text-sm text-zinc-600">No vehicles available yet.</p>
         ) : entriesLoading ? (
           <>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">
                   Select Vehicle
@@ -205,11 +205,11 @@ export default function HistoryPage() {
                 </select>
               </label>
             </div>
-            <p className="mt-4 text-sm text-zinc-600">Loading entries...</p>
+            <p className="text-sm text-zinc-600 lg:pt-9">Loading entries...</p>
           </>
         ) : entriesError ? (
           <>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">
                   Select Vehicle
@@ -227,11 +227,11 @@ export default function HistoryPage() {
                 </select>
               </label>
             </div>
-            <p className="mt-4 text-sm font-medium text-red-600">{entriesError}</p>
+            <p className="text-sm font-medium text-red-600 lg:pt-9">{entriesError}</p>
           </>
         ) : entries.length === 0 ? (
           <>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">
                   Select Vehicle
@@ -249,11 +249,11 @@ export default function HistoryPage() {
                 </select>
               </label>
             </div>
-            <p className="mt-4 text-sm text-zinc-600">No fuel entries yet.</p>
+            <p className="text-sm text-zinc-600 lg:pt-9">No fuel entries yet.</p>
           </>
         ) : (
           <>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr] lg:items-start">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">
                   Select Vehicle
@@ -271,7 +271,7 @@ export default function HistoryPage() {
                 </select>
               </label>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               {entries.map((entry) => (
                 <article
                   key={entry.id}
