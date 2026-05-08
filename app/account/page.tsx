@@ -305,7 +305,7 @@ export default function AccountPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
         <h1 className="text-2xl font-semibold text-zinc-900">Account</h1>
 
         {loading ? (
@@ -321,7 +321,7 @@ export default function AccountPage() {
             </Link>
           </div>
         ) : (
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <h2 className="text-lg font-semibold text-zinc-900">User Info</h2>
               <p className="mt-2 text-sm text-zinc-700">
@@ -456,7 +456,7 @@ export default function AccountPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <span>
                             {vehicle.name} ({vehicle.vehicleType}) - Odometer: {vehicle.initial_odometer}
                           </span>
@@ -491,7 +491,7 @@ export default function AccountPage() {
               ) : null}
             </section>
 
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 lg:col-span-2">
               <h2 className="text-lg font-semibold text-zinc-900">Actions</h2>
               <div className="mt-3 flex flex-wrap gap-3">
                 <VehicleForm />

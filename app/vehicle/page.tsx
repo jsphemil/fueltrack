@@ -130,8 +130,8 @@ export default function VehiclePage() {
   }
 
   return (
-    <main className="px-4 py-6">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen bg-zinc-50 px-4 py-10">
+      <div className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
         <h1 className="text-xl font-semibold text-zinc-900">Vehicles</h1>
 
         {!session ? (
@@ -146,11 +146,11 @@ export default function VehiclePage() {
 
         {!loading && !errorMessage && session ? (
           vehicles.length > 0 ? (
-            <ul className="mt-4 space-y-6">
+            <ul className="mt-6 grid gap-4 md:grid-cols-2">
               {vehicles.map((vehicle) => (
-                <li key={vehicle.id} className="rounded-lg bg-white p-6 shadow-md">
+                <li key={vehicle.id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
                   <p className="text-xl font-bold text-zinc-900">{vehicle.name}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <p className="text-sm text-zinc-500">Type</p>
                       <p className="text-base font-medium text-zinc-900">
