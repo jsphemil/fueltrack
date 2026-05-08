@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
+  Bar,
+  BarChart,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -28,6 +30,7 @@ type FuelEntry = {
 type Vehicle = {
   id: string;
   name: string;
+  averageMileage?: number | null;
 };
 
 type MonthlySummary = {
@@ -106,6 +109,18 @@ export default function HomePage() {
   }, [entries]);
 
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
+
+
+  const mileageComparisonChartData = useMemo(
+    () =>
+      vehicles
+        .filter((vehicle) => typeof vehicle.averageMileage === "number" && vehicle.averageMileage > 0)
+        .map((vehicle) => ({
+          name: vehicle.name,
+          averageMileage: Number(vehicle.averageMileage?.toFixed(2) ?? 0),
+        })),
+    [vehicles]
+  );
 
   const monthlySpendChartData = useMemo(
     () =>
@@ -660,6 +675,27 @@ export default function HomePage() {
                       <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
                       <Line type="monotone" dataKey="totalSpend" stroke="#2563eb" dot />
                     </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </section>
+
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Mileage Comparison</h2>
+              {vehiclesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">Loading mileage comparison...</p>
+              ) : mileageComparisonChartData.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">Not enough data</p>
+              ) : (
+                <div className="mt-4 h-64 rounded-lg bg-white p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={mileageComparisonChartData}>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => `${value.toFixed(1)} km/l`} />
+                      <Bar dataKey="averageMileage" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
