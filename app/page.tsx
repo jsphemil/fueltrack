@@ -39,6 +39,10 @@ type MonthlySummary = {
   total_distance: number;
   average_mileage: number | null;
 };
+type MileageTrendPoint = {
+  date: string;
+  mileage: number;
+};
 
 type UserProfile = {
   id: string;
@@ -57,6 +61,7 @@ export default function HomePage() {
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
   const [monthlySummary, setMonthlySummary] = useState<MonthlySummary[]>([]);
+  const [mileageTrend, setMileageTrend] = useState<MileageTrendPoint[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editOdometer, setEditOdometer] = useState("");
   const [editFuelPrice, setEditFuelPrice] = useState("");
@@ -132,6 +137,14 @@ export default function HomePage() {
           totalSpend: item.total_spend,
         })),
     [monthlySummary]
+  );
+  const mileageTrendChartData = useMemo(
+    () =>
+      mileageTrend.map((item) => ({
+        ...item,
+        label: new Date(item.date).toLocaleDateString("en-US"),
+      })),
+    [mileageTrend]
   );
 
 
@@ -211,6 +224,7 @@ export default function HomePage() {
       if (!accessToken) {
         setEntries([]);
         setMonthlySummary([]);
+        setMileageTrend([]);
         return;
       }
 
@@ -226,7 +240,7 @@ export default function HomePage() {
         ? `?vehicleId=${encodeURIComponent(vehicleId)}`
         : "";
 
-      const [entriesResponse, monthlyResponse] = await Promise.all([
+      const [entriesResponse, monthlyResponse, mileageTrendResponse] = await Promise.all([
         fetch(`/api/fuel-entry${query}`, {
           method: "GET",
           headers,
@@ -235,9 +249,13 @@ export default function HomePage() {
           method: "GET",
           headers,
         }),
+        fetch(`/api/analytics/mileage-trend${query}`, {
+          method: "GET",
+          headers,
+        }),
       ]);
 
-      if (!entriesResponse.ok || !monthlyResponse.ok) {
+      if (!entriesResponse.ok || !monthlyResponse.ok || !mileageTrendResponse.ok) {
         setEntriesError("Could not load fuel entries.");
         setEntriesLoading(false);
         return;
@@ -249,10 +267,14 @@ export default function HomePage() {
       const monthlyResult = (await monthlyResponse.json()) as {
         monthly: Array<{ vehicleId: string; monthly: MonthlySummary[] }>;
       };
+      const mileageTrendResult = (await mileageTrendResponse.json()) as {
+        trend: MileageTrendPoint[];
+      };
 
       setEntries(entriesResult.entries ?? []);
       const selectedVehicleMonthly = monthlyResult.monthly?.[0]?.monthly ?? [];
       setMonthlySummary(selectedVehicleMonthly);
+      setMileageTrend(mileageTrendResult.trend ?? []);
       setEntriesLoading(false);
     },
     []
@@ -326,6 +348,7 @@ export default function HomePage() {
       } else {
         setEntries([]);
         setMonthlySummary([]);
+        setMileageTrend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
         setProfile(null);
@@ -346,6 +369,7 @@ export default function HomePage() {
       } else {
         setEntries([]);
         setMonthlySummary([]);
+        setMileageTrend([]);
         setVehicles([]);
         setSelectedVehicleId(null);
         setProfile(null);
@@ -697,6 +721,26 @@ export default function HomePage() {
                       <Tooltip formatter={(value: number) => `${value.toFixed(1)} km/l`} />
                       <Bar dataKey="averageMileage" fill="#2563eb" radius={[4, 4, 0, 0]} />
                     </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <h2 className="text-lg font-semibold text-zinc-900">Mileage Trend</h2>
+              {entriesLoading ? (
+                <p className="mt-3 text-sm text-zinc-600">Loading mileage trend...</p>
+              ) : mileageTrendChartData.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">Not enough data</p>
+              ) : (
+                <div className="mt-4 h-64 rounded-lg bg-white p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={mileageTrendChartData}>
+                      <XAxis dataKey="label" />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => `${value.toFixed(1)} km/l`} />
+                      <Line type="monotone" dataKey="mileage" stroke="#16a34a" dot />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}

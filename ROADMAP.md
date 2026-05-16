@@ -39,6 +39,7 @@
 * Monthly spend trend chart
 * Calendar-based entry view
 * Add vehicle-wise average mileage chart
+* Additional charts → mileage trend over time
 * Move "Add Vehicle" to Account page
 * Move "Reset Account" to Account page
 * Provide vehicle deletion from Account page vehicle list
@@ -114,6 +115,5 @@
 * Multi-vehicle analytics comparison
 * Additional charts:
 
-  * mileage trend over time
   * consumption patterns
 * Theme customization (dark/light)
