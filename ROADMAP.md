@@ -75,12 +75,14 @@
   * last 3 entries
   * monthly analytics summary
   * monthly spend chart
+  * mileage trend chart
+  * vehicle mileage comparison chart
 * Entry page for fuel input
 * History page for full entry list
 * Account page for vehicle and profile management
 * Vehicle page with card-based layout and stats
 * Calendar page for date-based entry exploration
-* Implement responsive layout for desktop screens across dashboard, entry, history, vehicle, and account pages
+* Responsive layout across dashboard, entry, history, vehicle, and account pages
 
 ---
 
@@ -89,11 +91,6 @@
 ### Dashboard Improvements
 
 * Extend dashboard with additional analytics insights
-
----
-
-### UI / UX Improvements
-
 
 ---
 
