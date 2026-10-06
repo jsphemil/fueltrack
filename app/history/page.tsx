@@ -1,324 +1,199 @@
 "use client";
-export const dynamic = "force-dynamic";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type FuelEntry = {
-  id: string;
-  odometer: number;
-  fuel_price: number;
-  amount_paid: number;
-  fuel_volume: number;
-  is_reserve: boolean;
-  vehicleId: string | null;
-  created_at: string;
-};
+import FuelEntryForm from "@/components/FuelEntryForm";
+import PageShell from "@/components/PageShell";
+import VehicleSelect from "@/components/VehicleSelect";
+import { apiRequest } from "@/lib/api";
+import { formatCurrency, formatDateTime, formatNumber } from "@/lib/format";
+import { useSession, useVehicles } from "@/lib/hooks";
+import { calculateCycles } from "@/lib/mileage";
+import type { FuelEntry } from "@/lib/types";
+import {
+  cardClass,
+  dangerButtonClass,
+  errorTextClass,
+  mutedTextClass,
+  secondaryButtonClass,
+} from "@/lib/ui";
 
-type Vehicle = {
-  id: string;
-  name: string;
-};
+const smallButton = "h-8! px-3! text-xs!";
 
 export default function HistoryPage() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [vehiclesError, setVehiclesError] = useState("");
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const { loading: sessionLoading, userId } = useSession();
+  const {
+    vehicles,
+    loading: vehiclesLoading,
+    error: vehiclesError,
+    selectedVehicleId,
+    setSelectedVehicleId,
+    reload: reloadVehicles,
+  } = useVehicles(userId);
+  const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
-  const [entries, setEntries] = useState<FuelEntry[]>([]);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
-  async function fetchEntries(accessToken?: string, vehicleId?: string | null) {
-    if (!accessToken) {
-      setEntries([]);
-      return;
-    }
-
+  const loadEntries = useCallback(async (vehicleId: string) => {
     setEntriesLoading(true);
     setEntriesError("");
-
-    const query = vehicleId ? `?vehicleId=${encodeURIComponent(vehicleId)}` : "";
-    const response = await fetch(`/api/fuel-entry${query}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setEntriesError("Could not load fuel history.");
-      setEntriesLoading(false);
-      return;
+    const result = await apiRequest<{ entries: FuelEntry[] }>(
+      `/api/fuel-entry?vehicleId=${encodeURIComponent(vehicleId)}`
+    );
+    if (result.ok) {
+      setEntries(result.data.entries ?? []);
+    } else {
+      setEntriesError(result.error);
     }
-
-    const result = (await response.json()) as { entries: FuelEntry[] };
-    setEntries(result.entries ?? []);
     setEntriesLoading(false);
-  }
-
-  async function fetchVehicles(accessToken?: string) {
-    if (!accessToken) {
-      setVehicles([]);
-      setSelectedVehicleId(null);
-      setEntries([]);
-      return;
-    }
-
-    setVehiclesLoading(true);
-    setVehiclesError("");
-
-    const response = await fetch("/api/vehicle", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setVehiclesError("Could not load vehicles.");
-      setVehiclesLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { vehicles: Vehicle[] };
-    const nextVehicles = result.vehicles ?? [];
-    setVehicles(nextVehicles);
-    setSelectedVehicleId((currentValue) => {
-      if (nextVehicles.length === 0) {
-        setEntries([]);
-        return null;
-      }
-
-      if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
-        return currentValue;
-      }
-
-      return nextVehicles[0].id;
-    });
-    setVehiclesLoading(false);
-  }
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
-
-      if (!isMounted) {
-        return;
-      }
-
-      setSession(data.session);
-      setLoading(false);
-      if (data.session) {
-        void fetchVehicles(data.session.access_token);
-      }
-    }
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-      if (nextSession) {
-        void fetchVehicles(nextSession.access_token);
-      } else {
-        setVehicles([]);
-        setSelectedVehicleId(null);
-        setEntries([]);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
-    if (!session?.access_token || !selectedVehicleId) {
+    if (!userId || !selectedVehicleId) {
       return;
     }
 
     const timerId = window.setTimeout(() => {
-      void fetchEntries(session.access_token, selectedVehicleId);
+      setEditingEntryId(null);
+      void loadEntries(selectedVehicleId);
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, [selectedVehicleId, session?.access_token]);
+  }, [userId, selectedVehicleId, loadEntries]);
+
+  // Mileage of the reserve-to-reserve cycle that each closing fill completes.
+  const cycleMileageByEntryId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const cycle of calculateCycles(entries)) {
+      map.set(cycle.endEntry.id, cycle.mileage);
+    }
+    return map;
+  }, [entries]);
+
+  async function refreshAfterChange() {
+    if (selectedVehicleId) {
+      await loadEntries(selectedVehicleId);
+    }
+    void reloadVehicles();
+  }
+
+  async function handleDelete(entry: FuelEntry) {
+    const confirmed = window.confirm(
+      `Delete the fill from ${formatDateTime(entry.filled_at)} at ${formatNumber(entry.odometer)} km?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingEntryId(entry.id);
+    setEntriesError("");
+    const result = await apiRequest(`/api/fuel-entry?id=${encodeURIComponent(entry.id)}`, {
+      method: "DELETE",
+    });
+    setDeletingEntryId(null);
+
+    if (!result.ok) {
+      setEntriesError(result.error);
+      return;
+    }
+
+    if (editingEntryId === entry.id) {
+      setEditingEntryId(null);
+    }
+    await refreshAfterChange();
+  }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold text-zinc-900">Fuel History</h1>
-          <Link
-            href="/"
-            className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-
-        {loading ? (
-          <p className="mt-4 text-sm text-zinc-600">Checking session...</p>
-        ) : !session ? (
-          <div className="mt-4">
-            <p className="text-sm text-zinc-700">Please login to view history.</p>
-            <Link
-              href="/login"
-              className="mt-3 inline-flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Go to Login
-            </Link>
-          </div>
-        ) : vehiclesLoading ? (
-          <p className="mt-4 text-sm text-zinc-600">Loading vehicles...</p>
-        ) : vehiclesError ? (
-          <p className="mt-4 text-sm font-medium text-red-600">{vehiclesError}</p>
-        ) : vehicles.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No vehicles available yet.</p>
-        ) : entriesLoading ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm text-zinc-600 lg:pt-9">Loading entries...</p>
-          </>
-        ) : entriesError ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm font-medium text-red-600 lg:pt-9">{entriesError}</p>
-          </>
-        ) : entries.length === 0 ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm text-zinc-600 lg:pt-9">No fuel entries yet.</p>
-          </>
-        ) : (
-          <>
-            <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="space-y-3">
-              {entries.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
-                >
-                  <p className="text-sm text-zinc-700">
-                    Odometer:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.odometer}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Fuel Price:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.fuel_price.toFixed(2)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Amount Paid:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.amount_paid.toFixed(2)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Fuel Volume:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.fuel_volume.toFixed(2)} L
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Filled at reserve:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.is_reserve ? "Yes" : "No"}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Created at:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {new Date(entry.created_at).toLocaleString()}
-                    </span>
-                  </p>
-                </article>
-              ))}
-            </div>
-          </>
-        )}
+    <PageShell
+      title="Fuel history"
+      description="All fills for the selected vehicle. Edit or delete any entry."
+      loading={sessionLoading || !userId}
+    >
+      <section className={cardClass}>
+        <VehicleSelect
+          vehicles={vehicles}
+          selectedVehicleId={selectedVehicleId}
+          onChange={setSelectedVehicleId}
+          loading={vehiclesLoading}
+          error={vehiclesError}
+        />
       </section>
-    </main>
+
+      {selectedVehicleId ? (
+        <section className={cardClass}>
+          {entriesError ? <p className={`mb-3 ${errorTextClass}`}>{entriesError}</p> : null}
+
+          {entriesLoading && entries.length === 0 ? (
+            <p className={mutedTextClass}>Loading entries...</p>
+          ) : entries.length === 0 ? (
+            <p className={mutedTextClass}>No fuel entries yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {entries.map((entry) => {
+                const cycleMileage = cycleMileageByEntryId.get(entry.id);
+
+                return (
+                  <li key={entry.id} className="py-4 first:pt-0 last:pb-0">
+                    {editingEntryId === entry.id ? (
+                      <FuelEntryForm
+                        vehicleId={selectedVehicleId}
+                        entry={entry}
+                        onSaved={() => {
+                          setEditingEntryId(null);
+                          void refreshAfterChange();
+                        }}
+                        onCancel={() => setEditingEntryId(null)}
+                      />
+                    ) : (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                            {formatDateTime(entry.filled_at)}
+                            {entry.is_reserve ? (
+                              <span className="rounded-full border border-border-strong px-2 py-0.5 text-xs font-medium text-subtle">
+                                Reserve
+                              </span>
+                            ) : null}
+                            {cycleMileage !== undefined ? (
+                              <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                                {formatNumber(cycleMileage)} km/l
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className={mutedTextClass}>
+                            {formatNumber(entry.odometer)} km · {formatNumber(entry.fuel_volume, 2)} L @{" "}
+                            {formatCurrency(entry.fuel_price)}/L · {formatCurrency(entry.amount_paid)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingEntryId(entry.id)}
+                            disabled={deletingEntryId !== null}
+                            className={`${secondaryButtonClass} ${smallButton}`}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(entry)}
+                            disabled={deletingEntryId !== null}
+                            className={`${dangerButtonClass} ${smallButton}`}
+                          >
+                            {deletingEntryId === entry.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      ) : null}
+    </PageShell>
   );
 }

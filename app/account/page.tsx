@@ -1,518 +1,280 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabase";
+import PageShell from "@/components/PageShell";
 import VehicleForm from "@/components/VehicleForm";
+import { apiRequest } from "@/lib/api";
+import { formatNumber } from "@/lib/format";
+import { useSession, useVehicles } from "@/lib/hooks";
+import type { Profile, VehicleWithStats } from "@/lib/types";
+import {
+  cardClass,
+  dangerButtonClass,
+  errorTextClass,
+  inputClass,
+  mutedTextClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/lib/ui";
+import { parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
 
-type Profile = {
-  name: string;
-};
-
-type Vehicle = {
-  id: string;
-  name: string;
-  vehicleType: string;
-  initial_odometer: number;
-};
+const smallButton = "h-8! px-3! text-xs!";
 
 export default function AccountPage() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [vehiclesError, setVehiclesError] = useState("");
-  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState("");
-  const [editVehicleId, setEditVehicleId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editVehicleType, setEditVehicleType] = useState("");
-  const [editInitialOdometer, setEditInitialOdometer] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState("");
+  const { session, loading: sessionLoading, userId } = useSession();
+  const { vehicles, loading: vehiclesLoading, error: vehiclesError, reload } = useVehicles(userId);
+
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileNameInput, setProfileNameInput] = useState("");
-  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
-  const [profileSaveError, setProfileSaveError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
-
-  async function fetchProfile(accessToken?: string) {
-    if (!accessToken) {
-      setProfile(null);
-      return;
-    }
-
-    setProfileLoading(true);
-    setProfileError("");
-
-    const response = await fetch("/api/profile", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setProfileError("Could not load profile.");
-      setProfileLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { profile: Profile | null };
-    setProfile(result.profile);
-    setProfileNameInput(result.profile?.name ?? "");
-    setProfileLoading(false);
-  }
-
-  async function fetchVehicles(accessToken?: string) {
-    if (!accessToken) {
-      setVehicles([]);
-      return;
-    }
-
-    setVehiclesLoading(true);
-    setVehiclesError("");
-
-    const response = await fetch("/api/vehicle", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setVehiclesError("Could not load vehicles.");
-      setVehiclesLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { vehicles: Vehicle[] };
-    setVehicles(result.vehicles ?? []);
-    setVehiclesLoading(false);
-  }
+  const [editVehicleId, setEditVehicleId] = useState<string | null>(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [vehicleActionError, setVehicleActionError] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     let isMounted = true;
-
-    async function loadSessionAndData() {
-      const { data } = await supabase.auth.getSession();
-
+    void apiRequest<{ profile: Profile | null }>("/api/profile").then((result) => {
       if (!isMounted) {
         return;
       }
-
-      setSession(data.session);
-      setLoading(false);
-
-      if (data.session?.access_token) {
-        void fetchVehicles(data.session.access_token);
-        void fetchProfile(data.session.access_token);
-      }
-    }
-
-    void loadSessionAndData();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-      setResetError("");
-
-      if (nextSession?.access_token) {
-        void fetchVehicles(nextSession.access_token);
-        void fetchProfile(nextSession.access_token);
+      if (result.ok) {
+        setProfile(result.data.profile);
       } else {
-        setVehicles([]);
-        setProfile(null);
-        setEditingProfile(false);
-        setProfileNameInput("");
+        setProfileError(result.error);
       }
+      setProfileLoading(false);
     });
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
-  }, []);
+  }, [userId]);
 
-  async function handleResetAccount() {
-    if (!session?.access_token || resetLoading) {
+  function startProfileEdit() {
+    setEditingProfile(true);
+    setProfileNameInput(profile?.name ?? "");
+    setProfileError("");
+  }
+
+  async function handleSaveProfile() {
+    const parsed = parseProfileInput({ name: profileNameInput });
+    if (!parsed.ok) {
+      setProfileError(parsed.error);
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to reset your account? This will delete all vehicles and fuel entries."
-    );
+    setProfileSaving(true);
+    setProfileError("");
+    const result = await apiRequest<{ profile: Profile }>("/api/profile", {
+      method: "POST",
+      body: parsed.value,
+    });
+    setProfileSaving(false);
 
+    if (!result.ok) {
+      setProfileError(result.error);
+      return;
+    }
+
+    setProfile(result.data.profile);
+    setEditingProfile(false);
+    window.dispatchEvent(new Event("profile-updated"));
+  }
+
+  async function handleDeleteVehicle(vehicle: VehicleWithStats) {
+    const confirmed = window.confirm(
+      `Delete "${vehicle.name}"? This also deletes all of its fuel entries.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteLoadingId(vehicle.id);
+    setVehicleActionError("");
+    const result = await apiRequest(`/api/vehicle?id=${encodeURIComponent(vehicle.id)}`, {
+      method: "DELETE",
+    });
+    setDeleteLoadingId(null);
+
+    if (!result.ok) {
+      setVehicleActionError(result.error);
+      return;
+    }
+
+    await reload();
+  }
+
+  async function handleResetAccount() {
+    const confirmed = window.confirm(
+      "Reset your account? This permanently deletes your profile, all vehicles and all fuel entries."
+    );
     if (!confirmed) {
       return;
     }
 
     setResetLoading(true);
     setResetError("");
-
-    const response = await fetch("/api/account/reset", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      setResetError("Could not reset account.");
-      setResetLoading(false);
-      return;
-    }
-
-    await fetchVehicles(session.access_token);
+    const result = await apiRequest("/api/account/reset", { method: "POST" });
     setResetLoading(false);
-  }
 
-  async function handleDeleteVehicle(vehicleId: string, vehicleName: string) {
-    if (!session?.access_token || deleteLoadingId) {
+    if (!result.ok) {
+      setResetError(result.error);
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${vehicleName}"? This will delete all its fuel entries.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeleteLoadingId(vehicleId);
-    setDeleteError("");
-
-    const response = await fetch(`/api/vehicle?id=${encodeURIComponent(vehicleId)}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      setDeleteError("Could not delete vehicle.");
-      setDeleteLoadingId(null);
-      return;
-    }
-
-    await fetchVehicles(session.access_token);
-    setDeleteLoadingId(null);
-  }
-
-  function startVehicleEdit(vehicle: Vehicle) {
-    setEditVehicleId(vehicle.id);
-    setEditName(vehicle.name);
-    setEditVehicleType(vehicle.vehicleType ?? "");
-    setEditInitialOdometer(String(vehicle.initial_odometer ?? 0));
-    setEditError("");
-  }
-
-  function cancelVehicleEdit() {
-    setEditVehicleId(null);
-    setEditName("");
-    setEditVehicleType("");
-    setEditInitialOdometer("");
-    setEditError("");
-  }
-
-
-  async function handleSaveProfile() {
-    if (!session?.access_token || profileSaveLoading) {
-      return;
-    }
-
-    const name = profileNameInput.trim();
-    if (!name) {
-      setProfileSaveError("Name is required.");
-      return;
-    }
-
-    setProfileSaveLoading(true);
-    setProfileSaveError("");
-
-    const response = await fetch("/api/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ name }),
-    });
-
-    if (!response.ok) {
-      setProfileSaveError("Could not update profile.");
-      setProfileSaveLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { profile: Profile };
-    setProfile(result.profile);
-    setProfileNameInput(result.profile?.name ?? "");
-    setEditingProfile(false);
-    setProfileSaveLoading(false);
-  }
-
-  async function handleSaveVehicleEdit() {
-    if (!session?.access_token || !editVehicleId || editLoading) {
-      return;
-    }
-
-    const name = editName.trim();
-    const vehicleType = editVehicleType.trim();
-    const initialOdometer = Number(editInitialOdometer);
-    if (!name || !vehicleType || !Number.isFinite(initialOdometer) || initialOdometer < 0) {
-      setEditError("Please enter valid vehicle details.");
-      return;
-    }
-
-    setEditLoading(true);
-    setEditError("");
-
-    const response = await fetch("/api/vehicle", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        id: editVehicleId,
-        name,
-        vehicleType,
-        initial_odometer: initialOdometer,
-      }),
-    });
-
-    if (!response.ok) {
-      setEditError("Could not update vehicle.");
-      setEditLoading(false);
-      return;
-    }
-
-    await fetchVehicles(session.access_token);
-    setEditLoading(false);
-    cancelVehicleEdit();
+    setProfile(null);
+    window.dispatchEvent(new Event("profile-updated"));
+    await reload();
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
-        <h1 className="text-2xl font-semibold text-zinc-900">Account</h1>
+    <PageShell title="Account" loading={sessionLoading || !userId}>
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <section className={cardClass}>
+          <h2 className="text-lg font-semibold text-foreground">Profile</h2>
+          <p className={`mt-2 ${mutedTextClass}`}>
+            Email: <span className="font-medium text-foreground">{session?.user.email}</span>
+          </p>
 
-        {loading ? (
-          <p className="mt-4 text-sm text-zinc-600">Checking session...</p>
-        ) : !session ? (
-          <div className="mt-4">
-            <p className="text-sm text-zinc-700">Please log in to view your account.</p>
-            <Link
-              href="/login"
-              className="mt-3 inline-flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
+          {profileLoading ? (
+            <p className={`mt-3 ${mutedTextClass}`}>Loading profile...</p>
+          ) : editingProfile ? (
+            <form
+              className="mt-3 space-y-3"
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleSaveProfile();
+              }}
             >
-              Go to Login
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">User Info</h2>
-              <p className="mt-2 text-sm text-zinc-700">
-                Email: <span className="font-medium text-zinc-900">{session.user.email}</span>
-              </p>
-            </section>
-
-
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Profile</h2>
-              {profileLoading ? (
-                <p className="mt-2 text-sm text-zinc-600">Loading profile...</p>
-              ) : editingProfile ? (
-                <div className="mt-3 space-y-2">
-                  <input
-                    type="text"
-                    value={profileNameInput}
-                    onChange={(event) => setProfileNameInput(event.target.value)}
-                    className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
-                    placeholder="Name"
-                    required
-                  />
-                  {profileSaveError ? (
-                    <p className="text-xs font-medium text-red-600">{profileSaveError}</p>
-                  ) : null}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleSaveProfile();
-                      }}
-                      disabled={profileSaveLoading}
-                      className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {profileSaveLoading ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingProfile(false);
-                        setProfileNameInput(profile?.name ?? "");
-                        setProfileSaveError("");
-                      }}
-                      disabled={profileSaveLoading}
-                      className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="text-sm text-zinc-700">
-                    Name: <span className="font-medium text-zinc-900">{profile?.name ?? "Not set"}</span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingProfile(true);
-                      setProfileNameInput(profile?.name ?? "");
-                      setProfileSaveError("");
-                    }}
-                    className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
-                  >
-                    Edit
-                  </button>
-                </div>
-              )}
-              {profileError ? <p className="mt-2 text-sm font-medium text-red-600">{profileError}</p> : null}
-            </section>
-
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Vehicle List</h2>
-              {vehiclesLoading ? (
-                <p className="mt-2 text-sm text-zinc-600">Loading vehicles...</p>
-              ) : vehiclesError ? (
-                <p className="mt-2 text-sm font-medium text-red-600">{vehiclesError}</p>
-              ) : vehicles.length === 0 ? (
-                <p className="mt-2 text-sm text-zinc-600">No vehicles added yet.</p>
-              ) : (
-                <ul className="mt-2 space-y-2 text-sm text-zinc-700">
-                  {vehicles.map((vehicle) => (
-                    <li key={vehicle.id} className="rounded-lg border border-zinc-200 bg-white p-3">
-                      {editVehicleId === vehicle.id ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(event) => setEditName(event.target.value)}
-                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
-                            placeholder="Vehicle name"
-                            required
-                          />
-                          <input
-                            type="text"
-                            value={editVehicleType}
-                            onChange={(event) => setEditVehicleType(event.target.value)}
-                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
-                            placeholder="Vehicle type"
-                            required
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={editInitialOdometer}
-                            onChange={(event) => setEditInitialOdometer(event.target.value)}
-                            className="h-9 w-full rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
-                            placeholder="Initial odometer"
-                            required
-                          />
-                          {editError ? <p className="text-xs font-medium text-red-600">{editError}</p> : null}
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void handleSaveVehicleEdit();
-                              }}
-                              disabled={editLoading}
-                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {editLoading ? "Saving..." : "Save"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelVehicleEdit}
-                              disabled={editLoading}
-                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <span>
-                            {vehicle.name} ({vehicle.vehicleType}) - Odometer: {vehicle.initial_odometer}
-                          </span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startVehicleEdit(vehicle)}
-                              disabled={deleteLoadingId !== null}
-                              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void handleDeleteVehicle(vehicle.id, vehicle.name);
-                              }}
-                              disabled={deleteLoadingId !== null}
-                              className="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {deleteError ? (
-                <p className="mt-2 text-sm font-medium text-red-600">{deleteError}</p>
-              ) : null}
-            </section>
-
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 lg:col-span-2">
-              <h2 className="text-lg font-semibold text-zinc-900">Actions</h2>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <VehicleForm />
+              <input
+                type="text"
+                value={profileNameInput}
+                maxLength={PROFILE_NAME_MAX_LENGTH}
+                onChange={(event) => setProfileNameInput(event.target.value)}
+                className={inputClass}
+                placeholder="Your name"
+                autoComplete="name"
+              />
+              <div className="flex gap-2">
+                <button type="submit" disabled={profileSaving} className={primaryButtonClass}>
+                  {profileSaving ? "Saving..." : "Save"}
+                </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    void handleResetAccount();
-                  }}
-                  disabled={resetLoading}
-                  className="inline-flex h-10 items-center rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => setEditingProfile(false)}
+                  disabled={profileSaving}
+                  className={secondaryButtonClass}
                 >
-                  {resetLoading ? "Resetting..." : "Reset Account"}
+                  Cancel
                 </button>
               </div>
-              {resetError ? (
-                <p className="mt-2 text-sm font-medium text-red-600">{resetError}</p>
-              ) : null}
-            </section>
+            </form>
+          ) : (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className={mutedTextClass}>
+                Name: <span className="font-medium text-foreground">{profile?.name ?? "Not set"}</span>
+              </p>
+              <button type="button" onClick={startProfileEdit} className={`${secondaryButtonClass} ${smallButton}`}>
+                Edit
+              </button>
+            </div>
+          )}
+          {profileError ? <p className={`mt-2 ${errorTextClass}`}>{profileError}</p> : null}
+        </section>
+
+        <section className={cardClass}>
+          <h2 className="text-lg font-semibold text-foreground">Danger zone</h2>
+          <p className={`mt-2 ${mutedTextClass}`}>
+            Delete your profile, vehicles and fuel entries. Your login stays active.
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleResetAccount()}
+            disabled={resetLoading}
+            className={`mt-4 ${dangerButtonClass}`}
+          >
+            {resetLoading ? "Resetting..." : "Reset account"}
+          </button>
+          {resetError ? <p className={`mt-2 ${errorTextClass}`}>{resetError}</p> : null}
+        </section>
+
+        <section className={`${cardClass} lg:col-span-2`}>
+          <h2 className="text-lg font-semibold text-foreground">Vehicles</h2>
+          {vehiclesError ? <p className={`mt-2 ${errorTextClass}`}>{vehiclesError}</p> : null}
+          {vehicleActionError ? <p className={`mt-2 ${errorTextClass}`}>{vehicleActionError}</p> : null}
+
+          {vehiclesLoading && vehicles.length === 0 ? (
+            <p className={`mt-2 ${mutedTextClass}`}>Loading vehicles...</p>
+          ) : vehicles.length === 0 ? (
+            <p className={`mt-2 ${mutedTextClass}`}>No vehicles added yet.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {vehicles.map((vehicle) => (
+                <li key={vehicle.id} className="py-3">
+                  {editVehicleId === vehicle.id ? (
+                    <VehicleForm
+                      vehicle={vehicle}
+                      onSaved={() => {
+                        setEditVehicleId(null);
+                        void reload();
+                      }}
+                      onCancel={() => setEditVehicleId(null)}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {vehicle.name} <span className="font-normal text-muted">· {vehicle.vehicleType}</span>
+                        </p>
+                        <p className="text-xs text-muted">
+                          Initial odometer {formatNumber(vehicle.initial_odometer, 0)} km · {vehicle.entryCount} fills
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditVehicleId(vehicle.id)}
+                          disabled={deleteLoadingId !== null}
+                          className={`${secondaryButtonClass} ${smallButton}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteVehicle(vehicle)}
+                          disabled={deleteLoadingId !== null}
+                          className={`${dangerButtonClass} ${smallButton}`}
+                        >
+                          {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div id="add-vehicle" className="mt-6 scroll-mt-6 border-t border-border pt-6">
+            <h3 className="text-base font-semibold text-foreground">Add vehicle</h3>
+            <div className="mt-3">
+              <VehicleForm onSaved={() => void reload()} />
+            </div>
           </div>
-        )}
-      </section>
-    </main>
+        </section>
+      </div>
+    </PageShell>
   );
 }

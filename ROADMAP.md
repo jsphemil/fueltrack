@@ -96,18 +96,9 @@
 * Shared API auth helper; remove inconsistent development auth bypass
 * Baseline database migration, indexes, cascades and row level security
 * Unit tests for calculations and validation
+* User-editable fill date used by history, calendar and analytics
 
 ---
-
-## In Progress
-
-### Reliability & Correctness
-
-* User-editable fill date used by history, calendar and analytics (API done; UI pending)
-
----
-
-## Planned
 
 ### Frontend Consistency
 
@@ -115,33 +106,32 @@
 * Redirect signed-out users to login
 * Edit and delete entries from the History page
 * Mobile-friendly navigation
-* Readable calendar page source
+* Readable calendar page source, with month navigation
+* Shared theme tokens and UI class constants
 
 ---
 
-### Dashboard Improvements
+### Roadmap Items Delivered
 
-* Extend dashboard with additional analytics insights
-
----
-
-### Vehicle Management Page
-
-* Support vehicle selection from this page
-
----
-
-### User Profile System (Enhancements)
-
+* Extend dashboard with additional analytics insights (cost per km, fuel purchased, distance tracked, monthly summary table)
+* Support vehicle selection from the Vehicle page (active vehicle shared across pages)
 * Improve first-time profile setup UX
-* Profile validation and persistence enhancements
+* Profile validation and persistence enhancements (shared validation, 50-character limit)
+* Theme customization (dark/light)
 
 ---
+
+## In Progress
+
+_Nothing in progress._
+
+---
+
+## Planned
 
 ### Future Enhancements
 
-* Multi-vehicle analytics comparison
+* Multi-vehicle analytics comparison (side-by-side table of mileage, cost per km and spend)
 * Additional charts:
 
-  * consumption patterns
-* Theme customization (dark/light)
+  * consumption patterns (litres per month, fill frequency)

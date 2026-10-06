@@ -1,213 +1,143 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useState } from "react";
 
-import { supabase } from "@/lib/supabase";
+import PageShell from "@/components/PageShell";
+import { apiRequest } from "@/lib/api";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { useSession, useVehicles } from "@/lib/hooks";
+import type { VehicleWithStats } from "@/lib/types";
+import {
+  cardClass,
+  dangerButtonClass,
+  errorTextClass,
+  mutedTextClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/lib/ui";
 
-type Vehicle = {
-  id: string;
-  name: string;
-  vehicleType?: string | null;
-  initial_odometer: number;
-  lastOdometer: number;
-  totalFuelSpend: number;
-  averageMileage: number | null;
-};
+const smallButton = "h-8! px-3! text-xs!";
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-muted">{label}</p>
+      <p className="text-sm font-medium text-foreground">{value}</p>
+    </div>
+  );
+}
 
 export default function VehiclePage() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+  const { loading: sessionLoading, userId } = useSession();
+  const { vehicles, loading, error, selectedVehicleId, setSelectedVehicleId, reload } = useVehicles(userId);
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
-  async function fetchVehicles(accessToken?: string) {
-    if (!accessToken) {
-      setVehicles([]);
-      return;
-    }
-
-    const response = await fetch("/api/vehicle", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setErrorMessage("Could not load vehicles.");
-      setVehicles([]);
-      return;
-    }
-
-    const result = (await response.json()) as { vehicles: Vehicle[] };
-    setVehicles(result.vehicles ?? []);
-  }
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadVehicles(nextSession: Session | null) {
-      if (!nextSession?.access_token) {
-        if (isMounted) {
-          setVehicles([]);
-          setLoading(false);
-        }
-        return;
-      }
-
-      await fetchVehicles(nextSession.access_token);
-      setLoading(false);
-    }
-
-    async function loadSessionAndVehicles() {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (error) {
-        setErrorMessage(error.message);
-        setLoading(false);
-        return;
-      }
-
-      setSession(data.session);
-      await loadVehicles(data.session ?? null);
-    }
-
-    void loadSessionAndVehicles();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(true);
-      setErrorMessage("");
-      void loadVehicles(nextSession);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function handleDeleteVehicle(vehicleId: string) {
-    if (!session?.access_token || deleteLoadingId) {
-      return;
-    }
-
+  async function handleDeleteVehicle(vehicle: VehicleWithStats) {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this vehicle? This will also delete all associated fuel entries."
+      `Delete "${vehicle.name}"? This also deletes all of its fuel entries.`
     );
-
     if (!confirmed) {
       return;
     }
 
-    setDeleteLoadingId(vehicleId);
-    setErrorMessage("");
-
-    const response = await fetch(`/api/vehicle?id=${encodeURIComponent(vehicleId)}`, {
+    setDeleteLoadingId(vehicle.id);
+    setDeleteError("");
+    const result = await apiRequest(`/api/vehicle?id=${encodeURIComponent(vehicle.id)}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
     });
+    setDeleteLoadingId(null);
 
-    if (!response.ok) {
-      setErrorMessage("Could not delete vehicle.");
-      setDeleteLoadingId(null);
+    if (!result.ok) {
+      setDeleteError(result.error);
       return;
     }
 
-    await fetchVehicles(session.access_token);
-    setDeleteLoadingId(null);
+    await reload();
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
-        <h1 className="text-xl font-semibold text-zinc-900">Vehicles</h1>
+    <PageShell
+      title="Vehicles"
+      description="Statistics for each of your vehicles."
+      loading={sessionLoading || !userId}
+      actions={
+        <Link href="/account#add-vehicle" className={secondaryButtonClass}>
+          Add or edit vehicles
+        </Link>
+      }
+    >
+      {error ? <p className={errorTextClass}>{error}</p> : null}
+      {deleteError ? <p className={errorTextClass}>{deleteError}</p> : null}
 
-        {!session ? (
-          <p className="mt-4 text-sm text-zinc-600">Please log in to view your vehicles.</p>
-        ) : null}
+      {loading && vehicles.length === 0 ? (
+        <p className={mutedTextClass}>Loading vehicles...</p>
+      ) : vehicles.length === 0 && !error ? (
+        <section className={cardClass}>
+          <p className={mutedTextClass}>No vehicles yet.</p>
+          <Link href="/account#add-vehicle" className={`mt-3 ${primaryButtonClass}`}>
+            Add vehicle
+          </Link>
+        </section>
+      ) : (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {vehicles.map((vehicle) => {
+            const isActive = vehicle.id === selectedVehicleId;
 
-        {loading ? <p className="mt-4 text-sm text-zinc-600">Loading vehicles...</p> : null}
-
-        {errorMessage ? (
-          <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
-        ) : null}
-
-        {!loading && !errorMessage && session ? (
-          vehicles.length > 0 ? (
-            <ul className="mt-6 grid gap-4 md:grid-cols-2">
-              {vehicles.map((vehicle) => (
-                <li key={vehicle.id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-xl font-bold text-zinc-900">{vehicle.name}</p>
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-sm text-zinc-500">Type</p>
-                      <p className="text-base font-medium text-zinc-900">
-                        {vehicle.vehicleType || "Not specified"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-zinc-500">Initial odometer</p>
-                      <p className="text-base font-medium text-zinc-900">
-                        {vehicle.initial_odometer}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-zinc-500">Last odometer</p>
-                      <p className="text-base font-medium text-zinc-900">
-                        {vehicle.lastOdometer}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-zinc-500">Total fuel spend</p>
-                      <p className="text-base font-medium text-zinc-900">
-                        {vehicle.totalFuelSpend.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-zinc-500">Average mileage</p>
-                      <p className="text-base font-medium text-zinc-900">
-                        {vehicle.averageMileage !== null
-                          ? vehicle.averageMileage.toFixed(2)
-                          : "N/A"}
-                      </p>
-                    </div>
+            return (
+              <li key={vehicle.id} className={`${cardClass} ${isActive ? "ring-2 ring-primary" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">{vehicle.name}</p>
+                    <p className={mutedTextClass}>{vehicle.vehicleType}</p>
                   </div>
-                  <div className="mt-5 flex justify-end">
+                  {isActive ? (
+                    <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                      Active
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Stat
+                    label="Average mileage"
+                    value={vehicle.averageMileage !== null ? `${formatNumber(vehicle.averageMileage)} km/l` : "—"}
+                  />
+                  <Stat
+                    label="Cost per km"
+                    value={vehicle.costPerKm !== null ? formatCurrency(vehicle.costPerKm) : "—"}
+                  />
+                  <Stat label="Total spend" value={formatCurrency(vehicle.totalSpend)} />
+                  <Stat label="Initial odometer" value={`${formatNumber(vehicle.initial_odometer, 0)} km`} />
+                  <Stat label="Last odometer" value={`${formatNumber(vehicle.lastOdometer, 0)} km`} />
+                  <Stat label="Fills" value={String(vehicle.entryCount)} />
+                </div>
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  {!isActive ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        void handleDeleteVehicle(vehicle.id);
-                      }}
-                      disabled={deleteLoadingId !== null}
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => setSelectedVehicleId(vehicle.id)}
+                      className={`${secondaryButtonClass} ${smallButton}`}
                     >
-                      {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                      Set active
                     </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 text-sm text-zinc-600">No vehicles found.</p>
-          )
-        ) : null}
-
-        <Link href="/" className="mt-6 inline-block text-sm font-medium text-zinc-700">
-          Back to Dashboard
-        </Link>
-      </div>
-    </main>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteVehicle(vehicle)}
+                    disabled={deleteLoadingId !== null}
+                    className={`${dangerButtonClass} ${smallButton}`}
+                  >
+                    {deleteLoadingId === vehicle.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </PageShell>
   );
 }

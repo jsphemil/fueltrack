@@ -1,921 +1,336 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useEffect, useMemo, useState } from "react";
+
+import { BarValueChart, LineTrendChart } from "@/components/Charts";
+import PageShell from "@/components/PageShell";
+import ProfileSetupCard from "@/components/ProfileSetupCard";
+import StatCard from "@/components/StatCard";
+import VehicleSelect from "@/components/VehicleSelect";
+import { apiRequest } from "@/lib/api";
+import { formatCurrency, formatDate, formatDateTime, formatMonthKey, formatNumber } from "@/lib/format";
+import { useSession, useVehicles } from "@/lib/hooks";
+import type { FuelEntry, MileageTrendPoint, MonthlySummary, Profile, VehicleSummary } from "@/lib/types";
 import {
-  Bar,
-  BarChart,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { supabase } from "@/lib/supabase";
+  cardClass,
+  errorTextClass,
+  mutedTextClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/lib/ui";
 
-type FuelEntry = {
-  id: string;
-  odometer: number;
-  fuel_price: number;
-  amount_paid: number;
-  fuel_volume: number;
-  is_reserve: boolean;
-  vehicleId: string | null;
-  created_at: string;
+type DashboardData = {
+  entries: FuelEntry[];
+  summary: VehicleSummary | null;
+  monthly: MonthlySummary[];
+  trend: MileageTrendPoint[];
 };
 
-type Vehicle = {
-  id: string;
-  name: string;
-  averageMileage?: number | null;
-};
+const emptyData: DashboardData = { entries: [], summary: null, monthly: [], trend: [] };
 
-type MonthlySummary = {
-  month: string;
-  total_spend: number;
-  total_distance: number;
-  average_mileage: number | null;
-};
-type MileageTrendPoint = {
-  date: string;
-  mileage: number;
-};
-
-type UserProfile = {
-  id: string;
-  name: string;
-};
-
-export default function HomePage() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [entries, setEntries] = useState<FuelEntry[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [vehiclesError, setVehiclesError] = useState("");
-  const [entriesLoading, setEntriesLoading] = useState(false);
-  const [entriesError, setEntriesError] = useState("");
-  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary[]>([]);
-  const [mileageTrend, setMileageTrend] = useState<MileageTrendPoint[]>([]);
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
-  const [editOdometer, setEditOdometer] = useState("");
-  const [editFuelPrice, setEditFuelPrice] = useState("");
-  const [editAmountPaid, setEditAmountPaid] = useState("");
-  const [editIsReserve, setEditIsReserve] = useState(false);
-  const [entryActionLoading, setEntryActionLoading] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileName, setProfileName] = useState("");
-  const [profileError, setProfileError] = useState("");
-  const [profileSaving, setProfileSaving] = useState(false);
-
-  const dashboardMetrics = useMemo(() => {
-    const orderedEntries = [...entries].sort((a, b) => a.odometer - b.odometer);
-    const mileages: number[] = [];
-
-    for (let index = 1; index < orderedEntries.length; index += 1) {
-      const previous = orderedEntries[index - 1];
-      const current = orderedEntries[index];
-
-      const distance = current.odometer - previous.odometer;
-      if (distance <= 0 || previous.fuel_volume <= 0) {
-        continue;
-      }
-
-      mileages.push(distance / previous.fuel_volume);
-    }
-
-    const latestMileage =
-      mileages.length > 0 ? mileages[mileages.length - 1] : null;
-    const averageMileage =
-      mileages.length > 0
-        ? mileages.reduce((sum, value) => sum + value, 0) / mileages.length
-        : null;
-    const latestEntry =
-      orderedEntries.length > 0 ? orderedEntries[orderedEntries.length - 1] : null;
-    const range =
-      latestEntry && averageMileage !== null
-        ? latestEntry.fuel_volume * averageMileage
-        : null;
-    const nextRefuelOdometer =
-      latestEntry && range !== null ? latestEntry.odometer + range : null;
-
-    return {
-      latestMileage,
-      averageMileage,
-      range,
-      nextRefuelOdometer,
-    };
-  }, [entries]);
-
-  const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
-
-
-  const mileageComparisonChartData = useMemo(
-    () =>
-      vehicles
-        .filter((vehicle) => typeof vehicle.averageMileage === "number" && vehicle.averageMileage > 0)
-        .map((vehicle) => ({
-          name: vehicle.name,
-          averageMileage: Number(vehicle.averageMileage?.toFixed(2) ?? 0),
-        })),
-    [vehicles]
-  );
-
-  const monthlySpendChartData = useMemo(
-    () =>
-      [...monthlySummary]
-        .reverse()
-        .map((item) => ({
-          month: item.month,
-          label: item.month,
-          totalSpend: item.total_spend,
-        })),
-    [monthlySummary]
-  );
-  const mileageTrendChartData = useMemo(
-    () =>
-      mileageTrend.map((item) => ({
-        ...item,
-        label: new Date(item.date).toLocaleDateString("en-US"),
-      })),
-    [mileageTrend]
-  );
-
-
-  const fetchProfile = useCallback(async (accessToken?: string) => {
-    if (!accessToken) {
-      setProfile(null);
-      setProfileName("");
-      return;
-    }
-
-    setProfileLoading(true);
-    setProfileError("");
-
-    const response = await fetch("/api/profile", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setProfileError("Could not load profile.");
-      setProfileLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { profile: UserProfile | null };
-    setProfile(result.profile);
-    setProfileName(result.profile?.name ?? "");
-    setProfileLoading(false);
-  }, []);
-
-  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!session?.access_token) {
-      setProfileError("Please log in before saving your profile.");
-      return;
-    }
-
-    const name = profileName.trim();
-    if (!name) {
-      setProfileError("Name is required.");
-      return;
-    }
-
-    setProfileSaving(true);
-    setProfileError("");
-
-    const response = await fetch("/api/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ name }),
-    });
-
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as
-        | { error?: string }
-        | null;
-      setProfileError(result?.error ?? "Could not save profile.");
-      setProfileSaving(false);
-      return;
-    }
-
-    const result = (await response.json()) as { profile: UserProfile };
-    setProfile(result.profile);
-    setProfileName(result.profile.name);
-    window.dispatchEvent(new Event("profile-updated"));
-    setProfileSaving(false);
-  }
-
-  const fetchEntries = useCallback(
-    async (accessToken?: string, vehicleId?: string | null) => {
-      if (!accessToken) {
-        setEntries([]);
-        setMonthlySummary([]);
-        setMileageTrend([]);
-        return;
-      }
-
-      setEntriesLoading(true);
-      setEntriesError("");
-
-      const headers: HeadersInit = {};
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-
-      const query = vehicleId
-        ? `?vehicleId=${encodeURIComponent(vehicleId)}`
-        : "";
-
-      const [entriesResponse, monthlyResponse, mileageTrendResponse] = await Promise.all([
-        fetch(`/api/fuel-entry${query}`, {
-          method: "GET",
-          headers,
-        }),
-        fetch(`/api/analytics/monthly${query}`, {
-          method: "GET",
-          headers,
-        }),
-        fetch(`/api/analytics/mileage-trend${query}`, {
-          method: "GET",
-          headers,
-        }),
-      ]);
-
-      if (!entriesResponse.ok || !monthlyResponse.ok || !mileageTrendResponse.ok) {
-        setEntriesError("Could not load fuel entries.");
-        setEntriesLoading(false);
-        return;
-      }
-
-      const entriesResult = (await entriesResponse.json()) as {
-        entries: FuelEntry[];
-      };
-      const monthlyResult = (await monthlyResponse.json()) as {
-        monthly: Array<{ vehicleId: string; monthly: MonthlySummary[] }>;
-      };
-      const mileageTrendResult = (await mileageTrendResponse.json()) as {
-        trend: MileageTrendPoint[];
-      };
-
-      setEntries(entriesResult.entries ?? []);
-      const selectedVehicleMonthly = monthlyResult.monthly?.[0]?.monthly ?? [];
-      setMonthlySummary(selectedVehicleMonthly);
-      setMileageTrend(mileageTrendResult.trend ?? []);
-      setEntriesLoading(false);
-    },
-    []
-  );
-
-  const fetchVehicles = useCallback(
-    async (accessToken?: string) => {
-      if (!accessToken) {
-        setVehicles([]);
-        setSelectedVehicleId(null);
-        return null;
-      }
-
-      setVehiclesLoading(true);
-      setVehiclesError("");
-
-      const response = await fetch("/api/vehicle", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        setVehiclesError("Could not load vehicles.");
-        setVehiclesLoading(false);
-        return null;
-      }
-
-      const result = (await response.json()) as { vehicles: Vehicle[] };
-      const nextVehicles = result.vehicles ?? [];
-      setVehicles(nextVehicles);
-      setSelectedVehicleId((currentValue) => {
-        if (nextVehicles.length === 0) {
-          return null;
-        }
-
-        if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
-          return currentValue;
-        }
-
-        return nextVehicles[0].id;
-      });
-      setVehiclesLoading(false);
-      return nextVehicles[0]?.id ?? null;
-    },
-    []
-  );
+export default function DashboardPage() {
+  const { loading: sessionLoading, userId } = useSession();
+  const {
+    vehicles,
+    loading: vehiclesLoading,
+    error: vehiclesError,
+    selectedVehicleId,
+    selectedVehicle,
+    setSelectedVehicleId,
+  } = useVehicles(userId);
+  const [data, setData] = useState<DashboardData>(emptyData);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadSession() {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (error) {
-        setErrorMessage(error.message);
-        setLoading(false);
-        return;
-      }
-
-      setSession(data.session);
-      setLoading(false);
-      if (data.session) {
-        void fetchProfile(data.session.access_token);
-        void fetchVehicles(data.session.access_token);
-      } else {
-        setEntries([]);
-        setMonthlySummary([]);
-        setMileageTrend([]);
-        setVehicles([]);
-        setSelectedVehicleId(null);
-        setProfile(null);
-        setProfileName("");
-      }
+    if (!userId) {
+      return;
     }
 
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-      if (nextSession) {
-        void fetchProfile(nextSession.access_token);
-        void fetchVehicles(nextSession.access_token);
-      } else {
-        setEntries([]);
-        setMonthlySummary([]);
-        setMileageTrend([]);
-        setVehicles([]);
-        setSelectedVehicleId(null);
-        setProfile(null);
-        setProfileName("");
+    let isMounted = true;
+    void apiRequest<{ profile: Profile | null }>("/api/profile").then((result) => {
+      if (isMounted && result.ok) {
+        setProfile(result.data.profile);
+        setProfileChecked(true);
       }
     });
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
-  }, [fetchProfile, fetchVehicles]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!session?.access_token) {
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchEntries(session.access_token, selectedVehicleId);
-  }, [fetchEntries, selectedVehicleId, session?.access_token]);
-
-  function startEditingEntry(entry: FuelEntry) {
-    setEditingEntryId(entry.id);
-    setEditOdometer(String(entry.odometer));
-    setEditFuelPrice(String(entry.fuel_price));
-    setEditAmountPaid(String(entry.amount_paid));
-    setEditIsReserve(entry.is_reserve);
-    setEntriesError("");
-  }
-
-  function cancelEditingEntry() {
-    setEditingEntryId(null);
-    setEditOdometer("");
-    setEditFuelPrice("");
-    setEditAmountPaid("");
-    setEditIsReserve(false);
-  }
-
-  async function handleUpdateEntry(entry: FuelEntry) {
-    if (!session?.access_token) {
-      setEntriesError("Please log in before updating an entry.");
+    if (!userId || !selectedVehicleId) {
       return;
     }
 
-    const odometer = Number(editOdometer);
-    const fuelPrice = Number(editFuelPrice);
-    const amountPaid = Number(editAmountPaid);
-    const fuelVolume =
-      Number.isFinite(fuelPrice) && fuelPrice > 0 ? amountPaid / fuelPrice : 0;
+    let isMounted = true;
+    const query = `?vehicleId=${encodeURIComponent(selectedVehicleId)}`;
+    const tzOffset = new Date().getTimezoneOffset();
 
-    setEntryActionLoading(true);
-    setEntriesError("");
+    async function load() {
+      setDataLoading(true);
+      setDataError("");
 
-    const response = await fetch("/api/fuel-entry", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        id: entry.id,
-        vehicleId: entry.vehicleId,
-        odometer,
-        fuel_price: fuelPrice,
-        amount_paid: amountPaid,
-        fuel_volume: fuelVolume,
-        is_reserve: editIsReserve,
-      }),
-    });
+      const [entriesResult, monthlyResult, trendResult] = await Promise.all([
+        apiRequest<{ entries: FuelEntry[]; summary: VehicleSummary | null }>(`/api/fuel-entry${query}`),
+        apiRequest<{ monthly: Array<{ vehicleId: string; monthly: MonthlySummary[] }> }>(
+          `/api/analytics/monthly${query}&tzOffset=${tzOffset}`
+        ),
+        apiRequest<{ trend: MileageTrendPoint[] }>(`/api/analytics/mileage-trend${query}`),
+      ]);
 
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as
-        | { message?: string; error?: string }
-        | null;
-      setEntriesError(
-        result?.message ?? result?.error ?? "Could not update fuel entry."
-      );
-      setEntryActionLoading(false);
-      return;
+      if (!isMounted) {
+        return;
+      }
+
+      if (!entriesResult.ok || !monthlyResult.ok || !trendResult.ok) {
+        setDataError("Could not load dashboard data.");
+        setData(emptyData);
+      } else {
+        setData({
+          entries: entriesResult.data.entries ?? [],
+          summary: entriesResult.data.summary,
+          monthly: monthlyResult.data.monthly?.[0]?.monthly ?? [],
+          trend: trendResult.data.trend ?? [],
+        });
+      }
+      setDataLoading(false);
     }
 
-    cancelEditingEntry();
-    await fetchEntries(session.access_token, selectedVehicleId);
-    setEntryActionLoading(false);
-  }
+    void load();
 
-  async function handleDeleteEntry(entryId: string) {
-    if (!session?.access_token) {
-      setEntriesError("Please log in before deleting an entry.");
-      return;
-    }
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, selectedVehicleId]);
 
-    setEntryActionLoading(true);
-    setEntriesError("");
+  const { entries, summary, monthly, trend } = data;
+  const recentEntries = entries.slice(0, 3);
 
-    const response = await fetch(`/api/fuel-entry?id=${encodeURIComponent(entryId)}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const result = (await response.json().catch(() => null)) as
-        | { message?: string; error?: string }
-        | null;
-      setEntriesError(
-        result?.message ?? result?.error ?? "Could not delete fuel entry."
-      );
-      setEntryActionLoading(false);
-      return;
-    }
-
-    if (editingEntryId === entryId) {
-      cancelEditingEntry();
-    }
-
-    await fetchEntries(session.access_token, selectedVehicleId);
-    setEntryActionLoading(false);
-  }
-
-
-
-  const currencyFormatter = useMemo(
+  const monthlySpendChartData = useMemo(
     () =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }),
-    []
+      [...monthly].reverse().map((item) => ({
+        label: formatMonthKey(item.month),
+        totalSpend: item.total_spend,
+      })),
+    [monthly]
   );
 
-  const monthLabelFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }),
-    []
+  const mileageTrendChartData = useMemo(
+    () => trend.map((item) => ({ label: formatDate(item.date), mileage: item.mileage })),
+    [trend]
   );
 
-  const isAuthenticated = Boolean(session);
+  const mileageComparisonChartData = useMemo(
+    () =>
+      vehicles
+        .filter((vehicle) => vehicle.averageMileage !== null)
+        .map((vehicle) => ({ name: vehicle.name, averageMileage: vehicle.averageMileage ?? 0 })),
+    [vehicles]
+  );
+
+  const latestMonth = monthly[0];
+  const showData = Boolean(selectedVehicleId) && !dataError;
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-6xl rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-900">FuelTrack</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Track your fuel usage once you sign in with Email and Password.
-        </p>
+    <PageShell
+      title="Dashboard"
+      description={selectedVehicle ? `${selectedVehicle.name} · ${selectedVehicle.vehicleType}` : undefined}
+      loading={sessionLoading || !userId}
+      actions={
+        selectedVehicleId ? (
+          <Link href="/entry" className={primaryButtonClass}>
+            Add fuel entry
+          </Link>
+        ) : null
+      }
+    >
+      {profileChecked && !profile ? <ProfileSetupCard onSaved={setProfile} /> : null}
 
-        {loading ? (
-          <p className="mt-6 text-sm text-zinc-700">Checking session...</p>
-        ) : !isAuthenticated ? (
-          <div className="mt-6">
-            <Link
-              href="/login"
-              className="inline-flex h-11 items-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Go to Login
-            </Link>
-          </div>
-        ) : null}
+      <section className={cardClass}>
+        <VehicleSelect
+          vehicles={vehicles}
+          selectedVehicleId={selectedVehicleId}
+          onChange={setSelectedVehicleId}
+          loading={vehiclesLoading}
+          error={vehiclesError}
+        />
+      </section>
 
-        {errorMessage ? (
-          <p className="mt-4 text-sm font-medium text-red-600">{errorMessage}</p>
-        ) : null}
+      {dataError ? <p className={errorTextClass}>{dataError}</p> : null}
 
-        {isAuthenticated && !profileLoading && !profile ? (
-          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-900">Enter your name</h2>
-            <form onSubmit={handleSaveProfile} className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="text"
-                value={profileName}
-                onChange={(event) => setProfileName(event.target.value)}
-                className="h-10 flex-1 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900"
-                placeholder="Enter your name"
-                required
+      {showData ? (
+        <>
+          <section className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard
+                label="Average mileage"
+                value={summary?.averageMileage != null ? `${formatNumber(summary.averageMileage)} km/l` : "—"}
+                hint={summary ? `${summary.cycleCount} reserve-to-reserve cycle${summary.cycleCount === 1 ? "" : "s"}` : undefined}
               />
-              <button
-                type="submit"
-                disabled={profileSaving}
-                className="h-10 rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-400"
-              >
-                {profileSaving ? "Saving..." : "Save"}
-              </button>
-            </form>
-            {profileError ? (
-              <p className="mt-3 text-sm font-medium text-red-600">{profileError}</p>
-            ) : null}
-          </section>
-        ) : null}
-
-        {isAuthenticated ? (
-          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-900">Vehicle Selection</h2>
-
-            {vehiclesLoading ? (
-              <p className="mt-3 text-sm text-zinc-600">Loading vehicles...</p>
-            ) : vehiclesError ? (
-              <p className="mt-3 text-sm font-medium text-red-600">{vehiclesError}</p>
-            ) : vehicles.length === 0 ? (
-              <p className="mt-3 text-sm text-zinc-600">No vehicles available yet.</p>
-            ) : (
-              <div className="mt-3 space-y-3">
-                <label className="block">
-                  <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                    Select Vehicle
-                  </span>
-                  <select
-                    value={selectedVehicleId ?? ""}
-                    onChange={(event) => setSelectedVehicleId(event.target.value)}
-                    className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                  >
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
-          </section>
-        ) : null}
-
-        {isAuthenticated ? (
-          <section className="mt-8 space-y-6">
-
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Metrics</h2>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Latest mileage</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {dashboardMetrics.latestMileage !== null
-                      ? `${dashboardMetrics.latestMileage.toFixed(1)} km/l`
-                      : "Not enough data"}
-                  </p>
-                </article>
-
-                <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Average mileage</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {dashboardMetrics.averageMileage !== null
-                      ? `${dashboardMetrics.averageMileage.toFixed(1)} km/l`
-                      : "Not enough data"}
-                  </p>
-                </article>
-
-                <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Range</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {dashboardMetrics.range !== null
-                      ? `${dashboardMetrics.range.toFixed(1)} km`
-                      : "Not enough data"}
-                  </p>
-                </article>
-
-                <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Next refuel</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {dashboardMetrics.nextRefuelOdometer !== null
-                      ? Math.round(
-                          dashboardMetrics.nextRefuelOdometer
-                        ).toLocaleString()
-                      : "Not enough data"}
-                  </p>
-                </article>
-
-                <article className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-sm text-zinc-500">Latest monthly spend</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {entriesLoading
-                      ? "Loading..."
-                      : monthlySummary.length > 0
-                        ? (() => {
-                            const latestMonth = monthlySummary[0];
-                            const [year, month] = latestMonth.month.split("-");
-                            const monthDate = new Date(
-                              Date.UTC(Number(year), Number(month) - 1, 1)
-                            );
-                            return `${monthLabelFormatter.format(monthDate)}: ${currencyFormatter.format(latestMonth.total_spend)}`;
-                          })()
-                        : "No data"}
-                  </p>
-                </article>
-
-              </div>
-            </section>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <h2 className="text-lg font-semibold text-zinc-900">Monthly Analytics</h2>
-                {entriesLoading ? (
-                  <p className="mt-3 text-sm text-zinc-600">Loading monthly analytics...</p>
-                ) : monthlySummary.length === 0 ? (
-                  <p className="mt-3 text-sm text-zinc-600">No monthly analytics yet.</p>
-                ) : (
-                  <ul className="mt-3 space-y-2">
-                    {monthlySummary.map((item) => {
-                      const [year, month] = item.month.split("-");
-                      const monthDate = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
-                      return (
-                        <li key={item.month} className="rounded-lg bg-white px-3 py-2 text-sm text-zinc-900">
-                          {monthLabelFormatter.format(monthDate)} → {currencyFormatter.format(item.total_spend)} | {item.total_distance.toFixed(1)} km | {item.average_mileage !== null ? `${item.average_mileage.toFixed(1)} km/l` : "N/A"}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <h2 className="text-lg font-semibold text-zinc-900">Monthly Spend Trend</h2>
-                {entriesLoading ? (
-                  <p className="mt-3 text-sm text-zinc-600">Loading monthly spend trend...</p>
-                ) : monthlySpendChartData.length === 0 ? (
-                  <p className="mt-3 text-sm text-zinc-600">No monthly spend data yet.</p>
-                ) : (
-                  <div className="mt-4 h-64 rounded-lg bg-white p-3">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={monthlySpendChartData}>
-                        <XAxis dataKey="label" />
-                        <YAxis />
-                        <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
-                        <Line type="monotone" dataKey="totalSpend" stroke="#2563eb" dot />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </section>
+              <StatCard
+                label="Latest cycle"
+                value={summary?.latestMileage != null ? `${formatNumber(summary.latestMileage)} km/l` : "—"}
+              />
+              <StatCard
+                label="Estimated range left"
+                value={summary?.remainingRange != null ? `${formatNumber(summary.remainingRange, 0)} km` : "—"}
+                hint={
+                  summary?.nextReserveOdometer != null
+                    ? `Reserve expected near ${formatNumber(summary.nextReserveOdometer, 0)} km`
+                    : undefined
+                }
+              />
+              <StatCard
+                label="Cost per km"
+                value={summary?.costPerKm != null ? formatCurrency(summary.costPerKm) : "—"}
+              />
+              <StatCard label="Total spend" value={formatCurrency(summary?.totalSpend ?? 0)} />
+              <StatCard
+                label="Fuel purchased"
+                value={`${formatNumber(summary?.totalLitres ?? 0)} L`}
+                hint={summary ? `${summary.entryCount} fill${summary.entryCount === 1 ? "" : "s"}` : undefined}
+              />
+              <StatCard
+                label="Distance tracked"
+                value={`${formatNumber(summary?.distanceTracked ?? 0, 0)} km`}
+              />
+              <StatCard
+                label={latestMonth ? `Spend in ${formatMonthKey(latestMonth.month, "long")}` : "Monthly spend"}
+                value={latestMonth ? formatCurrency(latestMonth.total_spend) : "—"}
+              />
             </div>
 
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Mileage Comparison</h2>
-              {vehiclesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">Loading mileage comparison...</p>
-              ) : mileageComparisonChartData.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">Not enough data</p>
-              ) : (
-                <div className="mt-4 h-64 rounded-lg bg-white p-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={mileageComparisonChartData}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value: number) => `${value.toFixed(1)} km/l`} />
-                      <Bar dataKey="averageMileage" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <h2 className="text-lg font-semibold text-zinc-900">Mileage Trend</h2>
-              {entriesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">Loading mileage trend...</p>
-              ) : mileageTrendChartData.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">Not enough data</p>
-              ) : (
-                <div className="mt-4 h-64 rounded-lg bg-white p-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mileageTrendChartData}>
-                      <XAxis dataKey="label" />
-                      <YAxis />
-                      <Tooltip formatter={(value: number) => `${value.toFixed(1)} km/l`} />
-                      <Line type="monotone" dataKey="mileage" stroke="#16a34a" dot />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-zinc-900">
-                  Recent Entries
-                </h2>
-                <Link
-                  href={
-                    selectedVehicleId
-                      ? `/history?vehicleId=${encodeURIComponent(selectedVehicleId)}`
-                      : "/history"
-                  }
-                  className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-                >
-                  View Full History
-                </Link>
-              </div>
-
-              {entriesLoading ? (
-                <p className="mt-3 text-sm text-zinc-600">Loading entries...</p>
-              ) : entriesError ? (
-                <p className="mt-3 text-sm font-medium text-red-600">
-                  {entriesError}
-                </p>
-              ) : recentEntries.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">No fuel entries yet.</p>
-              ) : (
-                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
-                  {recentEntries.map((entry) => (
-                    <article
-                      key={entry.id}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
-                    >
-                      {editingEntryId === entry.id ? (
-                        <div className="space-y-3">
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                              Odometer
-                            </span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              min="0"
-                              step="0.1"
-                              value={editOdometer}
-                              onChange={(event) => setEditOdometer(event.target.value)}
-                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                              Fuel Price
-                            </span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              min="0"
-                              step="0.01"
-                              value={editFuelPrice}
-                              onChange={(event) => setEditFuelPrice(event.target.value)}
-                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                              Amount Paid
-                            </span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              min="0"
-                              step="0.01"
-                              value={editAmountPaid}
-                              onChange={(event) => setEditAmountPaid(event.target.value)}
-                              className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                            />
-                          </label>
-                          <label className="flex items-center gap-2 text-sm text-zinc-700">
-                            <input
-                              type="checkbox"
-                              checked={editIsReserve}
-                              onChange={(event) => setEditIsReserve(event.target.checked)}
-                              className="h-4 w-4 accent-zinc-900"
-                            />
-                            Filled at reserve
-                          </label>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateEntry(entry)}
-                              disabled={entryActionLoading}
-                              className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelEditingEntry}
-                              disabled={entryActionLoading}
-                              className="h-9 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-sm text-zinc-700">
-                            Odometer:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {entry.odometer}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-zinc-700">
-                            Fuel Price:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {entry.fuel_price.toFixed(2)}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-zinc-700">
-                            Amount Paid:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {entry.amount_paid.toFixed(2)}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-zinc-700">
-                            Fuel Volume:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {entry.fuel_volume.toFixed(2)} L
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-zinc-700">
-                            Filled at reserve:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {entry.is_reserve ? "Yes" : "No"}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-sm text-zinc-700">
-                            Created at:{" "}
-                            <span className="font-medium text-zinc-900">
-                              {new Date(entry.created_at).toLocaleString()}
-                            </span>
-                          </p>
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startEditingEntry(entry)}
-                              disabled={entryActionLoading}
-                              className="h-9 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              disabled={entryActionLoading}
-                              className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
+            {!dataLoading && summary && summary.cycleCount === 0 ? (
+              <p className={`rounded-xl border border-border bg-surface px-4 py-3 ${mutedTextClass}`}>
+                Mileage appears after two fills marked <strong>Filled at reserve</strong>. Fill up when
+                the bike hits reserve and tick the box when adding the entry.
+              </p>
+            ) : null}
           </section>
-        ) : null}
-      </section>
-    </main>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className={cardClass}>
+              <h2 className="text-lg font-semibold text-foreground">Monthly spend</h2>
+              {monthlySpendChartData.length === 0 ? (
+                <p className={`mt-3 ${mutedTextClass}`}>{dataLoading ? "Loading..." : "No fuel entries yet."}</p>
+              ) : (
+                <div className="mt-4">
+                  <BarValueChart
+                    data={monthlySpendChartData}
+                    xKey="label"
+                    yKey="totalSpend"
+                    name="Spend"
+                    formatValue={(value) => formatCurrency(value)}
+                  />
+                </div>
+              )}
+            </section>
+
+            <section className={cardClass}>
+              <h2 className="text-lg font-semibold text-foreground">Mileage trend</h2>
+              {mileageTrendChartData.length === 0 ? (
+                <p className={`mt-3 ${mutedTextClass}`}>{dataLoading ? "Loading..." : "Not enough reserve fills yet."}</p>
+              ) : (
+                <div className="mt-4">
+                  <LineTrendChart
+                    data={mileageTrendChartData}
+                    xKey="label"
+                    yKey="mileage"
+                    name="Mileage"
+                    formatValue={(value) => `${formatNumber(value)} km/l`}
+                  />
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section className={cardClass}>
+            <h2 className="text-lg font-semibold text-foreground">Monthly summary</h2>
+            {monthly.length === 0 ? (
+              <p className={`mt-3 ${mutedTextClass}`}>{dataLoading ? "Loading..." : "No monthly data yet."}</p>
+            ) : (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead className="text-muted">
+                    <tr className="border-b border-border">
+                      <th className="py-2 pr-4 font-medium">Month</th>
+                      <th className="py-2 pr-4 font-medium">Fills</th>
+                      <th className="py-2 pr-4 font-medium">Spend</th>
+                      <th className="py-2 pr-4 font-medium">Litres</th>
+                      <th className="py-2 pr-4 font-medium">Distance</th>
+                      <th className="py-2 pr-4 font-medium">Mileage</th>
+                      <th className="py-2 font-medium">Cost/km</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-foreground">
+                    {monthly.map((item) => (
+                      <tr key={item.month} className="border-b border-border last:border-0">
+                        <td className="py-2 pr-4">{formatMonthKey(item.month, "long")}</td>
+                        <td className="py-2 pr-4">{item.fill_count}</td>
+                        <td className="py-2 pr-4">{formatCurrency(item.total_spend)}</td>
+                        <td className="py-2 pr-4">{formatNumber(item.total_litres, 2)} L</td>
+                        <td className="py-2 pr-4">{item.total_distance > 0 ? `${formatNumber(item.total_distance, 0)} km` : "—"}</td>
+                        <td className="py-2 pr-4">{item.average_mileage !== null ? `${formatNumber(item.average_mileage)} km/l` : "—"}</td>
+                        <td className="py-2">{item.cost_per_km !== null ? formatCurrency(item.cost_per_km) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className={`mt-3 text-xs ${mutedTextClass}`}>
+              Distance and mileage are counted in the month a reserve-to-reserve cycle ends.
+            </p>
+          </section>
+
+          {mileageComparisonChartData.length > 1 ? (
+            <section className={cardClass}>
+              <h2 className="text-lg font-semibold text-foreground">Mileage by vehicle</h2>
+              <div className="mt-4">
+                <BarValueChart
+                  data={mileageComparisonChartData}
+                  xKey="name"
+                  yKey="averageMileage"
+                  name="Average mileage"
+                  color="var(--chart-3)"
+                  formatValue={(value) => `${formatNumber(value)} km/l`}
+                />
+              </div>
+            </section>
+          ) : null}
+
+          <section className={cardClass}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-foreground">Recent entries</h2>
+              <Link href="/history" className={secondaryButtonClass}>
+                View history
+              </Link>
+            </div>
+            {recentEntries.length === 0 ? (
+              <p className={`mt-3 ${mutedTextClass}`}>{dataLoading ? "Loading..." : "No fuel entries yet."}</p>
+            ) : (
+              <ul className="mt-4 divide-y divide-border">
+                {recentEntries.map((entry) => (
+                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                    <span className="text-foreground">{formatDateTime(entry.filled_at)}</span>
+                    <span className="text-muted">
+                      {formatNumber(entry.odometer)} km · {formatNumber(entry.fuel_volume, 2)} L ·{" "}
+                      {formatCurrency(entry.amount_paid)}
+                      {entry.is_reserve ? " · Reserve" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      ) : null}
+    </PageShell>
   );
 }

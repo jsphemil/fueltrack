@@ -10,6 +10,7 @@ FuelTrack is a web app to track motorcycle fuel usage, mileage, range and spend 
 * Reserve-to-reserve mileage calculation
 * Range and next-reserve prediction
 * Monthly analytics, charts and calendar view
+* Light and dark theme
 
 ## How mileage is calculated
 

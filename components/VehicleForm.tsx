@@ -1,12 +1,31 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { supabase } from "@/lib/supabase";
 
-export default function VehicleForm() {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
-  const [initialOdometer, setInitialOdometer] = useState("");
+import { apiRequest } from "@/lib/api";
+import type { Vehicle } from "@/lib/types";
+import {
+  errorTextClass,
+  inputClass,
+  labelClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  successTextClass,
+} from "@/lib/ui";
+import { parseVehicleInput, VEHICLE_NAME_MAX_LENGTH, VEHICLE_TYPE_MAX_LENGTH } from "@/lib/validation";
+
+type VehicleFormProps = {
+  // When set the form edits this vehicle instead of creating a new one.
+  vehicle?: Vehicle;
+  onSaved?: (vehicle: Vehicle) => void;
+  onCancel?: () => void;
+};
+
+export default function VehicleForm({ vehicle, onSaved, onCancel }: VehicleFormProps) {
+  const isEditing = Boolean(vehicle);
+  const [name, setName] = useState(vehicle?.name ?? "");
+  const [vehicleType, setVehicleType] = useState(vehicle?.vehicleType ?? "");
+  const [initialOdometer, setInitialOdometer] = useState(vehicle ? String(vehicle.initial_odometer) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -15,84 +34,73 @@ export default function VehicleForm() {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+
+    const payload = { name, vehicleType, initial_odometer: initialOdometer };
+    const parsed = parseVehicleInput(payload);
+    if (!parsed.ok) {
+      setErrorMessage(parsed.error);
+      return;
+    }
+
     setIsSubmitting(true);
-
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session) {
-      setErrorMessage("Please log in before adding a vehicle.");
-      setIsSubmitting(false);
-      return;
-    }
-    const accessToken = data.session.access_token;
-
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    const response = await fetch("/api/vehicle", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        name: name.trim(),
-        vehicleType: type.trim(),
-        initial_odometer: Number(initialOdometer),
-      }),
+    const result = await apiRequest<{ vehicle: Vehicle }>("/api/vehicle", {
+      method: isEditing ? "PUT" : "POST",
+      body: { ...parsed.value, ...(vehicle ? { id: vehicle.id } : {}) },
     });
+    setIsSubmitting(false);
 
-    if (!response.ok) {
-      setErrorMessage("Could not save vehicle.");
-      setIsSubmitting(false);
+    if (!result.ok) {
+      setErrorMessage(result.error);
       return;
     }
 
-    setSuccessMessage("Vehicle saved.");
-    setName("");
-    setType("");
-    setInitialOdometer("");
-    setIsSubmitting(false);
+    if (!isEditing) {
+      setSuccessMessage("Vehicle saved.");
+      setName("");
+      setVehicleType("");
+      setInitialOdometer("");
+    }
+
+    onSaved?.(result.data.vehicle);
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-zinc-900">Add Vehicle</h2>
-      <p className="mt-1 text-sm text-zinc-600">
-        Add your vehicle details to get started.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <div className="grid gap-4 sm:grid-cols-3">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-            Vehicle Name
-          </span>
+          <span className={labelClass}>Vehicle name</span>
           <input
             type="text"
             required
+            maxLength={VEHICLE_NAME_MAX_LENGTH}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="e.g. Honda City"
-            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+            placeholder="e.g. Classic 350"
+            className={inputClass}
           />
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-            Vehicle Type
-          </span>
+          <span className={labelClass}>Vehicle type</span>
           <input
             type="text"
             required
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-            placeholder="e.g. Car, Bike"
-            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+            maxLength={VEHICLE_TYPE_MAX_LENGTH}
+            list="vehicle-type-options"
+            value={vehicleType}
+            onChange={(event) => setVehicleType(event.target.value)}
+            placeholder="e.g. Motorcycle"
+            className={inputClass}
           />
+          <datalist id="vehicle-type-options">
+            <option value="Motorcycle" />
+            <option value="Scooter" />
+            <option value="Car" />
+          </datalist>
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-            Initial Odometer
-          </span>
+          <span className={labelClass}>Initial odometer (km)</span>
           <input
             type="number"
             inputMode="decimal"
@@ -102,26 +110,24 @@ export default function VehicleForm() {
             value={initialOdometer}
             onChange={(event) => setInitialOdometer(event.target.value)}
             placeholder="e.g. 10000"
-            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+            className={inputClass}
           />
         </label>
+      </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="h-11 w-full rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "Saving..." : "Save Vehicle"}
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" disabled={isSubmitting} className={primaryButtonClass}>
+          {isSubmitting ? "Saving..." : isEditing ? "Save changes" : "Add vehicle"}
         </button>
-
-        {successMessage ? (
-          <p className="text-sm font-medium text-emerald-700">{successMessage}</p>
+        {onCancel ? (
+          <button type="button" onClick={onCancel} disabled={isSubmitting} className={secondaryButtonClass}>
+            Cancel
+          </button>
         ) : null}
+      </div>
 
-        {errorMessage ? (
-          <p className="text-sm font-medium text-red-600">{errorMessage}</p>
-        ) : null}
-      </form>
-    </section>
+      {successMessage ? <p className={successTextClass}>{successMessage}</p> : null}
+      {errorMessage ? <p className={errorTextClass}>{errorMessage}</p> : null}
+    </form>
   );
 }

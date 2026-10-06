@@ -1,37 +1,198 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
 
-type FuelEntry = { id: string; odometer: number; fuel_price: number; amount_paid: number; fuel_volume: number; is_reserve: boolean; vehicleId: string | null; created_at: string };
-type Vehicle = { id: string; name: string };
+import PageShell from "@/components/PageShell";
+import VehicleSelect from "@/components/VehicleSelect";
+import { apiRequest } from "@/lib/api";
+import { formatCurrency, formatDate, formatNumber, toLocalDateKey } from "@/lib/format";
+import { useSession, useVehicles } from "@/lib/hooks";
+import type { FuelEntry } from "@/lib/types";
+import { cardClass, errorTextClass, mutedTextClass, secondaryButtonClass } from "@/lib/ui";
+
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const toLocalDateKey = (input: string) => {
-  const date = new Date(input);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
 
-export default function CalendarPage() { /* trimmed for brevity */
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [vehiclesError, setVehiclesError] = useState("");
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+type CalendarDay = { dateKey: string; dayNumber: number } | null;
+
+function buildCalendarDays(year: number, month: number): CalendarDay[] {
+  const leadingBlanks = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: CalendarDay[] = Array.from({ length: leadingBlanks }, () => null);
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    days.push({ dateKey: toLocalDateKey(new Date(year, month, day)), dayNumber: day });
+  }
+
+  return days;
+}
+
+export default function CalendarPage() {
+  const { loading: sessionLoading, userId } = useSession();
+  const {
+    vehicles,
+    loading: vehiclesLoading,
+    error: vehiclesError,
+    selectedVehicleId,
+    setSelectedVehicleId,
+  } = useVehicles(userId);
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [entriesError, setEntriesError] = useState("");
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const monthDate = useMemo(() => new Date(), []);
-  const monthLabel = monthDate.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  const calendarDays = useMemo(() => { const y = monthDate.getFullYear(); const m = monthDate.getMonth(); const off = new Date(y, m, 1).getDay(); const total = new Date(y, m + 1, 0).getDate(); const items: Array<{ dateKey: string | null; dayNumber: number | null }> = []; for (let i=0;i<off;i+=1) items.push({dateKey:null,dayNumber:null}); for (let d=1; d<=total; d+=1) items.push({dateKey:`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,dayNumber:d}); return items; }, [monthDate]);
-  const entriesByDate = useMemo(() => { const grouped: Record<string, FuelEntry[]> = {}; for (const entry of entries) { if (!entry.created_at) continue; const key = toLocalDateKey(entry.created_at); (grouped[key] ||= []).push(entry);} return grouped;}, [entries]);
-  const selectedDateEntries = selectedDate ? entriesByDate[selectedDate] ?? [] : [];
-  async function fetchVehicles(accessToken?: string) { if (!accessToken) { setVehicles([]); setSelectedVehicleId(null); setEntries([]); return; } setVehiclesLoading(true); setVehiclesError(""); const response = await fetch("/api/vehicle", { method: "GET", headers: { Authorization: `Bearer ${accessToken}` } }); if (!response.ok) { setVehiclesError("Could not load vehicles."); setVehiclesLoading(false); return; } const result = (await response.json()) as { vehicles: Vehicle[] }; const next = result.vehicles ?? []; setVehicles(next); setSelectedVehicleId((cur) => { if (next.length===0) return null; if (cur && next.some((v)=>v.id===cur)) return cur; return next[0].id;}); setVehiclesLoading(false); }
-  async function fetchEntries(accessToken?: string, vehicleId?: string | null) { if (!accessToken || !vehicleId) { setEntries([]); return; } setEntriesLoading(true); setEntriesError(""); const response = await fetch(`/api/fuel-entry?vehicleId=${encodeURIComponent(vehicleId)}`, { method: "GET", headers: { Authorization: `Bearer ${accessToken}` } }); if (!response.ok) { setEntriesError("Could not load fuel entries."); setEntriesLoading(false); return; } const result = (await response.json()) as { entries: FuelEntry[] }; setEntries(result.entries ?? []); setEntriesLoading(false); }
-  useEffect(() => { let mounted = true; async function load() { const { data } = await supabase.auth.getSession(); if (!mounted) return; setSession(data.session ?? null); setLoading(false); if (data.session?.access_token) void fetchVehicles(data.session.access_token);} void load(); const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, next) => { setSession(next); setLoading(false); if (next?.access_token) void fetchVehicles(next.access_token); else { setVehicles([]); setSelectedVehicleId(null); setEntries([]);} }); return () => { mounted = false; subscription.unsubscribe(); }; }, []);
-  useEffect(() => { if (!session?.access_token || !selectedVehicleId) { setSelectedDate(null); return; } setSelectedDate(null); void fetchEntries(session.access_token, selectedVehicleId); }, [selectedVehicleId, session?.access_token]);
-  return <main className="min-h-screen bg-zinc-50 px-4 py-10"><section className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><h1 className="text-2xl font-semibold text-zinc-900">Calendar View</h1><Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Back</Link></div>{loading ? <p className="mt-4 text-sm text-zinc-600">Checking session...</p> : null}{!loading && !session ? <p className="mt-4 text-sm text-zinc-700">Please login to view calendar.</p> : null}{!loading && session ? <>{vehiclesLoading ? <p className="mt-4 text-sm text-zinc-600">Loading vehicles...</p> : null}{vehiclesError ? <p className="mt-4 text-sm font-medium text-red-600">{vehiclesError}</p> : null}{vehicles.length > 0 ? <label className="mt-4 block"><span className="mb-1.5 block text-sm font-medium text-zinc-700">Select Vehicle</span><select value={selectedVehicleId ?? ""} onChange={(event) => setSelectedVehicleId(event.target.value)} className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900">{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name}</option>)}</select></label> : null}{entriesLoading ? <p className="mt-4 text-sm text-zinc-600">Loading entries...</p> : null}{entriesError ? <p className="mt-4 text-sm font-medium text-red-600">{entriesError}</p> : null}{vehicles.length === 0 && !vehiclesLoading ? <p className="mt-4 text-sm text-zinc-600">No vehicles available yet.</p> : null}{vehicles.length > 0 && !entriesLoading && !entriesError ? <><h2 className="mt-6 text-lg font-semibold text-zinc-900">{monthLabel}</h2><div className="mt-3 grid grid-cols-7 gap-2">{weekDays.map((day) => <div key={day} className="text-center text-xs font-semibold text-zinc-500">{day}</div>)}{calendarDays.map((item, index) => !item.dateKey || !item.dayNumber ? <div key={`empty-${index}`} className="h-12 rounded border border-transparent" /> : <button type="button" key={item.dateKey} onClick={() => setSelectedDate(item.dateKey)} className={`h-12 rounded border text-sm ${selectedDate === item.dateKey ? "border-zinc-900 bg-zinc-900 text-white" : entriesByDate[item.dateKey]?.length ? "border-emerald-300 bg-emerald-50 text-zinc-900" : "border-zinc-200 bg-white text-zinc-700"}`}>{item.dayNumber}</button>)}</div><div className="mt-6"><h3 className="text-sm font-semibold text-zinc-900">{selectedDate ? `Entries on ${selectedDate}` : "Select a date to view entries"}</h3>{selectedDate ? selectedDateEntries.length > 0 ? <ul className="mt-3 space-y-2">{selectedDateEntries.map((entry) => <li key={entry.id} className="rounded-lg border border-zinc-200 p-3 text-sm text-zinc-700">Odometer: {entry.odometer} • Fuel: {entry.fuel_volume.toFixed(2)} L • Paid: ${entry.amount_paid.toFixed(2)}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-600">No entries for this date.</p> : null}</div></> : null}</> : null}</section></main>;
+
+  useEffect(() => {
+    if (!userId || !selectedVehicleId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function load(vehicleId: string) {
+      setEntriesLoading(true);
+      setEntriesError("");
+      setSelectedDate(null);
+      const result = await apiRequest<{ entries: FuelEntry[] }>(
+        `/api/fuel-entry?vehicleId=${encodeURIComponent(vehicleId)}`
+      );
+      if (!isMounted) {
+        return;
+      }
+      if (result.ok) {
+        setEntries(result.data.entries ?? []);
+      } else {
+        setEntriesError(result.error);
+      }
+      setEntriesLoading(false);
+    }
+
+    void load(selectedVehicleId);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, selectedVehicleId]);
+
+  const calendarDays = useMemo(
+    () => buildCalendarDays(visibleMonth.year, visibleMonth.month),
+    [visibleMonth]
+  );
+
+  const entriesByDate = useMemo(() => {
+    const grouped = new Map<string, FuelEntry[]>();
+    for (const entry of entries) {
+      const key = toLocalDateKey(entry.filled_at);
+      grouped.set(key, [...(grouped.get(key) ?? []), entry]);
+    }
+    return grouped;
+  }, [entries]);
+
+  const monthLabel = new Date(visibleMonth.year, visibleMonth.month, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+  const selectedDateEntries = selectedDate ? entriesByDate.get(selectedDate) ?? [] : [];
+
+  function changeMonth(delta: number) {
+    setSelectedDate(null);
+    setVisibleMonth(({ year, month }) => {
+      const next = new Date(year, month + delta, 1);
+      return { year: next.getFullYear(), month: next.getMonth() };
+    });
+  }
+
+  return (
+    <PageShell
+      title="Calendar"
+      description="See which days you filled up."
+      loading={sessionLoading || !userId}
+    >
+      <section className={cardClass}>
+        <VehicleSelect
+          vehicles={vehicles}
+          selectedVehicleId={selectedVehicleId}
+          onChange={setSelectedVehicleId}
+          loading={vehiclesLoading}
+          error={vehiclesError}
+        />
+      </section>
+
+      {selectedVehicleId ? (
+        <section className={cardClass}>
+          {entriesError ? <p className={`mb-3 ${errorTextClass}`}>{entriesError}</p> : null}
+
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={() => changeMonth(-1)} className={secondaryButtonClass} aria-label="Previous month">
+              ‹
+            </button>
+            <h2 className="text-lg font-semibold text-foreground">{monthLabel}</h2>
+            <button type="button" onClick={() => changeMonth(1)} className={secondaryButtonClass} aria-label="Next month">
+              ›
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-7 gap-1 sm:gap-2">
+            {weekDays.map((day) => (
+              <div key={day} className="text-center text-xs font-semibold text-muted">
+                {day}
+              </div>
+            ))}
+            {calendarDays.map((day, index) => {
+              if (!day) {
+                return <div key={`blank-${index}`} className="h-11 sm:h-12" />;
+              }
+
+              const dayEntries = entriesByDate.get(day.dateKey) ?? [];
+              const isSelected = selectedDate === day.dateKey;
+
+              return (
+                <button
+                  type="button"
+                  key={day.dateKey}
+                  onClick={() => setSelectedDate(day.dateKey)}
+                  className={`h-11 rounded-lg border text-sm transition sm:h-12 ${
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : dayEntries.length > 0
+                        ? "border-success/40 bg-success/10 font-semibold text-foreground"
+                        : "border-border bg-surface text-subtle hover:bg-surface-muted"
+                  }`}
+                >
+                  {day.dayNumber}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6">
+            {entriesLoading ? (
+              <p className={mutedTextClass}>Loading entries...</p>
+            ) : !selectedDate ? (
+              <p className={mutedTextClass}>Select a date to see its fills.</p>
+            ) : (
+              <>
+                <h3 className="text-sm font-semibold text-foreground">{formatDate(`${selectedDate}T00:00:00`)}</h3>
+                {selectedDateEntries.length === 0 ? (
+                  <p className={`mt-2 ${mutedTextClass}`}>No fills on this date.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {selectedDateEntries.map((entry) => (
+                      <li key={entry.id} className="rounded-lg border border-border p-3 text-sm text-subtle">
+                        {formatNumber(entry.odometer)} km · {formatNumber(entry.fuel_volume, 2)} L ·{" "}
+                        {formatCurrency(entry.amount_paid)}
+                        {entry.is_reserve ? " · Reserve" : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      ) : null}
+    </PageShell>
+  );
 }
