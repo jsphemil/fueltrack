@@ -20,7 +20,7 @@ model Vehicle {
   vehicleType      String      @default("Unknown")
   initial_odometer Float
   created_at       DateTime    @default(now())
-  user             User        @relation(fields: [userId], references: [id])
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   fuelEntries      FuelEntry[]
 }
 
@@ -33,8 +33,11 @@ model FuelEntry {
   amount_paid Float
   fuel_volume Float
   is_reserve  Boolean
+  filled_at   DateTime @default(now())
   created_at  DateTime @default(now())
-  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([userId, vehicleId, filled_at])
 }
 
 model UserProfile {
@@ -42,5 +45,5 @@ model UserProfile {
   userId    String   @unique
   name      String
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

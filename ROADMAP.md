@@ -86,21 +86,11 @@
 
 ---
 
-## In Progress
-
 ### Reliability & Correctness
 
 * Repository hygiene (remove committed logs, add .env.example, accurate README, app metadata)
-
----
-
-## Planned
-
-### Reliability & Correctness
-
 * Reserve-to-reserve mileage calculation using the reserve flag
 * Single shared calculation module for dashboard, vehicle stats and analytics
-* User-editable fill date used by history, calendar and analytics
 * Server-side validation (positive values, server-computed fuel volume, vehicle ownership)
 * Odometer ordering validation by fill date (allows editing older entries)
 * Shared API auth helper; remove inconsistent development auth bypass
@@ -108,6 +98,16 @@
 * Unit tests for calculations and validation
 
 ---
+
+## In Progress
+
+### Reliability & Correctness
+
+* User-editable fill date used by history, calendar and analytics (API done; UI pending)
+
+---
+
+## Planned
 
 ### Frontend Consistency
 
