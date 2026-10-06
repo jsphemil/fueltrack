@@ -94,6 +94,12 @@ Ensure all related layers are aligned before completing the task.
 - Maintain the existing roadmap structure and grouping (do not reorganize unnecessarily)
 
 
+## Git Rules
+
+- Always commit and push completed changes to the working branch
+- Commit after each logical step, with a clear message
+- Run lint, typecheck and tests before each push
+
 ## Implementation Checklist
 
 Before completing any task, ensure:
