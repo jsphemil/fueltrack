@@ -38,11 +38,15 @@ function Splash() {
 }
 
 function ActionBar({ className = "" }: { className?: string }) {
+  const { activeVehicle } = useFuel();
+  const gauge = activeVehicle?.gauge;
+  // The reserve button glows softly when you're close to (or on) reserve.
+  const low = gauge?.status === "on-reserve" || (gauge?.kmToReserve != null && gauge.kmToReserve < 30);
   return (
     <div className={`grid grid-cols-2 gap-3 ${className}`}>
       <Link
         href="/quick/reserve"
-        className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-reserve text-base font-semibold text-reserve-foreground shadow-sm transition active:scale-[0.98]"
+        className={`flex h-14 items-center justify-center gap-2 rounded-2xl bg-reserve text-base font-semibold text-reserve-foreground shadow-sm transition active:scale-[0.98] ${low ? "reserve-glow" : ""}`}
       >
         <ReserveIcon size={20} />
         On reserve
@@ -112,11 +116,20 @@ function Chrome({ children }: { children: ReactNode }) {
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-0.5 py-1.5 text-[11px] font-medium ${
+              className={`flex flex-col items-center gap-0.5 py-1.5 text-[11px] font-medium transition-colors ${
                 isActive(pathname, href) ? "text-foreground" : "text-muted"
               }`}
             >
-              <Icon size={22} />
+              <span className="relative flex h-7 w-12 items-center justify-center">
+                {/* Active pill grows in behind the icon */}
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-0 rounded-full bg-surface-muted transition-transform duration-300 ease-out ${
+                    isActive(pathname, href) ? "scale-100" : "scale-0"
+                  }`}
+                />
+                <Icon size={22} className="relative" />
+              </span>
               {label}
             </Link>
           ))}

@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, type ReactNode } from "react";
 
 import Gauge from "@/components/Gauge";
 import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
 import { useFuel } from "@/lib/fuel-context";
 import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatRelative } from "@/lib/format";
+import { useAnimatedNumber } from "@/lib/motion";
 import { newId } from "@/lib/outbox";
 import type { VehicleSummary } from "@/lib/types";
 import { cardClass, errorTextClass, inputClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
 import { parseOdometerInput } from "@/lib/validation";
 
 const confidenceLabel = { high: "High confidence", medium: "Medium confidence", low: "Low confidence" };
+
+// Counts up from 0 on first show, then glides to new values.
+function KmCounter({ km }: { km: number }) {
+  const value = useAnimatedNumber(km, 1400, 0);
+  return <>≈ {formatNumber(Math.round(value), 0)} km</>;
+}
 
 function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
   const { gauge, rangeScaleKm } = vehicle;
@@ -25,14 +32,14 @@ function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
         ? gauge.kmToReserve / rangeScaleKm
         : null;
 
-  let headline: string;
+  let headline: ReactNode;
   let caption: string;
   if (onReserve) {
     headline = "On reserve";
     caption =
       gauge.reserveKmLeft !== null ? `About ${formatNumber(gauge.reserveKmLeft, 0)} km left on reserve. Fill up soon.` : "Fill up soon.";
   } else if (gauge.status === "ok" && gauge.kmToReserve !== null) {
-    headline = `≈ ${formatNumber(gauge.kmToReserve, 0)} km`;
+    headline = <KmCounter km={gauge.kmToReserve} />;
     caption = gauge.reserveAtOdometer !== null ? `to reserve · expected near ${formatKm(gauge.reserveAtOdometer)}` : "to reserve";
   } else if (gauge.status === "needs-tank-info") {
     headline = "Full tank";
@@ -44,8 +51,8 @@ function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
 
   return (
     <section className={`${cardClass} flex flex-col items-center justify-center text-center`}>
-      <Gauge fraction={fraction} onReserve={onReserve} />
-      <p className={`tabular -mt-2 text-4xl font-bold tracking-tight ${onReserve ? "text-reserve" : "text-foreground"}`}>{headline}</p>
+      <Gauge fraction={fraction} onReserve={onReserve} id={vehicle.id} />
+      <p className={`tabular -mt-1 text-5xl font-semibold tracking-tighter ${onReserve ? "text-reserve" : "text-foreground"}`}>{headline}</p>
       <p className="mt-1 max-w-xs text-sm text-muted">{caption}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
         {gauge.efficiency !== null ? (

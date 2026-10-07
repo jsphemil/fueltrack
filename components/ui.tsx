@@ -20,7 +20,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Page({ children, narrow = false }: { children: ReactNode; narrow?: boolean }) {
   return (
-    <div className={`mx-auto w-full ${narrow ? "max-w-xl" : "max-w-5xl"} space-y-5 px-4 pt-6 sm:px-6 sm:pt-10`}>
+    <div className={`stagger mx-auto w-full ${narrow ? "max-w-xl" : "max-w-5xl"} space-y-5 px-4 pt-6 sm:px-6 sm:pt-10`}>
       {children}
     </div>
   );
@@ -72,7 +72,7 @@ export function Notice({
 
 export function StatTile({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border/70 bg-surface p-4 transition-colors">
       <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
       <p className="tabular mt-1 text-xl font-semibold text-foreground">{value}</p>
       {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}

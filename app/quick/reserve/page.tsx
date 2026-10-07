@@ -43,6 +43,8 @@ function QuickReserve() {
       logged.current = true;
       const next = { id: newId(), vehicleId: activeVehicle.id, occurredAt: new Date().toISOString() };
       setMark(next);
+      // A short buzz so you know it registered without looking at the phone.
+      if ("vibrate" in navigator) navigator.vibrate([40, 60, 40]);
       void saveEntry({ ...next, kind: "RESERVE" });
     }, 0);
     return () => window.clearTimeout(timerId);
@@ -110,8 +112,15 @@ function QuickReserve() {
   return (
     <Page narrow>
       <section className={`${cardClass} text-center`}>
-        <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-reserve text-reserve-foreground">
-          <CheckIcon size={40} />
+        <span className="relative mx-auto flex h-20 w-20 items-center justify-center">
+          {/* Expanding rings behind the badge */}
+          <span className="ripple absolute inset-0 rounded-full bg-reserve" aria-hidden="true" />
+          <span className="ripple ripple-delayed absolute inset-0 rounded-full bg-reserve" aria-hidden="true" />
+          <span className="pop relative flex h-20 w-20 items-center justify-center rounded-full bg-reserve text-reserve-foreground">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path className="draw" d="m5 12.5 4.5 4.5L19 7.5" />
+            </svg>
+          </span>
         </span>
         <h1 className="mt-4 text-2xl font-bold text-foreground">On reserve</h1>
         <p className="mt-1 text-sm text-muted">

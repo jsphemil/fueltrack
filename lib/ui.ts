@@ -1,6 +1,8 @@
 // Shared Tailwind class strings; colours come from theme tokens in globals.css.
 
-export const cardClass = "rounded-3xl border border-border bg-surface p-5 shadow-sm";
+// Minimal cards: a hairline edge and a soft, low shadow.
+export const cardClass =
+  "rounded-3xl border border-border/70 bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_12px_32px_-16px_rgba(28,25,23,0.12)]";
 export const sectionTitleClass = "text-sm font-semibold uppercase tracking-wide text-muted";
 export const labelClass = "mb-1.5 block text-sm font-medium text-subtle";
 export const hintClass = "mt-1 block text-xs text-muted";
