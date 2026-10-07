@@ -41,6 +41,10 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Installable PWA with "On reserve" and "Add fuel" home-screen shortcuts
 * App shell cached for offline opening
 
+### Reminders
+
+* Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
+
 ---
 
 ## In Progress
@@ -53,5 +57,4 @@ _Nothing in progress._
 
 ### Future Enhancements
 
-* Low-fuel reminder notifications
 * Service reminders (oil change by distance)

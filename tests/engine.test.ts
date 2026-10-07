@@ -6,6 +6,7 @@ import {
   calculateStats,
   currentOdometer,
   efficiency,
+  isLowFuel,
   kmPerDay,
   monthKey,
   resolveReserveOdometer,
@@ -187,6 +188,22 @@ describe("calculateGauge", () => {
       reserve(8, 1800), fill(8, 1800, 8), reserve(12, 2200), fill(12, 2200, 8),
     ];
     expect(calculateGauge(noTank, many, at(12, 3)).confidence).toBe("high");
+  });
+});
+
+describe("isLowFuel", () => {
+  const events = [reserve(0, 1000), fill(0, 1000, 8), reserve(4, 1400), fill(4, 1400, 6), odo(5, 1500)]; // 200 km left
+
+  it("fires only when the estimate is within the threshold", () => {
+    const gauge = calculateGauge(tank, events, at(5, 3));
+    expect(isLowFuel(gauge, 200)).toBe(true);
+    expect(isLowFuel(gauge, 199)).toBe(false);
+    expect(isLowFuel(gauge, null)).toBe(false);
+  });
+
+  it("stays quiet on reserve and without an estimate", () => {
+    expect(isLowFuel(calculateGauge(tank, [...events, reserve(7, null)], at(7, 1)), 500)).toBe(false);
+    expect(isLowFuel(calculateGauge(noTank, [], at(0)), 500)).toBe(false);
   });
 });
 

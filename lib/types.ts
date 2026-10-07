@@ -54,5 +54,6 @@ export type Me = {
   id: string;
   email: string | null;
   name: string | null;
+  lowFuelKm: number | null; // reminder threshold; null = off
   vehicleCount: number;
 };

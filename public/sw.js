@@ -51,3 +51,13 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Low-fuel reminders: tapping one opens (or focuses) the app.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) =>
+      windows.length > 0 ? windows[0].focus() : self.clients.openWindow("/")
+    )
+  );
+});

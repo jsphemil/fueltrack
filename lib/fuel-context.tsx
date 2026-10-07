@@ -3,12 +3,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { apiRequest } from "@/lib/api";
+import { isLowFuel } from "@/lib/engine";
 import { flushOutbox, getOutbox, getServerOutbox, queueEvent, subscribeOutbox, type OutboxItem } from "@/lib/outbox";
 import type { Me, VehicleSummary } from "@/lib/types";
 
 const ACTIVE_VEHICLE_KEY = "fueltrack:activeVehicleId";
 // Last loaded data, so the app (and the reserve tap) works when opened offline.
 const CACHE_KEY = "fueltrack:cache";
+// vehicleId → last fill id already reminded about, so it's once per tank.
+const LOW_FUEL_KEY = "fueltrack:lowFuelNotified";
 
 type FuelContextValue = {
   me: Me | null;
@@ -51,6 +54,38 @@ export function clearFuelCache() {
     window.localStorage.removeItem(ACTIVE_VEHICLE_KEY);
   } catch {
     // Nothing to clear.
+  }
+}
+
+// Shows a phone notification for each vehicle that is newly low on fuel.
+// Runs when the app loads data; it can't fire while the app is closed.
+async function notifyLowFuel(vehicles: VehicleSummary[], thresholdKm: number | null) {
+  if (thresholdKm === null || !("Notification" in window) || Notification.permission !== "granted") return;
+  let notified: Record<string, string>;
+  try {
+    notified = JSON.parse(window.localStorage.getItem(LOW_FUEL_KEY) ?? "{}") as Record<string, string>;
+  } catch {
+    notified = {};
+  }
+  for (const vehicle of vehicles) {
+    const tankId = vehicle.lastFill?.id ?? "";
+    if (!isLowFuel(vehicle.gauge, thresholdKm) || notified[vehicle.id] === tankId) continue;
+    const title = `${vehicle.name}: low on fuel`;
+    const options = { body: `About ${vehicle.gauge.kmToReserve} km to reserve. Fill up soon.`, icon: "/icon/192", tag: `low-fuel-${vehicle.id}` };
+    try {
+      // Android only shows notifications through the service worker.
+      const registration = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
+      if (registration) await registration.showNotification(title, options);
+      else new Notification(title, options);
+      notified[vehicle.id] = tankId;
+    } catch {
+      // Notifications are optional.
+    }
+  }
+  try {
+    window.localStorage.setItem(LOW_FUEL_KEY, JSON.stringify(notified));
+  } catch {
+    // Worst case the reminder repeats.
   }
 }
 
@@ -122,6 +157,11 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [userId, refresh, sync]);
+
+  const lowFuelKm = me?.lowFuelKm ?? null;
+  useEffect(() => {
+    if (loaded) void notifyLowFuel(allVehicles.filter((vehicle) => !vehicle.archived), lowFuelKm);
+  }, [loaded, allVehicles, lowFuelKm]);
 
   const setActiveVehicleId = useCallback((id: string) => {
     setActiveVehicleIdState(id);
