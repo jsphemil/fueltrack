@@ -9,8 +9,9 @@ import {
   documentStage,
   efficiency,
   isLowFuel,
-  isServiceDue,
-  serviceDueKm,
+  addMonths,
+  serviceStatus,
+  serviceUrgency,
   kmPerDay,
   monthKey,
   resolveReserveOdometer,
@@ -211,24 +212,38 @@ describe("isLowFuel", () => {
   });
 });
 
-describe("serviceDueKm", () => {
-  const bike = { startOdometer: 100000, serviceIntervalKm: 3000, lastServiceOdometer: null };
+describe("service log", () => {
+  const today = new Date(2026, 9, 7, 9, 0); // 7 Oct 2026, local
+  const oil = { id: "i1", name: "Engine oil", intervalKm: 3000, intervalMonths: 6, baselineOdometer: 100000, baselineDate: "2026-06-01" };
 
-  it("counts from the start odometer until a service is recorded", () => {
-    expect(serviceDueKm(bike, 120000)).toBe(1000); // 2000 km ridden of 3000
-    expect(serviceDueKm({ ...bike, lastServiceOdometer: 125000 }, 130005)).toBe(2500);
+  it("adds months, clamping to the end of the month", () => {
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2028-01-31", 1)).toBe("2028-02-29");
+    expect(addMonths("2026-08-15", 6)).toBe("2027-02-15");
   });
 
-  it("goes negative when overdue and is off without an interval", () => {
-    expect(serviceDueKm(bike, 131000)).toBe(-100);
-    expect(serviceDueKm({ ...bike, serviceIntervalKm: null }, 131000)).toBeNull();
+  it("counts from the starting point until a service includes the item", () => {
+    const status = serviceStatus(oil, [], 120000, today); // 2000 km ridden
+    expect(status).toMatchObject({ dueKm: 1000, lastOdometer: 100000, lastDate: "2026-06-01", due: false });
+    expect(status.dueDays).toBe(55); // 1 Dec 2026
   });
 
-  it("flags due within 100 km", () => {
-    expect(isServiceDue(100)).toBe(true);
-    expect(isServiceDue(-5)).toBe(true);
-    expect(isServiceDue(101)).toBe(false);
-    expect(isServiceDue(null)).toBe(false);
+  it("uses the furthest service, whatever order records come in", () => {
+    const done = [{ odometer: 125000, occurredOn: "2026-09-01" }, { odometer: 110000, occurredOn: new Date("2026-07-01T00:00:00Z") }];
+    expect(serviceStatus(oil, done, 130000, today)).toMatchObject({ lastOdometer: 125000, lastDate: "2026-09-01", dueKm: 2500 });
+  });
+
+  it("ranks the most overdue share of its interval first", () => {
+    const chain = { ...oil, id: "i2", name: "Chain", intervalKm: 500, intervalMonths: null };
+    const statuses = [serviceStatus(oil, [], 128500, today), serviceStatus(chain, [], 110000, today)]; // 5 % vs -100 % left
+    expect(statuses.sort((a, b) => serviceUrgency(a) - serviceUrgency(b)).map((status) => status.name)).toEqual(["Chain", "Engine oil"]);
+  });
+
+  it("is due within 100 km or 14 days, and overdue goes negative", () => {
+    expect(serviceStatus(oil, [], 129000, today)).toMatchObject({ dueKm: 100, due: true });
+    expect(serviceStatus(oil, [], 131000, today)).toMatchObject({ dueKm: -100, due: true });
+    const byTime = { ...oil, intervalKm: null, baselineDate: "2026-04-15" }; // due 15 Oct
+    expect(serviceStatus(byTime, [], 999999, today)).toMatchObject({ dueKm: null, dueDays: 8, due: true });
   });
 });
 

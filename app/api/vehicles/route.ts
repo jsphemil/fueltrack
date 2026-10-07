@@ -1,6 +1,6 @@
 import { ensureUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getVehicleEvents, jsonError, STARTING_POINT_NOTE, summarizeVehicle, withUser } from "@/lib/server";
+import { getVehicleEvents, jsonError, SERVICE_ITEMS_INCLUDE, STARTING_POINT_NOTE, summarizeVehicle, withUser } from "@/lib/server";
 import { isUuid, parseVehicleInput, readJsonBody } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -12,11 +12,11 @@ export async function GET(request: Request) {
     const vehicles = await prisma.vehicle.findMany({
       where: { userId: user.id },
       orderBy: [{ archived: "asc" }, { createdAt: "asc" }],
-      include: { events: true },
+      include: { events: true, serviceItems: SERVICE_ITEMS_INCLUDE },
     });
     const now = new Date();
     return Response.json({
-      vehicles: vehicles.map(({ events, ...vehicle }) => summarizeVehicle(vehicle, events, now)),
+      vehicles: vehicles.map(({ events, serviceItems, ...vehicle }) => summarizeVehicle(vehicle, events, now, serviceItems)),
     });
   });
 }

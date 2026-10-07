@@ -1,7 +1,7 @@
 // Shapes returned by the API (dates arrive as ISO strings).
-import type { Cycle, EventKind, Gauge, VehicleStats } from "@/lib/engine";
+import type { Cycle, EventKind, Gauge, ServiceStatus, VehicleStats } from "@/lib/engine";
 
-export type { EventKind, Gauge, VehicleStats };
+export type { EventKind, Gauge, ServiceStatus, VehicleStats };
 
 export type FuelEvent = {
   id: string;
@@ -25,8 +25,6 @@ export type Vehicle = {
   startOdometer: number;
   tankCapacityMl: number | null;
   reserveMl: number | null;
-  serviceIntervalKm: number | null;
-  lastServiceOdometer: number | null; // tenths of km
   archived: boolean;
   createdAt: string;
 };
@@ -37,7 +35,7 @@ export type VehicleSummary = Vehicle & {
   lastFill: FuelEvent | null;
   lastPrice: number | null;
   openReserve: FuelEvent | null;
-  serviceDueKm: number | null; // km to next oil change; negative = overdue
+  services: ServiceStatus[]; // due first
   eventCount: number;
 };
 
@@ -51,6 +49,26 @@ export type TimelineCycle = {
   kmPerL: number | null;
   status: Cycle["status"];
   approx: boolean;
+};
+
+export type ServiceItem = {
+  id: string;
+  vehicleId: string;
+  name: string;
+  intervalKm: number | null;
+  intervalMonths: number | null;
+  baselineOdometer: number;
+  baselineDate: string;
+};
+
+export type ServiceRecord = {
+  id: string;
+  vehicleId: string;
+  occurredOn: string;
+  odometer: number;
+  costPaise: number | null;
+  note: string | null;
+  items: Array<{ id: string; name: string }>;
 };
 
 export type VehicleDocument = {

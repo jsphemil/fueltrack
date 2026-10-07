@@ -32,9 +32,6 @@ export default function VehicleForm({ vehicle, submitLabel, onSaved, onCancel }:
   const [odometer, setOdometer] = useState(toInputNumber(vehicle?.startOdometer, 10, 1));
   const [tankCapacity, setTankCapacity] = useState(toInputNumber(vehicle?.tankCapacityMl, 1000, 2));
   const [reserve, setReserve] = useState(toInputNumber(vehicle?.reserveMl, 1000, 2));
-  const [serviceInterval, setServiceInterval] = useState(vehicle?.serviceIntervalKm != null ? String(vehicle.serviceIntervalKm) : "");
-  const [lastService, setLastService] = useState(toInputNumber(vehicle?.lastServiceOdometer, 10, 1));
-  const [showService, setShowService] = useState(Boolean(vehicle?.serviceIntervalKm));
   const [showTank, setShowTank] = useState(Boolean(vehicle?.tankCapacityMl || vehicle?.reserveMl));
   const [initialState, setInitialState] = useState<InitialState>("reserve");
   const [saving, setSaving] = useState(false);
@@ -48,8 +45,6 @@ export default function VehicleForm({ vehicle, submitLabel, onSaved, onCancel }:
       startOdometerKm: odometer,
       tankCapacityL: showTank ? tankCapacity : "",
       reserveL: showTank ? reserve : "",
-      serviceIntervalKm: showService ? serviceInterval : "",
-      lastServiceKm: showService ? lastService : "",
     };
     const parsed = parseVehicleInput(body);
     if (!parsed.ok) return setError(parsed.error);
@@ -120,21 +115,6 @@ export default function VehicleForm({ vehicle, submitLabel, onSaved, onCancel }:
       ) : (
         <button type="button" onClick={() => setShowTank(true)} className="text-left text-sm font-medium text-subtle underline">
           Add tank capacity and reserve (optional, unlocks fuel level and km on reserve)
-        </button>
-      )}
-
-      {showService ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Oil change every (km)" hint="From the service booklet">
-            <input type="number" inputMode="numeric" min="0" step="1" value={serviceInterval} onChange={(event) => setServiceInterval(event.target.value)} placeholder="e.g. 3000" className={`${inputClass} tabular`} />
-          </Field>
-          <Field label="Last oil change at (km)" hint="Odometer reading; blank = starting odometer">
-            <input type="number" inputMode="decimal" min="0" step="0.1" value={lastService} onChange={(event) => setLastService(event.target.value)} placeholder="e.g. 12000" className={`${inputClass} tabular`} />
-          </Field>
-        </div>
-      ) : (
-        <button type="button" onClick={() => setShowService(true)} className="text-left text-sm font-medium text-subtle underline">
-          Add oil change reminder (optional)
         </button>
       )}
 

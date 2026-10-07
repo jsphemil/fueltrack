@@ -19,8 +19,10 @@ export const NOTE_MAX_LENGTH = 200;
 export const VEHICLE_KINDS = ["Motorcycle", "Scooter", "Moped", "Other"] as const;
 export const MAX_ODOMETER_KM = 9_999_999;
 export const AMOUNT_TOLERANCE_PAISE = 100;
-export const MIN_SERVICE_INTERVAL_KM = 100;
-export const MAX_SERVICE_INTERVAL_KM = 20_000;
+export const SERVICE_NAME_MAX_LENGTH = 40;
+export const MAX_SERVICE_INTERVAL_KM = 100_000;
+export const MAX_SERVICE_INTERVAL_MONTHS = 120;
+export const MAX_SERVICE_COST_RUPEES = 1_000_000;
 
 // Allow small clock differences between phone and server.
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -119,8 +121,6 @@ export type VehicleInput = {
   startOdometer: number;
   tankCapacityMl: number | null;
   reserveMl: number | null;
-  serviceIntervalKm: number | null;
-  lastServiceOdometer: number | null;
 };
 
 export function parseVehicleInput(body: Record<string, unknown> | null | undefined): ValidationResult<VehicleInput> {
@@ -160,25 +160,7 @@ export function parseVehicleInput(body: Record<string, unknown> | null | undefin
     }
   }
 
-  let serviceIntervalKm: number | null = null;
-  if (!isBlank(source.serviceIntervalKm)) {
-    serviceIntervalKm = toNumber(source.serviceIntervalKm);
-    if (!Number.isInteger(serviceIntervalKm) || serviceIntervalKm < MIN_SERVICE_INTERVAL_KM || serviceIntervalKm > MAX_SERVICE_INTERVAL_KM) {
-      return { ok: false, error: `Oil change interval must be a whole number from ${MIN_SERVICE_INTERVAL_KM} to ${MAX_SERVICE_INTERVAL_KM.toLocaleString("en-IN")} km` };
-    }
-  }
-
-  let lastServiceOdometer: number | null = null;
-  if (!isBlank(source.lastServiceKm)) {
-    const reading = parseOdometer(source.lastServiceKm, "Last oil change");
-    if (!reading.ok) return reading;
-    lastServiceOdometer = reading.value;
-  }
-
-  return {
-    ok: true,
-    value: { name, kind, startOdometer: odometer.value, tankCapacityMl, reserveMl, serviceIntervalKm, lastServiceOdometer },
-  };
+  return { ok: true, value: { name, kind, startOdometer: odometer.value, tankCapacityMl, reserveMl } };
 }
 
 // --- Events -----------------------------------------------------------------
@@ -359,6 +341,16 @@ export function checkOdometerOrder(params: {
 export const DOCUMENT_KINDS = ["Insurance", "PUC", "RC", "Licence", "Other"] as const;
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+// A calendar date "YYYY-MM-DD", stored as UTC midnight.
+function parseDateOnly(value: unknown, error: string): ValidationResult<Date> {
+  const text = toTrimmedString(value);
+  const date = new Date(`${text}T00:00:00Z`);
+  if (!DATE_ONLY_PATTERN.test(text) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text) {
+    return { ok: false, error };
+  }
+  return { ok: true, value: date };
+}
+
 export type DocumentInput = {
   kind: string;
   vehicleId: string | null;
@@ -374,13 +366,101 @@ export function parseDocumentInput(body: Record<string, unknown> | null | undefi
   const vehicleId = isBlank(source.vehicleId) ? null : source.vehicleId;
   if (vehicleId !== null && !isUuid(vehicleId)) return { ok: false, error: "Vehicle is invalid" };
 
-  const expiresText = toTrimmedString(source.expiresOn);
-  const expiresOn = new Date(`${expiresText}T00:00:00Z`);
-  if (!DATE_ONLY_PATTERN.test(expiresText) || Number.isNaN(expiresOn.getTime()) || expiresOn.toISOString().slice(0, 10) !== expiresText) {
-    return { ok: false, error: "Enter a valid expiry date" };
-  }
+  const expiresOn = parseDateOnly(source.expiresOn, "Enter a valid expiry date");
+  if (!expiresOn.ok) return expiresOn;
 
   const note = parseNote(source.note);
   if (!note.ok) return note;
-  return { ok: true, value: { kind, vehicleId, expiresOn, note: note.value } };
+  return { ok: true, value: { kind, vehicleId, expiresOn: expiresOn.value, note: note.value } };
+}
+
+// --- Service log ----------------------------------------------------------------
+
+function parseOptionalWhole(value: unknown, max: number, error: string): ValidationResult<number | null> {
+  if (isBlank(value)) return { ok: true, value: null };
+  const number = toNumber(value);
+  if (!Number.isInteger(number) || number < 1 || number > max) return { ok: false, error };
+  return { ok: true, value: number };
+}
+
+export type ServiceItemInput = {
+  name: string;
+  intervalKm: number | null;
+  intervalMonths: number | null;
+  baselineOdometer: number | null; // null = the vehicle's starting odometer
+  baselineDate: Date | null; // null = today
+};
+
+export function parseServiceItemInput(body: Record<string, unknown> | null | undefined): ValidationResult<ServiceItemInput> {
+  const source = body ?? {};
+  const name = toTrimmedString(source.name).replace(/\s+/g, " ");
+  if (!name) return { ok: false, error: "Name is required" };
+  if (name.length > SERVICE_NAME_MAX_LENGTH) return { ok: false, error: `Name must be at most ${SERVICE_NAME_MAX_LENGTH} characters` };
+
+  const intervalKm = parseOptionalWhole(source.intervalKm, MAX_SERVICE_INTERVAL_KM, `Every (km) must be a whole number up to ${MAX_SERVICE_INTERVAL_KM.toLocaleString("en-IN")}`);
+  if (!intervalKm.ok) return intervalKm;
+  const intervalMonths = parseOptionalWhole(source.intervalMonths, MAX_SERVICE_INTERVAL_MONTHS, `Every (months) must be a whole number up to ${MAX_SERVICE_INTERVAL_MONTHS}`);
+  if (!intervalMonths.ok) return intervalMonths;
+  if (intervalKm.value === null && intervalMonths.value === null) return { ok: false, error: "Set how often: every so many km, months, or both" };
+
+  let baselineOdometer: number | null = null;
+  if (!isBlank(source.lastDoneKm)) {
+    const reading = parseOdometer(source.lastDoneKm, "Last done at");
+    if (!reading.ok) return reading;
+    baselineOdometer = reading.value;
+  }
+  let baselineDate: Date | null = null;
+  if (!isBlank(source.lastDoneOn)) {
+    const date = parseDateOnly(source.lastDoneOn, "Enter a valid last done date");
+    if (!date.ok) return date;
+    baselineDate = date.value;
+  }
+
+  return { ok: true, value: { name, intervalKm: intervalKm.value, intervalMonths: intervalMonths.value, baselineOdometer, baselineDate } };
+}
+
+export type ServiceRecordInput = {
+  vehicleId: string;
+  occurredOn: Date;
+  odometer: number;
+  costPaise: number | null;
+  itemIds: string[];
+  note: string | null;
+};
+
+export function parseServiceRecordInput(
+  body: Record<string, unknown> | null | undefined,
+  now: Date = new Date()
+): ValidationResult<ServiceRecordInput> {
+  const source = body ?? {};
+  if (!isUuid(source.vehicleId)) return { ok: false, error: "Vehicle is invalid" };
+
+  const occurredOn = parseDateOnly(source.occurredOn, "Enter a valid service date");
+  if (!occurredOn.ok) return occurredOn;
+  // Date-only: allow "today" in any time zone, nothing later.
+  if (occurredOn.value.getTime() > now.getTime() + 24 * 60 * 60 * 1000) return { ok: false, error: "Service date can't be in the future" };
+
+  const odometer = parseOdometer(source.odometerKm, "Odometer");
+  if (!odometer.ok) return odometer;
+
+  let costPaise: number | null = null;
+  if (!isBlank(source.costRupees)) {
+    const cost = toNumber(source.costRupees);
+    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_SERVICE_COST_RUPEES) {
+      return { ok: false, error: `Cost must be between 0 and ${MAX_SERVICE_COST_RUPEES.toLocaleString("en-IN")} rupees` };
+    }
+    costPaise = rupeesToPaise(cost);
+  }
+
+  const itemIds = Array.isArray(source.itemIds) ? [...new Set(source.itemIds)] : [];
+  if (itemIds.length === 0) return { ok: false, error: "Tick at least one thing that was done" };
+  if (!itemIds.every(isUuid)) return { ok: false, error: "Service item is invalid" };
+
+  const note = parseNote(source.note);
+  if (!note.ok) return note;
+
+  return {
+    ok: true,
+    value: { vehicleId: source.vehicleId, occurredOn: occurredOn.value, odometer: odometer.value, costPaise, itemIds, note: note.value },
+  };
 }

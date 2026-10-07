@@ -47,6 +47,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
 * Service reminders: oil change interval per vehicle, due/overdue notice on Home and a notification within 100 km
 * Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
+* Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost (replaces the single oil change reminder)
 
 ---
 
@@ -60,7 +61,6 @@ _Nothing in progress._
 
 ### Vehicle Manager
 
-* Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost
 * All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
 * Mileage drop alert: warn when recent km/l falls clearly below the usual figure
 * Yearly summary (km, spend, mileage) and CSV import to restore a backup
