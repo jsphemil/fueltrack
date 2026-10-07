@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { BarValueChart, LineTrendChart } from "@/components/Charts";
@@ -7,12 +8,13 @@ import { Notice, Page, PageHeader, StatTile, VehicleChips } from "@/components/u
 import { apiRequest } from "@/lib/api";
 import { useFuel } from "@/lib/fuel-context";
 import { formatDate, formatKm, formatKmPerL, formatLitres, formatMoney, formatMonth, formatNumber } from "@/lib/format";
-import type { VehicleStats } from "@/lib/types";
-import { cardClass, mutedTextClass } from "@/lib/ui";
+import type { OwnershipCost, VehicleStats } from "@/lib/types";
+import { cardClass, mutedTextClass, secondaryButtonClass } from "@/lib/ui";
 
 export default function StatsPage() {
   const { activeVehicle, vehicles } = useFuel();
   const [stats, setStats] = useState<VehicleStats | null>(null);
+  const [ownership, setOwnership] = useState<OwnershipCost | null>(null);
   const [error, setError] = useState("");
   const vehicleId = activeVehicle?.id ?? null;
 
@@ -20,10 +22,11 @@ export default function StatsPage() {
     if (!vehicleId) return;
     let isMounted = true;
     const tzOffset = new Date().getTimezoneOffset();
-    void apiRequest<{ stats: VehicleStats }>(`/api/vehicles/${vehicleId}/stats?tzOffset=${tzOffset}`).then((result) => {
+    void apiRequest<{ stats: VehicleStats; ownership: OwnershipCost }>(`/api/vehicles/${vehicleId}/stats?tzOffset=${tzOffset}`).then((result) => {
       if (!isMounted) return;
       if (result.ok) {
         setStats(result.data.stats);
+        setOwnership(result.data.ownership);
         setError("");
       } else {
         setError(result.error);
@@ -50,7 +53,11 @@ export default function StatsPage() {
 
   return (
     <Page>
-      <PageHeader title="Stats" subtitle={activeVehicle?.name} />
+      <PageHeader
+        title="Stats"
+        subtitle={activeVehicle?.name}
+        actions={<Link href="/expenses" className={secondaryButtonClass}>Expenses</Link>}
+      />
       <VehicleChips />
       {error ? <Notice tone="danger">{error}</Notice> : null}
 
@@ -61,13 +68,39 @@ export default function StatsPage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatTile label="Mileage (recent)" value={formatKmPerL(stats.efficiency)} hint="Last 5 cycles" />
             <StatTile label="Mileage (lifetime)" value={formatKmPerL(stats.lifetimeEfficiency)} />
-            <StatTile label="Cost per km" value={stats.costPerKmPaise !== null ? formatMoney(stats.costPerKmPaise) : "—"} />
+            <StatTile label="Fuel per km" value={stats.costPerKmPaise !== null ? formatMoney(stats.costPerKmPaise) : "—"} hint="At your mileage" />
             <StatTile label="Riding per day" value={stats.kmPerDay !== null ? `${formatNumber(stats.kmPerDay, 1)} km` : "—"} />
-            <StatTile label="Total spend" value={formatMoney(stats.totalSpendPaise, true)} hint={`${stats.fillCount} fills`} />
+            <StatTile label="Fuel spend" value={formatMoney(stats.totalSpendPaise, true)} hint={`${stats.fillCount} fills`} />
             <StatTile label="Fuel bought" value={formatLitres(stats.totalVolumeMl, 1)} hint={stats.avgFillMl !== null ? `Avg fill ${formatLitres(stats.avgFillMl, 1)}` : undefined} />
             <StatTile label="Distance" value={formatKm(stats.distance)} hint="Since you started" />
             <StatTile label="Ridden on reserve" value={stats.avgReserveKm !== null ? `${formatNumber(stats.avgReserveKm, 1)} km` : "—"} hint="Average before filling" />
           </div>
+
+          {ownership && ownership.totalPaise > 0 ? (
+            <section className={cardClass}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-semibold text-foreground">Cost of ownership</h2>
+                <span className="tabular text-sm text-muted">
+                  {ownership.perKmPaise !== null ? `${formatMoney(ownership.perKmPaise)} per km, all in` : "Ride more to see per km"}
+                </span>
+              </div>
+              <p className="tabular mt-1 text-3xl font-bold tracking-tight text-foreground">{formatMoney(ownership.totalPaise, true)}</p>
+              <ul className="mt-4 space-y-3">
+                {ownership.breakdown.map((row) => (
+                  <li key={row.label}>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-subtle">{row.label}</span>
+                      <span className="tabular font-medium text-foreground">{formatMoney(row.paise, true)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                      <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(2, (row.paise / ownership.totalPaise) * 100)}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className={`mt-4 ${mutedTextClass}`}>Fuel, service visits and expenses since you started tracking.</p>
+            </section>
+          ) : null}
 
           <div className="grid gap-5 lg:grid-cols-2">
             <section className={cardClass}>

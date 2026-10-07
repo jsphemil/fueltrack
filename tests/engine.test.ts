@@ -14,6 +14,7 @@ import {
   serviceUrgency,
   kmPerDay,
   monthKey,
+  ownershipCost,
   resolveReserveOdometer,
   sortEvents,
   type EngineEvent,
@@ -263,6 +264,33 @@ describe("document reminders", () => {
     expect(documentStage(7)).toBe("7");
     expect(documentStage(0)).toBe("7");
     expect(documentStage(-1)).toBe("expired");
+  });
+});
+
+describe("ownershipCost", () => {
+  it("adds fuel, service and expenses, biggest first, and divides by distance", () => {
+    const cost = ownershipCost(
+      {
+        fuelPaise: 500000,
+        maintenancePaise: 120000,
+        repairPaise: 0,
+        expenses: [{ category: "Insurance", amountPaise: 150000 }, { category: "Parking", amountPaise: 2000 }, { category: "Parking", amountPaise: 3000 }],
+      },
+      50000 // 5000 km
+    );
+    expect(cost.totalPaise).toBe(775000);
+    expect(cost.perKmPaise).toBe(155); // ₹1.55 per km
+    expect(cost.breakdown).toEqual([
+      { label: "Fuel", paise: 500000 },
+      { label: "Insurance", paise: 150000 },
+      { label: "Maintenance", paise: 120000 },
+      { label: "Parking", paise: 5000 },
+    ]);
+  });
+
+  it("has no per-km figure before any distance or spend", () => {
+    expect(ownershipCost({ fuelPaise: 1000, maintenancePaise: 0, repairPaise: 0, expenses: [] }, 0).perKmPaise).toBeNull();
+    expect(ownershipCost({ fuelPaise: 0, maintenancePaise: 0, repairPaise: 0, expenses: [] }, 1000)).toEqual({ totalPaise: 0, perKmPaise: null, breakdown: [] });
   });
 });
 

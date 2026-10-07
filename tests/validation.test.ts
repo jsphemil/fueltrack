@@ -5,6 +5,7 @@ import {
   parseFillInput,
   parseOdometerInput,
   parseDocumentInput,
+  parseExpenseInput,
   parseIssueInput,
   parseLowFuelInput,
   parseProfileInput,
@@ -166,6 +167,25 @@ describe("parseServiceRecordInput", () => {
     expect(parseServiceRecordInput(repair, now).ok).toBe(false);
     expect(parseServiceRecordInput({ ...record, itemIds: [], note: "Oil top-up" }, now).ok).toBe(false); // maintenance needs an item
     expect(parseServiceRecordInput({ ...repair, issueIds: ["x"] }, now).ok).toBe(false);
+  });
+});
+
+describe("parseExpenseInput", () => {
+  const expense = { vehicleId: id, category: "Parking", occurredOn: "2026-08-10", amountRupees: "40.5", note: " Mall " };
+
+  it("stores the amount in paise", () => {
+    expect(parseExpenseInput(expense, now)).toEqual({
+      ok: true,
+      value: { vehicleId: id, category: "Parking", occurredOn: new Date("2026-08-10T00:00:00Z"), amountPaise: 4050, note: "Mall" },
+    });
+  });
+
+  it("rejects unknown categories, empty or negative amounts and future dates", () => {
+    expect(parseExpenseInput({ ...expense, category: "Snacks" }, now).ok).toBe(false);
+    for (const amountRupees of ["", "0", "-5", "abc", "1000001"]) {
+      expect(parseExpenseInput({ ...expense, amountRupees }, now).ok).toBe(false);
+    }
+    expect(parseExpenseInput({ ...expense, occurredOn: "2026-08-12" }, now).ok).toBe(false);
   });
 });
 

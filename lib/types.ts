@@ -1,7 +1,16 @@
 // Shapes returned by the API (dates arrive as ISO strings).
-import type { Cycle, EventKind, Gauge, ServiceStatus, VehicleStats } from "@/lib/engine";
+import type { Cycle, EventKind, Gauge, OwnershipCost, ServiceStatus, VehicleStats } from "@/lib/engine";
 
-export type { EventKind, Gauge, ServiceStatus, VehicleStats };
+export type { EventKind, Gauge, OwnershipCost, ServiceStatus, VehicleStats };
+
+export type Expense = {
+  id: string;
+  vehicleId: string;
+  category: string;
+  occurredOn: string;
+  amountPaise: number;
+  note: string | null;
+};
 
 export type FuelEvent = {
   id: string;

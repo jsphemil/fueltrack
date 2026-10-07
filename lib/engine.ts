@@ -549,3 +549,28 @@ export function documentStage(daysLeft: number) {
   const stage = [...DOCUMENT_REMIND_DAYS].sort((a, b) => a - b).find((days) => daysLeft <= days);
   return stage === undefined ? null : String(stage);
 }
+
+// --- Cost of ownership --------------------------------------------------------------
+
+export type OwnershipCost = {
+  totalPaise: number;
+  perKmPaise: number | null; // everything spent / distance ridden
+  breakdown: Array<{ label: string; paise: number }>; // biggest first, zero rows left out
+};
+
+// Fuel, service visits and other expenses together. Distance in tenths of km.
+export function ownershipCost(
+  parts: { fuelPaise: number; maintenancePaise: number; repairPaise: number; expenses: Array<{ category: string; amountPaise: number }> },
+  distance: number
+): OwnershipCost {
+  const totals = new Map<string, number>([
+    ["Fuel", parts.fuelPaise],
+    ["Maintenance", parts.maintenancePaise],
+    ["Repairs", parts.repairPaise],
+  ]);
+  for (const expense of parts.expenses) totals.set(expense.category, (totals.get(expense.category) ?? 0) + expense.amountPaise);
+
+  const breakdown = [...totals].map(([label, paise]) => ({ label, paise })).filter((row) => row.paise > 0).sort((a, b) => b.paise - a.paise);
+  const totalPaise = breakdown.reduce((sum, row) => sum + row.paise, 0);
+  return { totalPaise, perKmPaise: distance > 0 && totalPaise > 0 ? round(totalPaise / (distance / 10), 2) : null, breakdown };
+}
