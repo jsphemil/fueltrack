@@ -212,6 +212,20 @@ export default function HomePage() {
         </Notice>
       ) : null}
 
+      {activeVehicle.openIssues.length > 0 ? (
+        <Notice
+          tone="info"
+          action={
+            <Link href="/service" className="text-sm font-semibold text-foreground underline">
+              Service
+            </Link>
+          }
+        >
+          {activeVehicle.openIssues.length === 1 ? "Open issue" : `${activeVehicle.openIssues.length} open issues`}:{" "}
+          {activeVehicle.openIssues.map((issue) => issue.title).join(", ")}.
+        </Notice>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <GaugeCard vehicle={activeVehicle} />
         <div className="grid content-start gap-5">

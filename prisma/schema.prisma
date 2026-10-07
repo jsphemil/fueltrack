@@ -37,6 +37,7 @@ model Vehicle {
   documents           Document[]
   serviceItems        ServiceItem[]
   serviceRecords      ServiceRecord[]
+  issues              Issue[]
 
   @@index([userId])
 }
@@ -105,6 +106,7 @@ model ServiceRecord {
   id         String              @id @default(uuid())
   userId     String
   vehicleId  String
+  kind       String              @default("MAINTENANCE") // MAINTENANCE or REPAIR
   occurredOn DateTime            @db.Date
   odometer   Int // tenths of km
   costPaise  Int?
@@ -112,6 +114,7 @@ model ServiceRecord {
   createdAt  DateTime            @default(now())
   vehicle    Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   items      ServiceRecordItem[]
+  issues     Issue[]
 
   @@index([vehicleId, occurredOn])
 }
@@ -124,4 +127,21 @@ model ServiceRecordItem {
 
   @@id([recordId, itemId])
   @@index([itemId])
+}
+
+// A problem noticed with the vehicle ("brake squeal"). Open until a service
+// record fixes it; deleting that record reopens it.
+model Issue {
+  id        String         @id @default(uuid())
+  userId    String
+  vehicleId String
+  title     String
+  notedOn   DateTime       @db.Date
+  recordId  String? // the visit that fixed it; null = open
+  createdAt DateTime       @default(now())
+  vehicle   Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  record    ServiceRecord? @relation(fields: [recordId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId])
+  @@index([recordId])
 }

@@ -23,6 +23,9 @@ export const SERVICE_NAME_MAX_LENGTH = 40;
 export const MAX_SERVICE_INTERVAL_KM = 100_000;
 export const MAX_SERVICE_INTERVAL_MONTHS = 120;
 export const MAX_SERVICE_COST_RUPEES = 1_000_000;
+export const SERVICE_KINDS = ["MAINTENANCE", "REPAIR"] as const;
+export const ISSUE_TITLE_MAX_LENGTH = 80;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Allow small clock differences between phone and server.
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -421,12 +424,16 @@ export function parseServiceItemInput(body: Record<string, unknown> | null | und
 
 export type ServiceRecordInput = {
   vehicleId: string;
+  kind: (typeof SERVICE_KINDS)[number];
   occurredOn: Date;
   odometer: number;
   costPaise: number | null;
   itemIds: string[];
+  issueIds: string[]; // open issues this visit fixed
   note: string | null;
 };
+
+const uniqueIds = (value: unknown) => (Array.isArray(value) ? [...new Set(value)] : []);
 
 export function parseServiceRecordInput(
   body: Record<string, unknown> | null | undefined,
@@ -434,11 +441,13 @@ export function parseServiceRecordInput(
 ): ValidationResult<ServiceRecordInput> {
   const source = body ?? {};
   if (!isUuid(source.vehicleId)) return { ok: false, error: "Vehicle is invalid" };
+  const kind = SERVICE_KINDS.find((option) => option === source.kind);
+  if (!kind) return { ok: false, error: "Choose maintenance or repair" };
 
   const occurredOn = parseDateOnly(source.occurredOn, "Enter a valid service date");
   if (!occurredOn.ok) return occurredOn;
   // Date-only: allow "today" in any time zone, nothing later.
-  if (occurredOn.value.getTime() > now.getTime() + 24 * 60 * 60 * 1000) return { ok: false, error: "Service date can't be in the future" };
+  if (occurredOn.value.getTime() > now.getTime() + DAY_MS) return { ok: false, error: "Service date can't be in the future" };
 
   const odometer = parseOdometer(source.odometerKm, "Odometer");
   if (!odometer.ok) return odometer;
@@ -452,15 +461,31 @@ export function parseServiceRecordInput(
     costPaise = rupeesToPaise(cost);
   }
 
-  const itemIds = Array.isArray(source.itemIds) ? [...new Set(source.itemIds)] : [];
-  if (itemIds.length === 0) return { ok: false, error: "Tick at least one thing that was done" };
+  const itemIds = uniqueIds(source.itemIds);
+  const issueIds = uniqueIds(source.issueIds);
   if (!itemIds.every(isUuid)) return { ok: false, error: "Service item is invalid" };
+  if (!issueIds.every(isUuid)) return { ok: false, error: "Issue is invalid" };
 
   const note = parseNote(source.note);
   if (!note.ok) return note;
+  // Something must say what was done: a scheduled item, a fixed issue, or (for a repair) the note.
+  if (itemIds.length === 0 && issueIds.length === 0 && !(kind === "REPAIR" && note.value)) {
+    return { ok: false, error: kind === "REPAIR" ? "Pick the issue fixed or describe the repair" : "Tick at least one thing that was done" };
+  }
 
   return {
     ok: true,
-    value: { vehicleId: source.vehicleId, occurredOn: occurredOn.value, odometer: odometer.value, costPaise, itemIds, note: note.value },
+    value: { vehicleId: source.vehicleId, kind, occurredOn: occurredOn.value, odometer: odometer.value, costPaise, itemIds, issueIds, note: note.value },
   };
+}
+
+export function parseIssueInput(body: Record<string, unknown> | null | undefined, now: Date = new Date()): ValidationResult<{ title: string; notedOn: Date }> {
+  const source = body ?? {};
+  const title = toTrimmedString(source.title).replace(/\s+/g, " ");
+  if (!title) return { ok: false, error: "Describe the problem" };
+  if (title.length > ISSUE_TITLE_MAX_LENGTH) return { ok: false, error: `Keep it under ${ISSUE_TITLE_MAX_LENGTH} characters` };
+  const notedOn = parseDateOnly(source.notedOn, "Enter a valid date");
+  if (!notedOn.ok) return notedOn;
+  if (notedOn.value.getTime() > now.getTime() + DAY_MS) return { ok: false, error: "Date can't be in the future" };
+  return { ok: true, value: { title, notedOn: notedOn.value } };
 }

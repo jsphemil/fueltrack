@@ -167,7 +167,7 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
       if (cached) {
         setMe(cached.me);
         // Data cached by an older build may lack newer fields.
-        setAllVehicles(cached.vehicles.map((vehicle) => ({ ...vehicle, services: vehicle.services ?? [] })));
+        setAllVehicles(cached.vehicles.map((vehicle) => ({ ...vehicle, services: vehicle.services ?? [], openIssues: vehicle.openIssues ?? [] })));
         setDocuments(cached.documents ?? []);
         setLoading(false);
       }
