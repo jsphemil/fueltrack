@@ -46,14 +46,13 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 * Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
 * Service reminders: oil change interval per vehicle, due/overdue notice on Home and a notification within 100 km
+* Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
 
 ---
 
 ## In Progress
 
-### Vehicle Manager
-
-* Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
+_Nothing in progress._
 
 ---
 

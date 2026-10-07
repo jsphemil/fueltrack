@@ -4,6 +4,7 @@ import {
   checkOdometerOrder,
   parseFillInput,
   parseOdometerInput,
+  parseDocumentInput,
   parseLowFuelInput,
   parseProfileInput,
   parseReserveInput,
@@ -134,6 +135,26 @@ describe("parseVehicleInput service reminder", () => {
       expect(parseVehicleInput({ ...vehicle, serviceIntervalKm }).ok).toBe(false);
     }
     expect(parseVehicleInput({ ...vehicle, serviceIntervalKm: "3000", lastServiceKm: "-1" }).ok).toBe(false);
+  });
+});
+
+describe("parseDocumentInput", () => {
+  const doc = { kind: "Insurance", vehicleId: id, expiresOn: "2027-03-31", note: " Policy 123 " };
+
+  it("stores the expiry as UTC midnight and allows personal documents", () => {
+    expect(parseDocumentInput(doc)).toEqual({
+      ok: true,
+      value: { kind: "Insurance", vehicleId: id, expiresOn: new Date("2027-03-31T00:00:00Z"), note: "Policy 123" },
+    });
+    expect(parseDocumentInput({ ...doc, kind: "Licence", vehicleId: "" })).toMatchObject({ ok: true, value: { vehicleId: null } });
+  });
+
+  it("rejects bad kinds, vehicle ids and dates", () => {
+    expect(parseDocumentInput({ ...doc, kind: "Passport" }).ok).toBe(false);
+    expect(parseDocumentInput({ ...doc, vehicleId: "v1" }).ok).toBe(false);
+    for (const expiresOn of ["", "2027-02-30", "31/03/2027", "2027-3-31"]) {
+      expect(parseDocumentInput({ ...doc, expiresOn }).ok).toBe(false);
+    }
   });
 });
 

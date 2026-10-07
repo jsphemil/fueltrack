@@ -53,6 +53,15 @@ export type TimelineCycle = {
   approx: boolean;
 };
 
+export type VehicleDocument = {
+  id: string;
+  vehicleId: string | null; // null = personal (e.g. driving licence)
+  kind: string;
+  expiresOn: string; // ISO; the date part is the expiry date
+  note: string | null;
+  createdAt: string;
+};
+
 export type Me = {
   id: string;
   email: string | null;

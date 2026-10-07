@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { PlusIcon } from "@/components/Icons";
@@ -48,11 +49,14 @@ export default function VehiclesPage() {
       <PageHeader
         title="Vehicles"
         actions={
-          mode?.type !== "add" ? (
-            <button type="button" onClick={() => setMode({ type: "add" })} className={primaryButtonClass}>
-              <PlusIcon size={18} /> Add vehicle
-            </button>
-          ) : null
+          <div className="flex flex-wrap gap-2">
+            <Link href="/documents" className={secondaryButtonClass}>Documents</Link>
+            {mode?.type !== "add" ? (
+              <button type="button" onClick={() => setMode({ type: "add" })} className={primaryButtonClass}>
+                <PlusIcon size={18} /> Add vehicle
+              </button>
+            ) : null}
+          </div>
         }
       />
       {error ? <Notice tone="danger">{error}</Notice> : null}

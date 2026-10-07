@@ -5,6 +5,8 @@ import {
   calculateGauge,
   calculateStats,
   currentOdometer,
+  daysUntil,
+  documentStage,
   efficiency,
   isLowFuel,
   isServiceDue,
@@ -227,6 +229,25 @@ describe("serviceDueKm", () => {
     expect(isServiceDue(-5)).toBe(true);
     expect(isServiceDue(101)).toBe(false);
     expect(isServiceDue(null)).toBe(false);
+  });
+});
+
+describe("document reminders", () => {
+  const today = new Date(2026, 9, 7, 23, 30); // local time, late evening
+
+  it("counts whole calendar days to the expiry date", () => {
+    expect(daysUntil("2026-10-07T00:00:00.000Z", today)).toBe(0);
+    expect(daysUntil("2026-11-06", today)).toBe(30);
+    expect(daysUntil("2026-10-01", today)).toBe(-6);
+  });
+
+  it("moves through 30 days, 7 days and expired", () => {
+    expect(documentStage(31)).toBeNull();
+    expect(documentStage(30)).toBe("30");
+    expect(documentStage(8)).toBe("30");
+    expect(documentStage(7)).toBe("7");
+    expect(documentStage(0)).toBe("7");
+    expect(documentStage(-1)).toBe("expired");
   });
 });
 

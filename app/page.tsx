@@ -6,9 +6,9 @@ import { FormEvent, useState, type ReactNode } from "react";
 import Gauge from "@/components/Gauge";
 import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
-import { isServiceDue } from "@/lib/engine";
+import { daysUntil, documentStage, isServiceDue } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
-import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatRelative, formatServiceDue } from "@/lib/format";
+import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatExpiry, formatRelative, formatServiceDue } from "@/lib/format";
 import { useAnimatedNumber } from "@/lib/motion";
 import { newId } from "@/lib/outbox";
 import type { VehicleSummary } from "@/lib/types";
@@ -134,7 +134,9 @@ function OdometerCard({ vehicle }: { vehicle: VehicleSummary }) {
 }
 
 export default function HomePage() {
-  const { me, activeVehicle, loading, error } = useFuel();
+  const { me, activeVehicle, allVehicles, documents, loading, error } = useFuel();
+  // Documents come soonest expiry first, so the first due one is the most urgent.
+  const dueDocuments = documents.filter((document) => documentStage(daysUntil(document.expiresOn)) !== null);
 
   if (loading && !activeVehicle) {
     return (
@@ -175,6 +177,22 @@ export default function HomePage() {
           }
         >
           Reserve marked {formatRelative(openReserve.occurredAt)}. Add the odometer reading now, or the trip-meter reading when you fill up.
+        </Notice>
+      ) : null}
+
+      {dueDocuments.length > 0 ? (
+        <Notice
+          tone={daysUntil(dueDocuments[0].expiresOn) < 0 ? "danger" : "info"}
+          action={
+            <Link href="/documents" className="text-sm font-semibold text-foreground underline">
+              Documents
+            </Link>
+          }
+        >
+          {dueDocuments[0].kind}
+          {dueDocuments[0].vehicleId ? ` (${allVehicles.find((vehicle) => vehicle.id === dueDocuments[0].vehicleId)?.name ?? "vehicle"})` : ""}:{" "}
+          {formatExpiry(daysUntil(dueDocuments[0].expiresOn)).toLowerCase()}.
+          {dueDocuments.length > 1 ? ` ${dueDocuments.length - 1} more due soon.` : ""}
         </Notice>
       ) : null}
 

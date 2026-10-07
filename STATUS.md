@@ -50,6 +50,7 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 | Area | Files |
 |---|---|
 | Calculation engine (cycles, gauge, stats, low-fuel check) | `lib/engine.ts` + `tests/engine.test.ts` |
+| Document reminders | `app/documents`, `app/api/documents/**`, `Document` table, `daysUntil`/`documentStage` in `lib/engine.ts` |
 | Service reminders | `serviceDueKm` in `lib/engine.ts`, `Vehicle.serviceIntervalKm`/`lastServiceOdometer`, `components/VehicleForm.tsx` |
 | Low-fuel reminders | `notifyLowFuel` in `lib/fuel-context.tsx`, Settings card, `User.lowFuelKm`, `notificationclick` in `public/sw.js` |
 | Input validation (shared by UI and API) | `lib/validation.ts` + `tests/validation.test.ts` |
