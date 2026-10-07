@@ -1,12 +1,13 @@
 // Server-only helpers shared by API routes.
-import type { Event, EventKind, Prisma, Vehicle } from "@prisma/client";
+import type { Event, EventKind, Prisma, ServiceItem, Vehicle } from "@prisma/client";
 
 import { getUserFromRequest, type AuthenticatedUser } from "@/lib/auth";
 import {
   calculateCycles,
   calculateGauge,
   resolveReserveOdometer,
-  serviceDueKm,
+  serviceStatus,
+  serviceUrgency,
   sortEvents,
   type EngineVehicle,
 } from "@/lib/engine";
@@ -61,8 +62,16 @@ export function toEngineVehicle(vehicle: Vehicle): EngineVehicle {
   };
 }
 
+// A service item with the services that included it.
+export type ServiceItemWithDone = ServiceItem & { records: { record: { odometer: number; occurredOn: Date } }[] };
+
+export const SERVICE_ITEMS_INCLUDE = {
+  orderBy: { createdAt: "asc" },
+  include: { records: { select: { record: { select: { odometer: true, occurredOn: true } } } } },
+} satisfies Prisma.Vehicle$serviceItemsArgs;
+
 // Everything the Home screen needs for one vehicle.
-export function summarizeVehicle(vehicle: Vehicle, events: Event[], now = new Date()) {
+export function summarizeVehicle(vehicle: Vehicle, events: Event[], now = new Date(), serviceItems: ServiceItemWithDone[] = []) {
   const ordered = sortEvents(events);
   const fills = ordered.filter((event) => event.kind === "FILL" && event.volumeMl !== null);
   const lastFill = fills.length > 0 ? fills[fills.length - 1] : null;
@@ -97,7 +106,10 @@ export function summarizeVehicle(vehicle: Vehicle, events: Event[], now = new Da
     lastFill,
     lastPrice,
     openReserve,
-    serviceDueKm: serviceDueKm(vehicle, gauge.odometer.odometer),
+    // Most urgent first.
+    services: serviceItems
+      .map((item) => serviceStatus(item, item.records.map(({ record }) => record), gauge.odometer.odometer, now))
+      .sort((a, b) => serviceUrgency(a) - serviceUrgency(b)),
     eventCount: ordered.length,
   };
 }

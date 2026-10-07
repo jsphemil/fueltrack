@@ -80,7 +80,15 @@ export function formatExpiry(daysLeft: number) {
   return `Expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
 }
 
-// "Oil change due in 80 km" / "Oil change overdue by 20 km".
-export function formatServiceDue(dueKm: number) {
-  return dueKm < 0 ? `Oil change overdue by ${formatNumber(-dueKm, 0)} km` : `Oil change due in ${formatNumber(dueKm, 0)} km`;
+// "250 km left · 12 days left" / "40 km overdue".
+export function formatServiceDue(status: { dueKm: number | null; dueDays: number | null }) {
+  const parts: string[] = [];
+  if (status.dueKm !== null) {
+    parts.push(status.dueKm < 0 ? `${formatNumber(-status.dueKm, 0)} km overdue` : `${formatNumber(status.dueKm, 0)} km left`);
+  }
+  if (status.dueDays !== null) {
+    const days = Math.abs(status.dueDays);
+    parts.push(`${days} day${days === 1 ? "" : "s"} ${status.dueDays < 0 ? "overdue" : "left"}`);
+  }
+  return parts.join(" · ");
 }

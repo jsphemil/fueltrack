@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { apiRequest } from "@/lib/api";
-import { daysUntil, documentStage, isLowFuel, isServiceDue } from "@/lib/engine";
+import { daysUntil, documentStage, isLowFuel } from "@/lib/engine";
 import { formatDateOnly, formatExpiry, formatServiceDue } from "@/lib/format";
 import { flushOutbox, getOutbox, getServerOutbox, queueEvent, subscribeOutbox, type OutboxItem } from "@/lib/outbox";
 import type { Me, VehicleDocument, VehicleSummary } from "@/lib/types";
@@ -11,8 +11,8 @@ import type { Me, VehicleDocument, VehicleSummary } from "@/lib/types";
 const ACTIVE_VEHICLE_KEY = "fueltrack:activeVehicleId";
 // Last loaded data, so the app (and the reserve tap) works when opened offline.
 const CACHE_KEY = "fueltrack:cache";
-// "low:<vehicleId>" → last fill id, "service:<vehicleId>" → last service
-// odometer and "doc:<documentId>" → expiry + stage already reminded about:
+// "low:<vehicleId>" → last fill id, "service:<itemId>" → when it was last
+// done and "doc:<documentId>" → expiry + stage already reminded about:
 // once per tank, once per service and once per reminder stage.
 const LOW_FUEL_KEY = "fueltrack:lowFuelNotified";
 
@@ -91,9 +91,8 @@ async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDoc
     if (isLowFuel(vehicle.gauge, thresholdKm)) {
       await show(`low:${vehicle.id}`, vehicle.lastFill?.id ?? "", `${vehicle.name}: low on fuel`, `About ${vehicle.gauge.kmToReserve} km to reserve. Fill up soon.`);
     }
-    if (isServiceDue(vehicle.serviceDueKm)) {
-      const serviceId = String(vehicle.lastServiceOdometer ?? vehicle.startOdometer);
-      await show(`service:${vehicle.id}`, serviceId, `${vehicle.name}: service due`, `${formatServiceDue(vehicle.serviceDueKm as number)}.`);
+    for (const service of vehicle.services.filter((status) => status.due)) {
+      await show(`service:${service.itemId}`, `${service.lastOdometer}:${service.lastDate}`, `${vehicle.name}: ${service.name} due`, `${formatServiceDue(service)}.`);
     }
   }
   for (const document of documents) {
@@ -167,7 +166,8 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
       const cached = readCache();
       if (cached) {
         setMe(cached.me);
-        setAllVehicles(cached.vehicles);
+        // Data cached by an older build may lack newer fields.
+        setAllVehicles(cached.vehicles.map((vehicle) => ({ ...vehicle, services: vehicle.services ?? [] })));
         setDocuments(cached.documents ?? []);
         setLoading(false);
       }

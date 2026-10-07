@@ -7,6 +7,8 @@ import {
   parseDocumentInput,
   parseLowFuelInput,
   parseProfileInput,
+  parseServiceItemInput,
+  parseServiceRecordInput,
   parseReserveInput,
   parseVehicleInput,
 } from "@/lib/validation";
@@ -94,10 +96,7 @@ describe("parseVehicleInput", () => {
   it("accepts a vehicle without tank info", () => {
     expect(parseVehicleInput(vehicle)).toEqual({
       ok: true,
-      value: {
-        name: "Splendor", kind: "Motorcycle", startOdometer: 12000, tankCapacityMl: null, reserveMl: null,
-        serviceIntervalKm: null, lastServiceOdometer: null,
-      },
+      value: { name: "Splendor", kind: "Motorcycle", startOdometer: 12000, tankCapacityMl: null, reserveMl: null },
     });
   });
 
@@ -120,21 +119,39 @@ describe("parseProfileInput", () => {
   });
 });
 
-describe("parseVehicleInput service reminder", () => {
-  const vehicle = { name: "Splendor", kind: "Motorcycle", startOdometerKm: "1200" };
-
-  it("stores the interval in km and the last service in tenths", () => {
-    expect(parseVehicleInput({ ...vehicle, serviceIntervalKm: "3000", lastServiceKm: "1500.5" })).toMatchObject({
+describe("parseServiceItemInput", () => {
+  it("needs a name and at least one interval", () => {
+    expect(parseServiceItemInput({ name: " Engine  oil ", intervalKm: "3000", lastDoneKm: "1500.5", lastDoneOn: "2026-09-01" })).toEqual({
       ok: true,
-      value: { serviceIntervalKm: 3000, lastServiceOdometer: 15005 },
+      value: { name: "Engine oil", intervalKm: 3000, intervalMonths: null, baselineOdometer: 15005, baselineDate: new Date("2026-09-01T00:00:00Z") },
     });
+    expect(parseServiceItemInput({ name: "Coolant", intervalMonths: "24" })).toMatchObject({ ok: true, value: { baselineOdometer: null, baselineDate: null } });
+    expect(parseServiceItemInput({ name: "Oil" }).ok).toBe(false);
+    expect(parseServiceItemInput({ name: "", intervalKm: "3000" }).ok).toBe(false);
+    for (const intervalKm of ["0", "2500.5", "-1", "100001"]) {
+      expect(parseServiceItemInput({ name: "Oil", intervalKm }).ok).toBe(false);
+    }
+    expect(parseServiceItemInput({ name: "Oil", intervalMonths: "121" }).ok).toBe(false);
+  });
+});
+
+describe("parseServiceRecordInput", () => {
+  const record = { vehicleId: id, occurredOn: "2026-08-10", odometerKm: "12345.6", costRupees: "850.50", itemIds: [id, id], note: "" };
+
+  it("stores odometer in tenths, cost in paise and de-duplicates items", () => {
+    expect(parseServiceRecordInput(record, now)).toEqual({
+      ok: true,
+      value: { vehicleId: id, occurredOn: new Date("2026-08-10T00:00:00Z"), odometer: 123456, costPaise: 85050, itemIds: [id], note: null },
+    });
+    expect(parseServiceRecordInput({ ...record, costRupees: "" }, now)).toMatchObject({ ok: true, value: { costPaise: null } });
   });
 
-  it("rejects intervals out of range or not whole", () => {
-    for (const serviceIntervalKm of ["99", "20001", "2500.5", "-3000", "abc"]) {
-      expect(parseVehicleInput({ ...vehicle, serviceIntervalKm }).ok).toBe(false);
-    }
-    expect(parseVehicleInput({ ...vehicle, serviceIntervalKm: "3000", lastServiceKm: "-1" }).ok).toBe(false);
+  it("rejects missing items, future dates and negative cost", () => {
+    expect(parseServiceRecordInput({ ...record, itemIds: [] }, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, itemIds: ["x"] }, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, occurredOn: "2026-08-12" }, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, costRupees: "-1" }, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, odometerKm: "" }, now).ok).toBe(false);
   });
 });
 

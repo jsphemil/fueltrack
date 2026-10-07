@@ -112,14 +112,17 @@ export default function VehiclesPage() {
                 <div><dt className="text-xs text-muted">Tank</dt><dd className="font-medium text-foreground">{vehicle.tankCapacityMl !== null ? formatLitres(vehicle.tankCapacityMl, 1) : "Not set"}</dd></div>
                 <div><dt className="text-xs text-muted">Reserve</dt><dd className="font-medium text-foreground">{vehicle.reserveMl !== null ? formatLitres(vehicle.reserveMl, 1) : "Not set"}</dd></div>
               </dl>
-              {vehicle.serviceDueKm !== null ? (
-                <p className={`tabular mt-3 text-sm ${vehicle.serviceDueKm <= 0 ? "font-semibold text-danger" : "text-muted"}`}>{formatServiceDue(vehicle.serviceDueKm)}</p>
+              {vehicle.services[0] ? (
+                <p className={`tabular mt-3 text-sm ${vehicle.services[0].due ? "font-semibold text-foreground" : "text-muted"}`}>
+                  {vehicle.services[0].name}: {formatServiceDue(vehicle.services[0])}
+                </p>
               ) : null}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {!isActive && !vehicle.archived ? (
                   <button type="button" onClick={() => setActiveVehicleId(vehicle.id)} className={`${primaryButtonClass} ${smallButtonClass}`}>Set active</button>
                 ) : null}
+                <Link href="/service" onClick={() => setActiveVehicleId(vehicle.id)} className={`${secondaryButtonClass} ${smallButtonClass}`}>Service</Link>
                 <button type="button" onClick={() => setMode({ type: "edit", id: vehicle.id })} className={`${secondaryButtonClass} ${smallButtonClass}`}>Edit</button>
                 <button type="button" onClick={() => void patch(vehicle, { archived: !vehicle.archived })} className={`${secondaryButtonClass} ${smallButtonClass}`}>
                   {vehicle.archived ? "Restore" : "Archive"}

@@ -6,7 +6,7 @@ import { FormEvent, useState, type ReactNode } from "react";
 import Gauge from "@/components/Gauge";
 import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
-import { daysUntil, documentStage, isServiceDue } from "@/lib/engine";
+import { daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
 import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatExpiry, formatRelative, formatServiceDue } from "@/lib/format";
 import { useAnimatedNumber } from "@/lib/motion";
@@ -196,16 +196,19 @@ export default function HomePage() {
         </Notice>
       ) : null}
 
-      {isServiceDue(activeVehicle.serviceDueKm) ? (
+      {activeVehicle.services[0]?.due ? (
         <Notice
           tone="info"
           action={
-            <Link href="/vehicles" className="text-sm font-semibold text-foreground underline">
-              Update after service
+            <Link href="/service" className="text-sm font-semibold text-foreground underline">
+              Service
             </Link>
           }
         >
-          {formatServiceDue(activeVehicle.serviceDueKm as number)}.
+          {activeVehicle.services[0].name} due: {formatServiceDue(activeVehicle.services[0])}.
+          {activeVehicle.services.filter((status) => status.due).length > 1
+            ? ` ${activeVehicle.services.filter((status) => status.due).length - 1} more due.`
+            : ""}
         </Notice>
       ) : null}
 

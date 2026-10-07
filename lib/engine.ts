@@ -476,23 +476,60 @@ export function isLowFuel(gauge: Gauge, thresholdKm: number | null) {
   return thresholdKm !== null && gauge.status === "ok" && gauge.kmToReserve !== null && gauge.kmToReserve <= thresholdKm;
 }
 
-// Remind this many km before the oil change is due.
-export const SERVICE_SOON_KM = 100;
+// --- Service log ----------------------------------------------------------------
 
-// Service reminder: km until the next oil change (negative = overdue), or
-// null when no interval is set. Counts from the start odometer until a
-// service is recorded.
-export function serviceDueKm(
-  vehicle: { startOdometer: number; serviceIntervalKm: number | null; lastServiceOdometer: number | null },
-  odometer: number
-) {
-  if (vehicle.serviceIntervalKm === null) return null;
-  const since = odometer - (vehicle.lastServiceOdometer ?? vehicle.startOdometer);
-  return Math.round(vehicle.serviceIntervalKm - since / 10);
+// A service item counts as due this close to its interval.
+export const SERVICE_SOON_KM = 100;
+export const SERVICE_SOON_DAYS = 14;
+
+export type ServiceItemInput = {
+  id: string;
+  name: string;
+  intervalKm: number | null;
+  intervalMonths: number | null;
+  baselineOdometer: number; // tenths of km
+  baselineDate: Date | string; // date part is used
+};
+
+export type ServiceDone = { odometer: number; occurredOn: Date | string };
+
+export type ServiceStatus = {
+  itemId: string;
+  name: string;
+  intervalKm: number | null;
+  intervalMonths: number | null;
+  lastOdometer: number; // tenths of km
+  lastDate: string; // YYYY-MM-DD
+  dueKm: number | null; // km left; negative = overdue; null = no km interval
+  dueDays: number | null; // days left; negative = overdue; null = no time interval
+  due: boolean;
+};
+
+const datePart = (value: Date | string) => (typeof value === "string" ? value.slice(0, 10) : value.toISOString().slice(0, 10));
+
+// "YYYY-MM-DD" plus whole months, clamped to the month's last day (31 Jan + 1 month = 28/29 Feb).
+export function addMonths(date: string, months: number) {
+  const [year, month, day] = date.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year, month - 1 + months + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - 1 + months, Math.min(day, lastDay))).toISOString().slice(0, 10);
 }
 
-export function isServiceDue(dueKm: number | null) {
-  return dueKm !== null && dueKm <= SERVICE_SOON_KM;
+// When an item was last done is the furthest point among its starting point and
+// every service that included it, so editing or deleting history stays consistent.
+// Share of the interval left (by km or time, whichever is closer); lower = more urgent.
+export function serviceUrgency(status: ServiceStatus) {
+  const byKm = status.dueKm !== null && status.intervalKm ? status.dueKm / status.intervalKm : Infinity;
+  const byTime = status.dueDays !== null && status.intervalMonths ? status.dueDays / (status.intervalMonths * 30.4) : Infinity;
+  return Math.min(byKm, byTime);
+}
+
+export function serviceStatus(item: ServiceItemInput, done: ServiceDone[], odometer: number, today: Date = new Date()): ServiceStatus {
+  const lastOdometer = Math.max(item.baselineOdometer, ...done.map((record) => record.odometer));
+  const lastDate = [datePart(item.baselineDate), ...done.map((record) => datePart(record.occurredOn))].sort().pop() as string;
+  const dueKm = item.intervalKm !== null ? Math.round(item.intervalKm - (odometer - lastOdometer) / 10) : null;
+  const dueDays = item.intervalMonths !== null ? daysUntil(addMonths(lastDate, item.intervalMonths), today) : null;
+  const due = (dueKm !== null && dueKm <= SERVICE_SOON_KM) || (dueDays !== null && dueDays <= SERVICE_SOON_DAYS);
+  return { itemId: item.id, name: item.name, intervalKm: item.intervalKm, intervalMonths: item.intervalMonths, lastOdometer, lastDate, dueKm, dueDays, due };
 }
 
 // --- Document reminders ---------------------------------------------------------
