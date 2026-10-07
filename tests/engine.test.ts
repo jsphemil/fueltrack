@@ -207,6 +207,13 @@ describe("calculateStats", () => {
     expect(stats.cycles).toEqual([{ date: at(4).toISOString(), kmPerL: 50, distance: 4000, type: "RR" }]);
   });
 
+  it("ignores starting-point fills without a volume", () => {
+    const start: EngineEvent = { id: "s", kind: "FILL", occurredAt: at(0), odometer: 10000, volumeMl: null, amountPaise: null, fullTank: true };
+    const stats = calculateStats(noTank, [start, fill(2, 1100, 4)], 0, at(2, 3));
+    expect(stats.fillCount).toBe(1);
+    expect(stats.avgFillMl).toBe(4000);
+  });
+
   it("buckets months in local time", () => {
     expect(monthKey("2026-01-31T20:00:00Z", 0)).toBe("2026-01");
     expect(monthKey("2026-01-31T20:00:00Z", -330)).toBe("2026-02");

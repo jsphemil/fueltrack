@@ -377,7 +377,8 @@ export function calculateStats(
   now: Date = new Date()
 ): VehicleStats {
   const ordered = sortEvents(events);
-  const fills = ordered.filter((event) => event.kind === "FILL");
+  // Fills without a volume are starting points ("tank is full now"), not purchases.
+  const fills = ordered.filter((event) => event.kind === "FILL" && event.volumeMl != null);
   const cycles = calculateCycles(vehicle, ordered);
   const totalSpendPaise = fills.reduce((sum, event) => sum + (event.amountPaise ?? 0), 0);
   const totalVolumeMl = fills.reduce((sum, event) => sum + (event.volumeMl ?? 0), 0);
