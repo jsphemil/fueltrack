@@ -1,31 +1,58 @@
-import type { MonthlySummary, MileageTrendPoint, VehicleSummary } from "@/lib/mileage";
+// Shapes returned by the API (dates arrive as ISO strings).
+import type { Cycle, EventKind, Gauge, VehicleStats } from "@/lib/engine";
 
-export type { MonthlySummary, MileageTrendPoint, VehicleSummary };
+export type { EventKind, Gauge, VehicleStats };
 
-export type FuelEntry = {
+export type FuelEvent = {
   id: string;
-  odometer: number;
-  fuel_price: number;
-  amount_paid: number;
-  fuel_volume: number;
-  is_reserve: boolean;
-  vehicleId: string | null;
-  filled_at: string;
-  created_at: string;
+  vehicleId: string;
+  kind: EventKind;
+  occurredAt: string;
+  odometer: number | null;
+  odometerApprox: boolean;
+  volumeMl: number | null;
+  amountPaise: number | null;
+  pricePaise: number | null;
+  fullTank: boolean;
+  note: string | null;
+  createdAt: string;
 };
 
 export type Vehicle = {
   id: string;
   name: string;
-  vehicleType: string;
-  initial_odometer: number;
+  kind: string;
+  startOdometer: number;
+  tankCapacityMl: number | null;
+  reserveMl: number | null;
+  archived: boolean;
+  createdAt: string;
 };
 
-export type VehicleWithStats = Vehicle & VehicleSummary;
+export type VehicleSummary = Vehicle & {
+  gauge: Gauge;
+  rangeScaleKm: number | null;
+  lastFill: FuelEvent | null;
+  lastPrice: number | null;
+  openReserve: FuelEvent | null;
+  eventCount: number;
+};
 
-export type Profile = {
+export type TimelineCycle = {
+  startId: string;
+  endId: string;
+  type: Cycle["type"];
+  distance: number;
+  addedMl: number;
+  burnedMl: number | null;
+  kmPerL: number | null;
+  status: Cycle["status"];
+  approx: boolean;
+};
+
+export type Me = {
   id: string;
-  userId: string;
-  name: string;
-  createdAt: string;
+  email: string | null;
+  name: string | null;
+  vehicleCount: number;
 };

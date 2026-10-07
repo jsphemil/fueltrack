@@ -19,7 +19,7 @@ import {
 } from "@/lib/validation";
 
 // Note on the entry created from the vehicle's initial fuel state.
-export const STARTING_POINT_NOTE = "Starting point";
+export { STARTING_POINT_LABEL as STARTING_POINT_NOTE } from "@/lib/labels";
 
 export function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
@@ -74,9 +74,25 @@ export function summarizeVehicle(vehicle: Vehicle, events: Event[], now = new Da
       ? lastReserve
       : null;
 
+  const engineVehicle = toEngineVehicle(vehicle);
+  const gauge = calculateGauge(engineVehicle, ordered, now);
+
+  // Full-scale km for drawing the gauge: tank above reserve when known,
+  // otherwise the longest reserve-to-reserve run seen.
+  const longestCycle = calculateCycles(engineVehicle, ordered)
+    .filter((cycle) => cycle.status === "ok")
+    .reduce((max, cycle) => Math.max(max, cycle.distance / 10), 0);
+  const rangeScaleKm =
+    gauge.efficiency !== null && vehicle.tankCapacityMl !== null && vehicle.reserveMl !== null
+      ? Math.round(((vehicle.tankCapacityMl - vehicle.reserveMl) / 1000) * gauge.efficiency)
+      : longestCycle > 0
+        ? Math.round(longestCycle)
+        : null;
+
   return {
     ...vehicle,
-    gauge: calculateGauge(toEngineVehicle(vehicle), ordered, now),
+    gauge,
+    rangeScaleKm,
     lastFill,
     lastPrice,
     openReserve,

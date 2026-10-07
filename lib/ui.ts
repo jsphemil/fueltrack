@@ -1,20 +1,23 @@
 // Shared Tailwind class strings; colours come from theme tokens in globals.css.
 
-export const pageClass = "min-h-screen bg-background px-4 py-6 sm:py-10";
-export const containerClass = "mx-auto w-full max-w-6xl";
-export const cardClass = "rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-6";
-export const panelClass = "rounded-xl border border-border bg-surface-muted p-4";
+export const cardClass = "rounded-3xl border border-border bg-surface p-5 shadow-sm";
+export const sectionTitleClass = "text-sm font-semibold uppercase tracking-wide text-muted";
 export const labelClass = "mb-1.5 block text-sm font-medium text-subtle";
+export const hintClass = "mt-1 block text-xs text-muted";
 export const inputClass =
-  "h-11 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary disabled:opacity-60";
-export const primaryButtonClass =
-  "inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
-export const secondaryButtonClass =
-  "inline-flex h-10 items-center justify-center rounded-lg border border-border-strong bg-surface px-4 text-sm font-medium text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60";
-export const dangerButtonClass =
-  "inline-flex h-10 items-center justify-center rounded-lg border border-danger/40 bg-surface px-4 text-sm font-medium text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60";
+  "h-12 w-full rounded-2xl border border-border-strong bg-surface px-4 text-base text-foreground outline-none transition placeholder:text-muted/70 focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60";
+
+const buttonBase =
+  "inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+export const primaryButtonClass = `${buttonBase} h-12 bg-primary px-5 text-primary-foreground hover:opacity-90`;
+export const secondaryButtonClass = `${buttonBase} h-12 border border-border-strong bg-surface px-5 text-foreground hover:bg-surface-muted`;
+export const reserveButtonClass = `${buttonBase} h-14 bg-reserve px-5 text-reserve-foreground hover:opacity-90`;
+export const dangerButtonClass = `${buttonBase} h-12 border border-danger/40 bg-surface px-5 text-danger hover:bg-danger/10`;
+export const smallButtonClass = "h-9! rounded-xl! px-3! text-sm!";
+export const chipClass = "inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition";
+
 export const errorTextClass = "text-sm font-medium text-danger";
-export const successTextClass = "text-sm font-medium text-success";
+export const successTextClass = "text-sm font-medium text-good";
 export const mutedTextClass = "text-sm text-muted";
 
 // localStorage key for the light/dark preference (read by the layout script).

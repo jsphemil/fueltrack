@@ -1,62 +1,75 @@
 @import "tailwindcss";
 
-/* Theme tokens. Light by default, dark via system preference or data-theme. */
+/* Theme tokens: warm neutrals with a fuel-amber accent. Light by default,
+   dark via system preference or data-theme. */
 :root {
-  --background: #f4f4f5;
+  --background: #f5f5f4;
   --surface: #ffffff;
-  --surface-muted: #fafafa;
-  --border: #e4e4e7;
-  --border-strong: #d4d4d8;
-  --foreground: #18181b;
-  --subtle: #3f3f46;
-  --muted: #71717a;
-  --primary: #18181b;
-  --primary-foreground: #ffffff;
+  --surface-muted: #f5f5f4;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --foreground: #1c1917;
+  --subtle: #44403c;
+  --muted: #78716c;
+  --primary: #1c1917;
+  --primary-foreground: #fafaf9;
+  --reserve: #ea580c;
+  --reserve-foreground: #ffffff;
+  --warning: #d97706;
+  --good: #15803d;
   --danger: #dc2626;
-  --success: #047857;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #d97706;
+  --gauge-track: #e7e5e4;
+  --chart-1: #ea580c;
+  --chart-2: #15803d;
+  --chart-3: #2563eb;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: #09090b;
-    --surface: #18181b;
-    --surface-muted: #1f1f23;
-    --border: #27272a;
-    --border-strong: #3f3f46;
-    --foreground: #f4f4f5;
-    --subtle: #d4d4d8;
-    --muted: #a1a1aa;
-    --primary: #f4f4f5;
-    --primary-foreground: #18181b;
+    --background: #0c0a09;
+    --surface: #1c1917;
+    --surface-muted: #292524;
+    --border: #292524;
+    --border-strong: #44403c;
+    --foreground: #fafaf9;
+    --subtle: #d6d3d1;
+    --muted: #a8a29e;
+    --primary: #fafaf9;
+    --primary-foreground: #1c1917;
+    --reserve: #f97316;
+    --reserve-foreground: #1c1917;
+    --warning: #fbbf24;
+    --good: #4ade80;
     --danger: #f87171;
-    --success: #34d399;
-    --chart-1: #60a5fa;
+    --gauge-track: #292524;
+    --chart-1: #fb923c;
     --chart-2: #4ade80;
-    --chart-3: #fbbf24;
+    --chart-3: #60a5fa;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --background: #09090b;
-  --surface: #18181b;
-  --surface-muted: #1f1f23;
-  --border: #27272a;
-  --border-strong: #3f3f46;
-  --foreground: #f4f4f5;
-  --subtle: #d4d4d8;
-  --muted: #a1a1aa;
-  --primary: #f4f4f5;
-  --primary-foreground: #18181b;
+  --background: #0c0a09;
+  --surface: #1c1917;
+  --surface-muted: #292524;
+  --border: #292524;
+  --border-strong: #44403c;
+  --foreground: #fafaf9;
+  --subtle: #d6d3d1;
+  --muted: #a8a29e;
+  --primary: #fafaf9;
+  --primary-foreground: #1c1917;
+  --reserve: #f97316;
+  --reserve-foreground: #1c1917;
+  --warning: #fbbf24;
+  --good: #4ade80;
   --danger: #f87171;
-  --success: #34d399;
-  --chart-1: #60a5fa;
+  --gauge-track: #292524;
+  --chart-1: #fb923c;
   --chart-2: #4ade80;
-  --chart-3: #fbbf24;
+  --chart-3: #60a5fa;
   color-scheme: dark;
 }
 
@@ -71,8 +84,11 @@
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-reserve: var(--reserve);
+  --color-reserve-foreground: var(--reserve-foreground);
+  --color-warning: var(--warning);
+  --color-good: var(--good);
   --color-danger: var(--danger);
-  --color-success: var(--success);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -80,4 +96,10 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Numbers line up in stats and gauges. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }

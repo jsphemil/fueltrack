@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import LayoutNavigation from "@/components/LayoutNavigation";
+import AppShell from "@/components/AppShell";
+import ServiceWorker from "@/components/ServiceWorker";
 import { THEME_STORAGE_KEY } from "@/lib/ui";
 
 const geistSans = Geist({
@@ -16,7 +17,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FuelTrack",
-  description: "Track motorcycle fuel, mileage, range and spend.",
+  description: "A fuel gauge for bikes that don't have one: know how far you can ride before reserve.",
+  appleWebApp: { capable: true, title: "FuelTrack", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },
+  ],
 };
 
 export default function RootLayout({
@@ -38,15 +50,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen">
         {/*
           // IMPORTANT:
           // Layout structure must remain constant to prevent UI blocking issues.
         */}
-        <div className="flex-shrink-0">
-          <LayoutNavigation />
-        </div>
-        <div className="flex-1">{children}</div>
+        <AppShell>{children}</AppShell>
+        <ServiceWorker />
       </body>
     </html>
   );
