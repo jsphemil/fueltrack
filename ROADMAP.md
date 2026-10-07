@@ -35,7 +35,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Home gauge, add fuel, one-tap reserve with odometer filled later (trip meter supported)
 * Offline reserve tap with sync when back online
 * History grouped by cycle, stats, vehicles, settings
-* Ocean-blue colour palette (coolors.co 03045e → caf0f8), light and dark, AA contrast
+* Minimal neutral theme with one ocean-blue accent (#0077b6), light and dark, AA contrast
 
 ### v2 Phone App
 

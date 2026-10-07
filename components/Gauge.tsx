@@ -68,7 +68,7 @@ export default function Gauge({ fraction, onReserve = false, size = 260, id = "d
 
   const shown = Math.min(1, Math.max(0, level));
   const low = onReserve || (known && (fraction as number) < 0.15);
-  const colour = low ? "var(--reserve)" : "var(--primary)";
+  const colour = low ? "var(--reserve)" : "var(--accent)";
   const needle = point(shown, 68);
   const showNeedle = known || onReserve;
 

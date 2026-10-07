@@ -1,76 +1,81 @@
 @import "tailwindcss";
 
-/* Theme tokens: ocean blues (coolors.co 03045e → caf0f8). Orange, red and
-   green keep their meaning for reserve, danger and good. Light by default,
-   dark via system preference or data-theme. */
+/* Theme tokens: quiet neutral greys with one ocean-blue accent (#0077b6,
+   from coolors.co 03045e → caf0f8) for the gauge and charts, and light-mode
+   buttons. Dark mode is charcoal with soft grey buttons.
+   Orange, red and green keep their meaning for reserve, danger and good.
+   Light by default, dark via system preference or data-theme. */
 :root {
-  --background: #f4fbfd;
+  --background: #f7f8f9;
   --surface: #ffffff;
-  --surface-muted: #ebf8fc;
-  --border: #caf0f8;
-  --border-strong: #90e0ef;
-  --foreground: #03045e;
-  --subtle: #023e8a;
-  --muted: #0077b6;
+  --surface-muted: #f1f3f5;
+  --border: #e6e8eb;
+  --border-strong: #d3d7dc;
+  --foreground: #16191d;
+  --subtle: #3d434a;
+  --muted: #626a73;
   --primary: #0077b6;
   --primary-foreground: #ffffff;
+  --accent: #0077b6;
   --reserve: #c2410c;
   --reserve-foreground: #ffffff;
   --warning: #b45309;
   --good: #15803d;
   --danger: #dc2626;
-  --gauge-track: #caf0f8;
+  --gauge-track: #e6e8eb;
   --chart-1: #0077b6;
   --chart-2: #00b4d8;
-  --chart-3: #03045e;
+  --chart-3: #023e8a;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: #020237;
-    --surface: #03045e;
-    --surface-muted: #023e8a;
-    --border: #023e8a;
-    --border-strong: #0077b6;
-    --foreground: #caf0f8;
-    --subtle: #ade8f4;
-    --muted: #48cae4;
-    --primary: #48cae4;
-    --primary-foreground: #03045e;
+    --background: #0f1113;
+    --surface: #17191c;
+    --surface-muted: #202327;
+    --border: #24282c;
+    --border-strong: #353a40;
+    --foreground: #f2f4f6;
+    --subtle: #c9ced4;
+    --muted: #8b939c;
+    --primary: #e6e9ec;
+    --primary-foreground: #16191d;
+    --accent: #48cae4;
     --reserve: #f97316;
-    --reserve-foreground: #03045e;
+    --reserve-foreground: #0b1220;
     --warning: #fbbf24;
     --good: #4ade80;
     --danger: #f87171;
-    --gauge-track: #023e8a;
+    --gauge-track: #2a2e33;
     --chart-1: #48cae4;
     --chart-2: #90e0ef;
-    --chart-3: #00b4d8;
+    --chart-3: #0096c7;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --background: #020237;
-  --surface: #03045e;
-  --surface-muted: #023e8a;
-  --border: #023e8a;
-  --border-strong: #0077b6;
-  --foreground: #caf0f8;
-  --subtle: #ade8f4;
-  --muted: #48cae4;
-  --primary: #48cae4;
-  --primary-foreground: #03045e;
+  --background: #0f1113;
+  --surface: #17191c;
+  --surface-muted: #202327;
+  --border: #24282c;
+  --border-strong: #353a40;
+  --foreground: #f2f4f6;
+  --subtle: #c9ced4;
+  --muted: #8b939c;
+  --primary: #e6e9ec;
+  --primary-foreground: #16191d;
+  --accent: #48cae4;
   --reserve: #f97316;
-  --reserve-foreground: #03045e;
+  --reserve-foreground: #0b1220;
   --warning: #fbbf24;
   --good: #4ade80;
   --danger: #f87171;
-  --gauge-track: #023e8a;
+  --gauge-track: #2a2e33;
   --chart-1: #48cae4;
   --chart-2: #90e0ef;
-  --chart-3: #00b4d8;
+  --chart-3: #0096c7;
   color-scheme: dark;
 }
 
@@ -85,6 +90,7 @@
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
   --color-reserve: var(--reserve);
   --color-reserve-foreground: var(--reserve-foreground);
   --color-warning: var(--warning);

@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "A fuel gauge for bikes that don't have one.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f4fbfd",
+    background_color: "#f7f8f9",
     theme_color: "#0077b6",
     icons: [
       { src: "/icon/192", sizes: "192x192", type: "image/png" },
