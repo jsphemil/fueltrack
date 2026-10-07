@@ -35,7 +35,8 @@ export type VehicleSummary = Vehicle & {
   lastFill: FuelEvent | null;
   lastPrice: number | null;
   openReserve: FuelEvent | null;
-  services: ServiceStatus[]; // due first
+  services: ServiceStatus[]; // most urgent first
+  openIssues: OpenIssue[]; // oldest first
   eventCount: number;
 };
 
@@ -61,14 +62,20 @@ export type ServiceItem = {
   baselineDate: string;
 };
 
+export type OpenIssue = { id: string; title: string; notedOn: string };
+
+export type ServiceKind = "MAINTENANCE" | "REPAIR";
+
 export type ServiceRecord = {
   id: string;
   vehicleId: string;
+  kind: ServiceKind;
   occurredOn: string;
   odometer: number;
   costPaise: number | null;
   note: string | null;
   items: Array<{ id: string; name: string }>;
+  issues: Array<{ id: string; title: string }>; // fixed by this visit
 };
 
 export type VehicleDocument = {

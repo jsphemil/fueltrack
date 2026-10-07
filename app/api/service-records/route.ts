@@ -9,16 +9,28 @@ export async function POST(request: Request) {
     const parsed = parseServiceRecordInput(await readJsonBody(request));
     if (!parsed.ok) return jsonError(parsed.error, 400);
 
-    const { itemIds, ...data } = parsed.value;
-    const vehicle = await getOwnedVehicle(user.id, data.vehicleId);
+    const { itemIds, issueIds, vehicleId, kind, occurredOn, odometer, costPaise, note } = parsed.value;
+    const vehicle = await getOwnedVehicle(user.id, vehicleId);
     if (!vehicle) return jsonError("Vehicle not found", 404);
-    if (data.odometer < vehicle.startOdometer) return jsonError("Odometer can't be below the vehicle's starting odometer", 400);
+    if (odometer < vehicle.startOdometer) return jsonError("Odometer can't be below the vehicle's starting odometer", 400);
 
-    const owned = await prisma.serviceItem.count({ where: { id: { in: itemIds }, vehicleId: vehicle.id } });
-    if (owned !== itemIds.length) return jsonError("Service item not found", 404);
+    const ownedItems = await prisma.serviceItem.count({ where: { id: { in: itemIds }, vehicleId: vehicle.id } });
+    if (ownedItems !== itemIds.length) return jsonError("Service item not found", 404);
+    const openIssues = await prisma.issue.count({ where: { id: { in: issueIds }, vehicleId: vehicle.id, recordId: null } });
+    if (openIssues !== issueIds.length) return jsonError("Issue not found or already fixed", 404);
 
     const record = await prisma.serviceRecord.create({
-      data: { ...data, userId: user.id, items: { create: itemIds.map((itemId) => ({ itemId })) } },
+      data: {
+        userId: user.id,
+        vehicleId,
+        kind,
+        occurredOn,
+        odometer,
+        costPaise,
+        note,
+        items: { create: itemIds.map((itemId) => ({ itemId })) },
+        issues: { connect: issueIds.map((id) => ({ id })) },
+      },
     });
     return Response.json({ record }, { status: 201 });
   });

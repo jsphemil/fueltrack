@@ -5,6 +5,7 @@ import {
   parseFillInput,
   parseOdometerInput,
   parseDocumentInput,
+  parseIssueInput,
   parseLowFuelInput,
   parseProfileInput,
   parseServiceItemInput,
@@ -136,12 +137,15 @@ describe("parseServiceItemInput", () => {
 });
 
 describe("parseServiceRecordInput", () => {
-  const record = { vehicleId: id, occurredOn: "2026-08-10", odometerKm: "12345.6", costRupees: "850.50", itemIds: [id, id], note: "" };
+  const record = { vehicleId: id, kind: "MAINTENANCE", occurredOn: "2026-08-10", odometerKm: "12345.6", costRupees: "850.50", itemIds: [id, id], note: "" };
 
   it("stores odometer in tenths, cost in paise and de-duplicates items", () => {
     expect(parseServiceRecordInput(record, now)).toEqual({
       ok: true,
-      value: { vehicleId: id, occurredOn: new Date("2026-08-10T00:00:00Z"), odometer: 123456, costPaise: 85050, itemIds: [id], note: null },
+      value: {
+        vehicleId: id, kind: "MAINTENANCE", occurredOn: new Date("2026-08-10T00:00:00Z"), odometer: 123456, costPaise: 85050,
+        itemIds: [id], issueIds: [], note: null,
+      },
     });
     expect(parseServiceRecordInput({ ...record, costRupees: "" }, now)).toMatchObject({ ok: true, value: { costPaise: null } });
   });
@@ -152,6 +156,28 @@ describe("parseServiceRecordInput", () => {
     expect(parseServiceRecordInput({ ...record, occurredOn: "2026-08-12" }, now).ok).toBe(false);
     expect(parseServiceRecordInput({ ...record, costRupees: "-1" }, now).ok).toBe(false);
     expect(parseServiceRecordInput({ ...record, odometerKm: "" }, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, kind: "WASH" }, now).ok).toBe(false);
+  });
+
+  it("lets a repair fix issues, or be described in the note", () => {
+    const repair = { ...record, kind: "REPAIR", itemIds: [] };
+    expect(parseServiceRecordInput({ ...repair, issueIds: [id] }, now)).toMatchObject({ ok: true, value: { kind: "REPAIR", issueIds: [id], itemIds: [] } });
+    expect(parseServiceRecordInput({ ...repair, note: "Replaced clutch cable" }, now).ok).toBe(true);
+    expect(parseServiceRecordInput(repair, now).ok).toBe(false);
+    expect(parseServiceRecordInput({ ...record, itemIds: [], note: "Oil top-up" }, now).ok).toBe(false); // maintenance needs an item
+    expect(parseServiceRecordInput({ ...repair, issueIds: ["x"] }, now).ok).toBe(false);
+  });
+});
+
+describe("parseIssueInput", () => {
+  it("needs a short description and a date that isn't in the future", () => {
+    expect(parseIssueInput({ title: "  Front  brake squeals ", notedOn: "2026-08-09" }, now)).toEqual({
+      ok: true,
+      value: { title: "Front brake squeals", notedOn: new Date("2026-08-09T00:00:00Z") },
+    });
+    expect(parseIssueInput({ title: "", notedOn: "2026-08-09" }, now).ok).toBe(false);
+    expect(parseIssueInput({ title: "x".repeat(81), notedOn: "2026-08-09" }, now).ok).toBe(false);
+    expect(parseIssueInput({ title: "Noise", notedOn: "2026-08-12" }, now).ok).toBe(false);
   });
 });
 
