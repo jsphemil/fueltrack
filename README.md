@@ -41,7 +41,10 @@ npm install
 cp .env.example .env.local   # fill in your values
 ```
 
-Prisma reads `DATABASE_URL` from `.env` (see `prisma.config.ts`), so put it there as well.
+Prisma reads `.env` (see `prisma.config.ts`), so put `DATABASE_URL` and `DIRECT_URL` there as well.
+`DATABASE_URL` is used by the app (Supabase transaction pooler, port 6543); `DIRECT_URL` is used
+only by migrations (Supabase session pooler, port 5432), because migrations don't work through the
+transaction pooler.
 
 Apply database migrations:
 
