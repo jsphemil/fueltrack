@@ -26,9 +26,18 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
   `.env.local` holds only the two `NEXT_PUBLIC_…` keys.
 - **Design mockups:** Figma file "FuelTrack v2 — Mockups" and a Claude design canvas (reference only).
 
+## Direction (keep in mind for every change)
+
+- **Android app later.** Keep it reusable: business rules stay in pure functions (`lib/engine.ts`,
+  `lib/validation.ts`), all data goes through the JSON API with a bearer token (no server-rendered
+  data or cookie-only auth), and web-only features (notifications, service worker) stay optional.
+  First step will be packaging the PWA (Trusted Web Activity); a native app can reuse the API.
+- **AI must be free.** Prefer on-device models (Transformers.js / Hugging Face) over paid APIs.
+
 ## What to work on next
 
-- `ROADMAP.md` → Planned is empty; ask the owner for the next improvement.
+- `ROADMAP.md` → In Progress / Planned: the "complete vehicle manager" plan, then customisation,
+  an in-app guide, on-device AI and an Android app.
 - Low-fuel reminders run only when the app opens (no server push). True background push would need
   Web Push (VAPID keys, a subscription table) plus a scheduled job.
 - `npm audit` reports dependency warnings; review them carefully. Never run `npm audit fix --force`,
@@ -78,4 +87,4 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 - Follow `AGENTS.md`: pick tasks from `ROADMAP.md` → Planned. Commit and push after each logical
   step; run `npm run lint`, `npm run typecheck`, `npm test` before pushing.
 - After PR #50 is merged, start new work on a fresh branch from `master`.
-- Nothing is planned; ask the owner what to build next.
+- Next: see `ROADMAP.md` → In Progress and Planned.
