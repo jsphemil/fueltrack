@@ -19,6 +19,8 @@ export const NOTE_MAX_LENGTH = 200;
 export const VEHICLE_KINDS = ["Motorcycle", "Scooter", "Moped", "Other"] as const;
 export const MAX_ODOMETER_KM = 9_999_999;
 export const AMOUNT_TOLERANCE_PAISE = 100;
+export const MIN_SERVICE_INTERVAL_KM = 100;
+export const MAX_SERVICE_INTERVAL_KM = 20_000;
 
 // Allow small clock differences between phone and server.
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -117,6 +119,8 @@ export type VehicleInput = {
   startOdometer: number;
   tankCapacityMl: number | null;
   reserveMl: number | null;
+  serviceIntervalKm: number | null;
+  lastServiceOdometer: number | null;
 };
 
 export function parseVehicleInput(body: Record<string, unknown> | null | undefined): ValidationResult<VehicleInput> {
@@ -156,7 +160,25 @@ export function parseVehicleInput(body: Record<string, unknown> | null | undefin
     }
   }
 
-  return { ok: true, value: { name, kind, startOdometer: odometer.value, tankCapacityMl, reserveMl } };
+  let serviceIntervalKm: number | null = null;
+  if (!isBlank(source.serviceIntervalKm)) {
+    serviceIntervalKm = toNumber(source.serviceIntervalKm);
+    if (!Number.isInteger(serviceIntervalKm) || serviceIntervalKm < MIN_SERVICE_INTERVAL_KM || serviceIntervalKm > MAX_SERVICE_INTERVAL_KM) {
+      return { ok: false, error: `Oil change interval must be a whole number from ${MIN_SERVICE_INTERVAL_KM} to ${MAX_SERVICE_INTERVAL_KM.toLocaleString("en-IN")} km` };
+    }
+  }
+
+  let lastServiceOdometer: number | null = null;
+  if (!isBlank(source.lastServiceKm)) {
+    const reading = parseOdometer(source.lastServiceKm, "Last oil change");
+    if (!reading.ok) return reading;
+    lastServiceOdometer = reading.value;
+  }
+
+  return {
+    ok: true,
+    value: { name, kind, startOdometer: odometer.value, tankCapacityMl, reserveMl, serviceIntervalKm, lastServiceOdometer },
+  };
 }
 
 // --- Events -----------------------------------------------------------------

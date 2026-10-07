@@ -6,6 +6,7 @@ import {
   calculateCycles,
   calculateGauge,
   resolveReserveOdometer,
+  serviceDueKm,
   sortEvents,
   type EngineVehicle,
 } from "@/lib/engine";
@@ -96,6 +97,7 @@ export function summarizeVehicle(vehicle: Vehicle, events: Event[], now = new Da
     lastFill,
     lastPrice,
     openReserve,
+    serviceDueKm: serviceDueKm(vehicle, gauge.odometer.odometer),
     eventCount: ordered.length,
   };
 }

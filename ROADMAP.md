@@ -44,6 +44,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 ### Reminders
 
 * Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
+* Service reminders: oil change interval per vehicle, due/overdue notice on Home and a notification within 100 km
 
 ---
 
@@ -55,6 +56,4 @@ _Nothing in progress._
 
 ## Planned
 
-### Future Enhancements
-
-* Service reminders (oil change by distance)
+_Nothing planned._

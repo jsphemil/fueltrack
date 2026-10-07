@@ -26,6 +26,8 @@ model Vehicle {
   startOdometer  Int
   tankCapacityMl Int?
   reserveMl      Int?
+  serviceIntervalKm   Int? // oil change every N km; null = no service reminder
+  lastServiceOdometer Int? // tenths of km; null = count from startOdometer
   archived       Boolean  @default(false)
   createdAt      DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)

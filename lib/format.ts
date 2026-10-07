@@ -67,3 +67,8 @@ export function toDateTimeLocalValue(value: string | Date) {
 export function toInputNumber(value: number | null | undefined, divisor: number, decimals: number) {
   return typeof value === "number" ? String(Number((value / divisor).toFixed(decimals))) : "";
 }
+
+// "Oil change due in 80 km" / "Oil change overdue by 20 km".
+export function formatServiceDue(dueKm: number) {
+  return dueKm < 0 ? `Oil change overdue by ${formatNumber(-dueKm, 0)} km` : `Oil change due in ${formatNumber(dueKm, 0)} km`;
+}

@@ -6,8 +6,9 @@ import { FormEvent, useState, type ReactNode } from "react";
 import Gauge from "@/components/Gauge";
 import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
+import { isServiceDue } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
-import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatRelative } from "@/lib/format";
+import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatRelative, formatServiceDue } from "@/lib/format";
 import { useAnimatedNumber } from "@/lib/motion";
 import { newId } from "@/lib/outbox";
 import type { VehicleSummary } from "@/lib/types";
@@ -174,6 +175,19 @@ export default function HomePage() {
           }
         >
           Reserve marked {formatRelative(openReserve.occurredAt)}. Add the odometer reading now, or the trip-meter reading when you fill up.
+        </Notice>
+      ) : null}
+
+      {isServiceDue(activeVehicle.serviceDueKm) ? (
+        <Notice
+          tone="info"
+          action={
+            <Link href="/vehicles" className="text-sm font-semibold text-foreground underline">
+              Update after service
+            </Link>
+          }
+        >
+          {formatServiceDue(activeVehicle.serviceDueKm as number)}.
         </Notice>
       ) : null}
 
