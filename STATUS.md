@@ -1,6 +1,6 @@
 # FuelTrack — Project Status & Handoff
 
-_Last updated: 7 Oct 2026. Read this first in any new session._
+_Last updated: 7 Oct 2026 (after go-live). Read this first in any new session._
 
 ## What the app is
 
@@ -11,25 +11,28 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 ## Where things stand
 
-- **Code:** v2 is merged into `master` (PR #50, https://github.com/jsphemil/fueltrack/pull/50).
+**v2 is live** (go-live completed by the owner on 7 Oct 2026).
+
+- **Code:** v2 is merged into `master` (PR #50). Branch `master` is what Vercel deploys.
+- **Database (Supabase):** all migrations are applied, including `20261008090000_v2_fresh_start`.
+  Tables are `User`, `Vehicle`, `Event`, with RLS enabled. The v1 data was wiped as agreed.
+- **Deploy (Vercel):** production runs v2. The env vars `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `DATABASE_URL` (transaction pooler, rotated password) are set.
+- **Supabase Auth:** Site URL and redirect URLs point to the Vercel production URL (plus
+  `http://localhost:3000`).
+- **Phone:** installed as a PWA from the production URL.
 - **Checks:** lint, typecheck, 46 unit tests, 4 DB integration tests and the production build pass.
-  The full flow was tested in Chromium against a local Postgres.
-- **Database (Supabase):** v1 migrations are applied. The v2 migration
-  `20261008090000_v2_fresh_start` is **not applied yet**. It drops the v1 tables (agreed: start
-  fresh) and creates `User`, `Vehicle`, `Event`, with RLS enabled.
-- **Deploy (Vercel):** production still runs v1 until PR #50 is merged.
-- **Design mockups:** Figma file "FuelTrack v2 — Mockups" and a Claude design canvas (not needed to
-  run the app).
+- **Local setup (owner's Windows laptop, VS Code, PowerShell):** `.env` holds all four variables;
+  `.env.local` holds only the two `NEXT_PUBLIC_…` keys.
+- **Design mockups:** Figma file "FuelTrack v2 — Mockups" and a Claude design canvas (reference only).
 
-## Go-live checklist (owner does these)
+## What to work on next
 
-1. Reset the Supabase database password; update `.env` (local) and Vercel.
-2. `git pull`, `npm install`, `npx prisma migrate deploy` (applies v2; wipes v1 data).
-3. Test locally with `npm run dev`.
-4. Supabase → Authentication → URL Configuration: set the Site URL to the Vercel production URL.
-5. Vercel → Environment Variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-   `DATABASE_URL`.
-6. Merge PR #50, then check the production deploy and install it on the phone.
+- Pick from `ROADMAP.md` → Planned: low-fuel reminder notifications, service reminders.
+- `npm audit` reports dependency warnings; review them carefully. Never run `npm audit fix --force`,
+  which can upgrade Next.js and break the app.
+- Any database change needs a new Prisma migration, applied with `npx prisma migrate deploy`
+  (uses `DIRECT_URL`).
 
 ## Map of the code
 
