@@ -1,0 +1,113 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+
+import { ThemeSelect } from "@/components/ThemeToggle";
+import { Field, Notice, Page, PageHeader } from "@/components/ui";
+import { apiRequest } from "@/lib/api";
+import { clearFuelCache, useFuel } from "@/lib/fuel-context";
+import { supabase } from "@/lib/supabase";
+import { cardClass, dangerButtonClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, successTextClass } from "@/lib/ui";
+import { parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
+
+export default function SettingsPage() {
+  const router = useRouter();
+  const { me, refresh } = useFuel();
+  const [name, setName] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const nameValue = name ?? me?.name ?? "";
+
+  async function saveName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = parseProfileInput({ name: nameValue });
+    if (!parsed.ok) return setError(parsed.error);
+    const result = await apiRequest("/api/me", { method: "PATCH", body: parsed.value });
+    if (!result.ok) return setError(result.error);
+    setError("");
+    setMessage("Name saved.");
+    await refresh();
+  }
+
+  async function exportCsv() {
+    setError("");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return setError("Please sign in again.");
+    const response = await fetch("/api/export", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    if (!response?.ok) return setError("Couldn't export. Check your connection.");
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fueltrack-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteAll() {
+    const typed = window.prompt('This permanently deletes your vehicles and every entry. Type DELETE to confirm.');
+    if (typed !== "DELETE") return;
+    setBusy(true);
+    const result = await apiRequest("/api/me", { method: "DELETE" });
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    clearFuelCache();
+    await refresh();
+    router.replace("/onboarding");
+  }
+
+  async function signOut() {
+    clearFuelCache();
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }
+
+  return (
+    <Page narrow>
+      <PageHeader title="Settings" subtitle={me?.email ?? undefined} />
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Profile</h2>
+        <form onSubmit={saveName} className="mt-4 flex gap-2" noValidate>
+          <div className="flex-1">
+            <Field label="Name">
+              <input value={nameValue} maxLength={PROFILE_NAME_MAX_LENGTH} onChange={(event) => { setName(event.target.value); setMessage(""); }} className={inputClass} autoComplete="name" />
+            </Field>
+          </div>
+          <button type="submit" className={`${primaryButtonClass} self-end`}>Save</button>
+        </form>
+        {message ? <p className={`mt-2 ${successTextClass}`}>{message}</p> : null}
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Appearance</h2>
+        <div className="mt-4"><ThemeSelect /></div>
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Install on your phone</h2>
+        <p className={`mt-2 ${mutedTextClass}`}>
+          In Chrome, open the menu and choose <strong>Add to Home screen</strong> (Safari: Share → Add to Home Screen).
+          Then long-press the FuelTrack icon for the <strong>On reserve</strong> shortcut.
+        </p>
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Your data</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => void exportCsv()} className={secondaryButtonClass}>Export CSV</button>
+          <button type="button" onClick={() => void signOut()} className={secondaryButtonClass}>Sign out</button>
+        </div>
+        <div className="mt-6 border-t border-border pt-5">
+          <p className={mutedTextClass}>Delete all vehicles and entries. Your login stays.</p>
+          <button type="button" disabled={busy} onClick={() => void deleteAll()} className={`${dangerButtonClass} mt-3`}>
+            {busy ? "Deleting..." : "Delete all data"}
+          </button>
+        </div>
+      </section>
+    </Page>
+  );
+}

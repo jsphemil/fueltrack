@@ -1,5 +1,10 @@
 # Project: Bike Mileage Tracker
 
+## Current Status
+
+Read `STATUS.md` first: it describes what is built, what is deployed, the remaining go-live
+steps and known gotchas. Keep it up to date when that changes.
+
 ## Objective
 Build a simple, reliable mileage tracking app that tracks fuel, distance, and expenses accurately.
 
@@ -93,6 +98,12 @@ Ensure all related layers are aligned before completing the task.
 
 - Maintain the existing roadmap structure and grouping (do not reorganize unnecessarily)
 
+
+## Git Rules
+
+- Always commit and push completed changes to the working branch
+- Commit after each logical step, with a clear message
+- Run lint, typecheck and tests before each push
 
 ## Implementation Checklist
 

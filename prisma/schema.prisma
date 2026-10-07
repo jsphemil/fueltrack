@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
 }
 
@@ -7,40 +7,54 @@ datasource db {
   provider = "postgresql"
 }
 
+// Units: odometer in tenths of a km, volume in millilitres, money in paise.
+// Integers keep money, fuel and distance exact.
+
 model User {
-  id          String       @id
-  vehicles    Vehicle[]
-  userProfile UserProfile?
+  id        String    @id // Supabase auth user id
+  name      String?
+  createdAt DateTime  @default(now())
+  vehicles  Vehicle[]
 }
 
 model Vehicle {
-  id               String      @id @default(uuid())
-  userId           String
-  name             String
-  vehicleType      String      @default("Unknown")
-  initial_odometer Float
-  created_at       DateTime    @default(now())
-  user             User        @relation(fields: [userId], references: [id])
-  fuelEntries      FuelEntry[]
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  kind           String
+  startOdometer  Int
+  tankCapacityMl Int?
+  reserveMl      Int?
+  archived       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events         Event[]
+
+  @@index([userId])
 }
 
-model FuelEntry {
-  id          String   @id @default(uuid())
-  userId      String
-  vehicleId   String?
-  odometer    Float
-  fuel_price  Float
-  amount_paid Float
-  fuel_volume Float
-  is_reserve  Boolean
-  created_at  DateTime @default(now())
-  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+enum EventKind {
+  FILL
+  RESERVE
+  ODOMETER
 }
 
-model UserProfile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+model Event {
+  id             String    @id // client-generated uuid, so offline retries are idempotent
+  userId         String
+  vehicleId      String
+  kind           EventKind
+  occurredAt     DateTime
+  odometer       Int? // null only for a reserve mark whose reading is not known yet
+  odometerApprox Boolean   @default(false)
+  volumeMl       Int?
+  amountPaise    Int?
+  pricePaise     Int? // per litre
+  fullTank       Boolean   @default(false)
+  note           String?
+  createdAt      DateTime  @default(now())
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, occurredAt])
+  @@index([userId])
 }

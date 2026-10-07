@@ -1,324 +1,197 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-type FuelEntry = {
-  id: string;
-  odometer: number;
-  fuel_price: number;
-  amount_paid: number;
-  fuel_volume: number;
-  is_reserve: boolean;
-  vehicleId: string | null;
-  created_at: string;
+import { FuelIcon, OdometerIcon, ReserveIcon } from "@/components/Icons";
+import { Notice, Page, PageHeader, SyncStatus, VehicleChips } from "@/components/ui";
+import { apiRequest } from "@/lib/api";
+import { useFuel } from "@/lib/fuel-context";
+import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, toInputNumber } from "@/lib/format";
+import type { FuelEvent, TimelineCycle } from "@/lib/types";
+import { cardClass, errorTextClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
+import { STARTING_POINT_LABEL } from "@/lib/labels";
+
+const KIND_META = {
+  FILL: { icon: FuelIcon, label: "Fuel", tone: "bg-primary text-primary-foreground" },
+  RESERVE: { icon: ReserveIcon, label: "Reserve", tone: "bg-reserve text-reserve-foreground" },
+  ODOMETER: { icon: OdometerIcon, label: "Odometer", tone: "bg-surface-muted text-subtle" },
+} as const;
+
+const CYCLE_TYPES: Record<TimelineCycle["type"], string> = {
+  RR: "Reserve → reserve",
+  FF: "Full → full",
+  RF: "Reserve → full",
+  FR: "Full → reserve",
 };
 
-type Vehicle = {
-  id: string;
-  name: string;
-};
+function CycleBand({ cycle }: { cycle: TimelineCycle }) {
+  const ok = cycle.status === "ok";
+  const message =
+    cycle.status === "needs-tank-info"
+      ? "Add tank capacity and reserve to measure this cycle"
+      : cycle.status === "implausible"
+        ? "Result looks wrong (check odometer and litres), not used"
+        : cycle.status === "invalid"
+          ? "No fuel or distance recorded, not used"
+          : null;
+
+  return (
+    <div className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-2.5 text-sm ${ok ? "bg-good/10" : "bg-surface-muted"}`}>
+      <span className="font-medium text-subtle">{CYCLE_TYPES[cycle.type]}</span>
+      {ok ? (
+        <span className="tabular font-semibold text-foreground">
+          {formatKm(cycle.distance)} · {formatLitres(cycle.burnedMl, 2)} · <span className="text-good">{formatKmPerL(cycle.kmPerL)}</span>
+          {cycle.approx ? <span className="font-normal text-muted"> (approx.)</span> : null}
+        </span>
+      ) : (
+        <span className="text-muted">{message}</span>
+      )}
+    </div>
+  );
+}
+
+function EventRow({ event, onChanged }: { event: FuelEvent; onChanged: () => void }) {
+  const meta = KIND_META[event.kind];
+  const Icon = meta.icon;
+  const isStart = event.note === STARTING_POINT_LABEL;
+  const needsReading = event.kind === "RESERVE" && event.odometer === null;
+  const [editing, setEditing] = useState(needsReading);
+  const [value, setValue] = useState(toInputNumber(event.odometer, 10, 1));
+  const [error, setError] = useState("");
+
+  const title =
+    event.kind === "FILL"
+      ? isStart
+        ? "Full tank (starting point)"
+        : `${formatLitres(event.volumeMl)} · ${formatMoney(event.amountPaise)}`
+      : event.kind === "RESERVE"
+        ? isStart ? "On reserve (starting point)" : "Went on reserve"
+        : "Odometer reading";
+
+  async function saveReading(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    const result = await apiRequest(`/api/events/${event.id}`, {
+      method: "PATCH",
+      body: { occurredAt: event.occurredAt, odometerKm: value },
+    });
+    if (!result.ok) return setError(result.error);
+    setError("");
+    setEditing(false);
+    onChanged();
+  }
+
+  async function remove() {
+    if (!window.confirm(`Delete this ${meta.label.toLowerCase()} entry?`)) return;
+    const result = await apiRequest(`/api/events/${event.id}`, { method: "DELETE" });
+    if (!result.ok) return setError(result.error);
+    onChanged();
+  }
+
+  return (
+    <div className="flex gap-3 py-3">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${meta.tone}`}>
+        <Icon size={20} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="tabular font-semibold text-foreground">{title}</p>
+            <p className="tabular text-sm text-muted">
+              {formatDateTime(event.occurredAt)}
+              {event.odometer !== null ? ` · ${event.odometerApprox ? "≈ " : ""}${formatKm(event.odometer, 1)}` : ""}
+              {event.kind === "FILL" && event.pricePaise ? ` · ${formatMoney(event.pricePaise)}/L` : ""}
+            </p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {event.fullTank && !isStart ? <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-subtle">Full tank</span> : null}
+              {needsReading ? <span className="rounded-full bg-reserve/15 px-2 py-0.5 text-xs font-semibold text-reserve">Needs odometer</span> : null}
+              {event.odometerApprox ? <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted">Approximate reading</span> : null}
+              {event.note && !isStart ? <span className="text-xs text-muted">{event.note}</span> : null}
+            </div>
+          </div>
+          {!editing ? (
+            <div className="flex gap-2">
+              {event.kind === "FILL" && !isStart ? (
+                <Link href={`/fill?edit=${event.id}&vehicle=${event.vehicleId}`} className={`${secondaryButtonClass} ${smallButtonClass}`}>Edit</Link>
+              ) : event.kind !== "FILL" ? (
+                <button type="button" onClick={() => setEditing(true)} className={`${secondaryButtonClass} ${smallButtonClass}`}>Edit</button>
+              ) : null}
+              <button type="button" onClick={() => void remove()} className={`${secondaryButtonClass} ${smallButtonClass} text-danger!`}>Delete</button>
+            </div>
+          ) : null}
+        </div>
+        {editing ? (
+          <form onSubmit={saveReading} className="mt-3 flex gap-2" noValidate>
+            <input type="number" inputMode="decimal" min="0" step="0.1" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Odometer in km" className={`${inputClass} h-10! tabular`} aria-label="Odometer in km" />
+            <button type="submit" className={`${primaryButtonClass} h-10!`}>Save</button>
+            {!needsReading ? <button type="button" onClick={() => setEditing(false)} className={`${secondaryButtonClass} h-10!`}>Cancel</button> : null}
+          </form>
+        ) : null}
+        {error ? <p className={`mt-1 ${errorTextClass}`}>{error}</p> : null}
+      </div>
+    </div>
+  );
+}
 
 export default function HistoryPage() {
-  const [session, setSession] = useState<Session | null>(null);
+  const { activeVehicle, refresh } = useFuel();
+  const [events, setEvents] = useState<FuelEvent[]>([]);
+  const [cycles, setCycles] = useState<TimelineCycle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [vehiclesError, setVehiclesError] = useState("");
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [entriesLoading, setEntriesLoading] = useState(false);
-  const [entriesError, setEntriesError] = useState("");
-  const [entries, setEntries] = useState<FuelEntry[]>([]);
+  const [error, setError] = useState("");
+  const vehicleId = activeVehicle?.id ?? null;
 
-  async function fetchEntries(accessToken?: string, vehicleId?: string | null) {
-    if (!accessToken) {
-      setEntries([]);
-      return;
+  const load = useCallback(async (id: string) => {
+    const result = await apiRequest<{ events: FuelEvent[]; cycles: TimelineCycle[] }>(`/api/vehicles/${id}/events`);
+    if (result.ok) {
+      setEvents(result.data.events);
+      setCycles(result.data.cycles);
+      setError("");
+    } else {
+      setError(result.error);
     }
-
-    setEntriesLoading(true);
-    setEntriesError("");
-
-    const query = vehicleId ? `?vehicleId=${encodeURIComponent(vehicleId)}` : "";
-    const response = await fetch(`/api/fuel-entry${query}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setEntriesError("Could not load fuel history.");
-      setEntriesLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { entries: FuelEntry[] };
-    setEntries(result.entries ?? []);
-    setEntriesLoading(false);
-  }
-
-  async function fetchVehicles(accessToken?: string) {
-    if (!accessToken) {
-      setVehicles([]);
-      setSelectedVehicleId(null);
-      setEntries([]);
-      return;
-    }
-
-    setVehiclesLoading(true);
-    setVehiclesError("");
-
-    const response = await fetch("/api/vehicle", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setVehiclesError("Could not load vehicles.");
-      setVehiclesLoading(false);
-      return;
-    }
-
-    const result = (await response.json()) as { vehicles: Vehicle[] };
-    const nextVehicles = result.vehicles ?? [];
-    setVehicles(nextVehicles);
-    setSelectedVehicleId((currentValue) => {
-      if (nextVehicles.length === 0) {
-        setEntries([]);
-        return null;
-      }
-
-      if (currentValue && nextVehicles.some((vehicle) => vehicle.id === currentValue)) {
-        return currentValue;
-      }
-
-      return nextVehicles[0].id;
-    });
-    setVehiclesLoading(false);
-  }
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
-
-      if (!isMounted) {
-        return;
-      }
-
-      setSession(data.session);
-      setLoading(false);
-      if (data.session) {
-        void fetchVehicles(data.session.access_token);
-      }
-    }
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-      if (nextSession) {
-        void fetchVehicles(nextSession.access_token);
-      } else {
-        setVehicles([]);
-        setSelectedVehicleId(null);
-        setEntries([]);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (!session?.access_token || !selectedVehicleId) {
-      return;
-    }
-
-    const timerId = window.setTimeout(() => {
-      void fetchEntries(session.access_token, selectedVehicleId);
-    }, 0);
-
+    if (!vehicleId) return;
+    const timerId = window.setTimeout(() => void load(vehicleId), 0);
     return () => window.clearTimeout(timerId);
-  }, [selectedVehicleId, session?.access_token]);
+  }, [vehicleId, load, activeVehicle?.eventCount]);
+
+  const cycleByEnd = useMemo(() => new Map(cycles.map((cycle) => [cycle.endId, cycle])), [cycles]);
+
+  function changed() {
+    if (vehicleId) void load(vehicleId);
+    void refresh();
+  }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-10">
-      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-6 shadow-sm lg:p-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold text-zinc-900">Fuel History</h1>
-          <Link
-            href="/"
-            className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
+    <Page>
+      <PageHeader title="History" subtitle={activeVehicle ? `${activeVehicle.name} · newest first` : undefined} />
+      <VehicleChips />
+      <SyncStatus />
+      {error ? <Notice tone="danger">{error}</Notice> : null}
 
-        {loading ? (
-          <p className="mt-4 text-sm text-zinc-600">Checking session...</p>
-        ) : !session ? (
-          <div className="mt-4">
-            <p className="text-sm text-zinc-700">Please login to view history.</p>
-            <Link
-              href="/login"
-              className="mt-3 inline-flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Go to Login
-            </Link>
-          </div>
-        ) : vehiclesLoading ? (
-          <p className="mt-4 text-sm text-zinc-600">Loading vehicles...</p>
-        ) : vehiclesError ? (
-          <p className="mt-4 text-sm font-medium text-red-600">{vehiclesError}</p>
-        ) : vehicles.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No vehicles available yet.</p>
-        ) : entriesLoading ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm text-zinc-600 lg:pt-9">Loading entries...</p>
-          </>
-        ) : entriesError ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm font-medium text-red-600 lg:pt-9">{entriesError}</p>
-          </>
-        ) : entries.length === 0 ? (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-sm text-zinc-600 lg:pt-9">No fuel entries yet.</p>
-          </>
+      <section className={cardClass}>
+        {loading && events.length === 0 ? (
+          <p className={mutedTextClass}>Loading...</p>
+        ) : events.length === 0 ? (
+          <p className={mutedTextClass}>Nothing logged yet. Tap On reserve or Add fuel to start.</p>
         ) : (
-          <>
-            <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr] lg:items-start">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-700">
-                  Select Vehicle
-                </span>
-                <select
-                  value={selectedVehicleId ?? ""}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="space-y-3">
-              {entries.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
-                >
-                  <p className="text-sm text-zinc-700">
-                    Odometer:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.odometer}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Fuel Price:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.fuel_price.toFixed(2)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Amount Paid:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.amount_paid.toFixed(2)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Fuel Volume:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.fuel_volume.toFixed(2)} L
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Filled at reserve:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {entry.is_reserve ? "Yes" : "No"}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700">
-                    Created at:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {new Date(entry.created_at).toLocaleString()}
-                    </span>
-                  </p>
-                </article>
-              ))}
-            </div>
-          </>
+          <ul className="divide-y divide-border">
+            {events.map((event) => {
+              const cycle = cycleByEnd.get(event.id);
+              return (
+                <li key={event.id}>
+                  {cycle ? <div className="pt-3"><CycleBand cycle={cycle} /></div> : null}
+                  <EventRow event={event} onChanged={changed} />
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
-    </main>
+    </Page>
   );
 }
