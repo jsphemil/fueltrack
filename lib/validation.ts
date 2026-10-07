@@ -489,3 +489,29 @@ export function parseIssueInput(body: Record<string, unknown> | null | undefined
   if (notedOn.value.getTime() > now.getTime() + DAY_MS) return { ok: false, error: "Date can't be in the future" };
   return { ok: true, value: { title, notedOn: notedOn.value } };
 }
+
+// --- Expenses -------------------------------------------------------------------
+
+export const EXPENSE_CATEGORIES = ["Parts", "Insurance", "Tax/RC", "Parking", "Toll", "Wash", "Accessories", "Fine", "Other"] as const;
+
+export type ExpenseInput = { vehicleId: string; category: string; occurredOn: Date; amountPaise: number; note: string | null };
+
+export function parseExpenseInput(body: Record<string, unknown> | null | undefined, now: Date = new Date()): ValidationResult<ExpenseInput> {
+  const source = body ?? {};
+  if (!isUuid(source.vehicleId)) return { ok: false, error: "Vehicle is invalid" };
+  const category = toTrimmedString(source.category);
+  if (!(EXPENSE_CATEGORIES as readonly string[]).includes(category)) return { ok: false, error: "Choose a category" };
+
+  const occurredOn = parseDateOnly(source.occurredOn, "Enter a valid date");
+  if (!occurredOn.ok) return occurredOn;
+  if (occurredOn.value.getTime() > now.getTime() + DAY_MS) return { ok: false, error: "Date can't be in the future" };
+
+  const amount = toNumber(source.amountRupees);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_SERVICE_COST_RUPEES) {
+    return { ok: false, error: `Amount must be more than 0 and at most ${MAX_SERVICE_COST_RUPEES.toLocaleString("en-IN")} rupees` };
+  }
+
+  const note = parseNote(source.note);
+  if (!note.ok) return note;
+  return { ok: true, value: { vehicleId: source.vehicleId, category, occurredOn: occurredOn.value, amountPaise: rupeesToPaise(amount), note: note.value } };
+}

@@ -38,6 +38,7 @@ model Vehicle {
   serviceItems        ServiceItem[]
   serviceRecords      ServiceRecord[]
   issues              Issue[]
+  expenses            Expense[]
 
   @@index([userId])
 }
@@ -144,4 +145,20 @@ model Issue {
 
   @@index([vehicleId])
   @@index([recordId])
+}
+
+// Money spent on the vehicle outside fuel and service visits (parts, insurance,
+// parking, tolls...). Feeds the cost of ownership.
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String
+  vehicleId   String
+  category    String
+  occurredOn  DateTime @db.Date
+  amountPaise Int
+  note        String?
+  createdAt   DateTime @default(now())
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, occurredOn])
 }

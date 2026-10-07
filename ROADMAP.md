@@ -50,6 +50,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
 * Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost (replaces the single oil change reminder)
 * Issues and repairs: note problems as they appear, keep them open until a repair visit fixes them; visits are Maintenance or Repair with separate cost totals
+* All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
 
 ---
 
@@ -63,7 +64,6 @@ _Nothing in progress._
 
 ### Vehicle Manager
 
-* All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
 * Mileage drop alert: warn when recent km/l falls clearly below the usual figure
 * Yearly summary (km, spend, mileage) and CSV import to restore a backup
 
