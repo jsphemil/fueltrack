@@ -1,130 +1,139 @@
 import { describe, expect, it } from "@jest/globals";
+
 import {
-  calculateFuelVolume,
   checkOdometerOrder,
-  parseFuelEntryInput,
+  parseFillInput,
+  parseOdometerInput,
   parseProfileInput,
+  parseReserveInput,
   parseVehicleInput,
 } from "@/lib/validation";
+import { amountFromVolume, priceFromAmount, volumeFromAmount } from "@/lib/units";
 
-const now = new Date("2026-03-01T12:00:00Z");
+const now = new Date("2026-08-10T12:00:00Z");
+const id = "0b7a6a1e-3f7c-4d4b-9a51-2c3d4e5f6a7b";
+const base = { id, vehicleId: "v1", occurredAt: "2026-08-10T09:00:00Z", odometerKm: "12345.6" };
 
-describe("parseFuelEntryInput", () => {
-  const valid = {
-    vehicleId: "v1",
-    odometer: 1200,
-    fuel_price: 100,
-    amount_paid: 500,
-    is_reserve: true,
-    filled_at: "2026-02-28T08:00:00Z",
-  };
+describe("units", () => {
+  it("converts between amount, price and volume exactly", () => {
+    expect(volumeFromAmount(50000, 10245)).toBe(4880); // ₹500 at ₹102.45 → 4.880 L
+    expect(amountFromVolume(4880, 10245)).toBe(49996);
+    expect(priceFromAmount(50000, 5000)).toBe(10000);
+  });
+});
 
-  it("accepts valid input and computes fuel volume on the server", () => {
-    const result = parseFuelEntryInput({ ...valid, fuel_volume: 999 }, now);
-
+describe("parseFillInput", () => {
+  it("computes litres from amount and price", () => {
+    const result = parseFillInput({ ...base, amount: "500", price: "102.45", fullTank: true }, now);
     expect(result).toEqual({
       ok: true,
       value: {
+        id,
         vehicleId: "v1",
-        odometer: 1200,
-        fuel_price: 100,
-        amount_paid: 500,
-        fuel_volume: 5,
-        is_reserve: true,
-        filled_at: new Date("2026-02-28T08:00:00Z"),
+        occurredAt: new Date("2026-08-10T09:00:00Z"),
+        odometer: 123456,
+        volumeMl: 4880,
+        amountPaise: 50000,
+        pricePaise: 10245,
+        fullTank: true,
+        note: null,
+        reserveTrip: null,
       },
     });
   });
 
-  it("defaults the fill date to now", () => {
-    const result = parseFuelEntryInput({ ...valid, filled_at: undefined }, now);
-    expect(result.ok && result.value.filled_at).toEqual(now);
+  it("computes amount from litres and price, and price from amount and litres", () => {
+    const fromLitres = parseFillInput({ ...base, litres: "5", price: "100" }, now);
+    expect(fromLitres.ok && fromLitres.value.amountPaise).toBe(50000);
+    const fromAmount = parseFillInput({ ...base, litres: "4", amount: "420" }, now);
+    expect(fromAmount.ok && fromAmount.value.pricePaise).toBe(10500);
+  });
+
+  it("accepts all three when they agree within ₹1, rejects when they don't", () => {
+    expect(parseFillInput({ ...base, amount: "500", price: "102.45", litres: "4.88" }, now).ok).toBe(true);
+    expect(parseFillInput({ ...base, amount: "500", price: "102.45", litres: "5.5" }, now).ok).toBe(false);
+  });
+
+  it("parses the trip-meter reading for an open reserve mark", () => {
+    const result = parseFillInput({ ...base, amount: "200", price: "100", reserveTripKm: "3.5" }, now);
+    expect(result.ok && result.value.reserveTrip).toBe(35);
   });
 
   it.each([
-    ["missing vehicle", { vehicleId: "" }],
-    ["negative odometer", { odometer: -1 }],
-    ["empty odometer", { odometer: "" }],
-    ["zero price", { fuel_price: 0 }],
-    ["negative amount", { amount_paid: -10 }],
-    ["non-numeric amount", { amount_paid: "abc" }],
-    ["invalid date", { filled_at: "not-a-date" }],
-    ["future date", { filled_at: "2026-03-02T12:00:00Z" }],
+    ["only one of amount/price/litres", { amount: "500" }],
+    ["zero amount", { amount: "0", price: "100" }],
+    ["negative price", { amount: "500", price: "-1" }],
+    ["negative odometer", { amount: "500", price: "100", odometerKm: "-5" }],
+    ["missing odometer", { amount: "500", price: "100", odometerKm: "" }],
+    ["future date", { amount: "500", price: "100", occurredAt: "2026-08-11T12:00:00Z" }],
+    ["invalid id", { amount: "500", price: "100", id: "abc" }],
+    ["missing vehicle", { amount: "500", price: "100", vehicleId: "" }],
+    ["trip reading too large", { amount: "500", price: "100", reserveTripKm: "900" }],
   ])("rejects %s", (_label, override) => {
-    expect(parseFuelEntryInput({ ...valid, ...override }, now).ok).toBe(false);
-  });
-
-  it("rejects a missing body", () => {
-    expect(parseFuelEntryInput(null, now).ok).toBe(false);
+    expect(parseFillInput({ ...base, ...override }, now).ok).toBe(false);
   });
 });
 
-describe("calculateFuelVolume", () => {
-  it("divides amount by price and rounds to 3 decimals", () => {
-    expect(calculateFuelVolume(1000, 102.45)).toBe(9.761);
+describe("parseReserveInput and parseOdometerInput", () => {
+  it("allows a reserve mark without an odometer reading", () => {
+    const result = parseReserveInput({ id, vehicleId: "v1" }, now);
+    expect(result).toEqual({ ok: true, value: { id, vehicleId: "v1", occurredAt: now, odometer: null } });
   });
 
-  it("returns 0 for invalid values", () => {
-    expect(calculateFuelVolume(100, 0)).toBe(0);
-    expect(calculateFuelVolume(-5, 100)).toBe(0);
-    expect(calculateFuelVolume(Number.NaN, 100)).toBe(0);
+  it("requires a reading for an odometer update", () => {
+    expect(parseOdometerInput({ id, vehicleId: "v1" }, now).ok).toBe(false);
+    expect(parseOdometerInput({ id, vehicleId: "v1", odometerKm: 1500 }, now).ok).toBe(true);
   });
 });
 
 describe("parseVehicleInput", () => {
-  it("accepts and trims valid input", () => {
-    expect(parseVehicleInput({ name: " Classic 350 ", vehicleType: "Bike", initial_odometer: 0 })).toEqual({
+  const vehicle = { name: " Splendor ", kind: "Motorcycle", startOdometerKm: "1200" };
+
+  it("accepts a vehicle without tank info", () => {
+    expect(parseVehicleInput(vehicle)).toEqual({
       ok: true,
-      value: { name: "Classic 350", vehicleType: "Bike", initial_odometer: 0 },
+      value: { name: "Splendor", kind: "Motorcycle", startOdometer: 12000, tankCapacityMl: null, reserveMl: null },
     });
   });
 
-  it("rejects missing name, type and negative odometer", () => {
-    expect(parseVehicleInput({ name: "", vehicleType: "Bike", initial_odometer: 0 }).ok).toBe(false);
-    expect(parseVehicleInput({ name: "A", vehicleType: " ", initial_odometer: 0 }).ok).toBe(false);
-    expect(parseVehicleInput({ name: "A", vehicleType: "Bike", initial_odometer: -5 }).ok).toBe(false);
-    expect(parseVehicleInput({ name: "A", vehicleType: "Bike" }).ok).toBe(false);
+  it("validates tank capacity and reserve", () => {
+    expect(parseVehicleInput({ ...vehicle, tankCapacityL: "9.8", reserveL: "1.5" })).toMatchObject({
+      ok: true,
+      value: { tankCapacityMl: 9800, reserveMl: 1500 },
+    });
+    expect(parseVehicleInput({ ...vehicle, tankCapacityL: "5", reserveL: "6" }).ok).toBe(false);
+    expect(parseVehicleInput({ ...vehicle, tankCapacityL: "0.5" }).ok).toBe(false);
+    expect(parseVehicleInput({ ...vehicle, kind: "Truck" }).ok).toBe(false);
+    expect(parseVehicleInput({ ...vehicle, name: "" }).ok).toBe(false);
   });
 });
 
 describe("parseProfileInput", () => {
-  it("normalises whitespace", () => {
+  it("normalises whitespace and limits length", () => {
     expect(parseProfileInput({ name: "  Jane   Doe " })).toEqual({ ok: true, value: { name: "Jane Doe" } });
-  });
-
-  it("rejects empty and overly long names", () => {
-    expect(parseProfileInput({ name: "   " }).ok).toBe(false);
     expect(parseProfileInput({ name: "x".repeat(51) }).ok).toBe(false);
   });
 });
 
 describe("checkOdometerOrder", () => {
-  const others = [
-    { odometer: 1100, filled_at: new Date("2026-01-01T00:00:00Z") },
-    { odometer: 1500, filled_at: new Date("2026-01-10T00:00:00Z") },
+  const otherEvents = [
+    { odometer: 11000, occurredAt: new Date("2026-08-01T00:00:00Z") },
+    { odometer: null, occurredAt: new Date("2026-08-03T00:00:00Z") },
+    { odometer: 15000, occurredAt: new Date("2026-08-05T00:00:00Z") },
   ];
+  const check = (odometer: number, day: string) =>
+    checkOdometerOrder({ odometer, occurredAt: new Date(`2026-08-${day}T00:00:00Z`), startOdometer: 10000, otherEvents }).ok;
 
-  it("requires the first entry to exceed the initial odometer", () => {
-    const base = { filledAt: new Date("2026-01-01T00:00:00Z"), initialOdometer: 1000, otherEntries: [] };
-    expect(checkOdometerOrder({ ...base, odometer: 1000 }).ok).toBe(false);
-    expect(checkOdometerOrder({ ...base, odometer: 1001 }).ok).toBe(true);
+  it("accepts readings between neighbours, including equal readings", () => {
+    expect(check(12000, "03")).toBe(true);
+    expect(check(11000, "02")).toBe(true);
+    expect(check(15000, "04")).toBe(true);
   });
 
-  it("accepts a reading between neighbouring fills (back-dated entry)", () => {
-    expect(
-      checkOdometerOrder({ odometer: 1300, filledAt: new Date("2026-01-05T00:00:00Z"), initialOdometer: 1000, otherEntries: others }).ok
-    ).toBe(true);
-  });
-
-  it("rejects readings out of order with their neighbours", () => {
-    const filledAt = new Date("2026-01-05T00:00:00Z");
-    expect(checkOdometerOrder({ odometer: 1100, filledAt, initialOdometer: 1000, otherEntries: others }).ok).toBe(false);
-    expect(checkOdometerOrder({ odometer: 1500, filledAt, initialOdometer: 1000, otherEntries: others }).ok).toBe(false);
-  });
-
-  it("requires a new latest entry to exceed the latest reading", () => {
-    const filledAt = new Date("2026-01-20T00:00:00Z");
-    expect(checkOdometerOrder({ odometer: 1400, filledAt, initialOdometer: 1000, otherEntries: others }).ok).toBe(false);
-    expect(checkOdometerOrder({ odometer: 1600, filledAt, initialOdometer: 1000, otherEntries: others }).ok).toBe(true);
+  it("rejects readings that go backwards", () => {
+    expect(check(10900, "02")).toBe(false);
+    expect(check(15100, "04")).toBe(false);
+    expect(check(14000, "06")).toBe(false);
+    expect(checkOdometerOrder({ odometer: 9000, occurredAt: new Date(), startOdometer: 10000, otherEvents: [] }).ok).toBe(false);
   });
 });
