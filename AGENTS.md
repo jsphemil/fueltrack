@@ -1,5 +1,10 @@
 # Project: Bike Mileage Tracker
 
+## Current Status
+
+Read `STATUS.md` first: it describes what is built, what is deployed, the remaining go-live
+steps and known gotchas. Keep it up to date when that changes.
+
 ## Objective
 Build a simple, reliable mileage tracking app that tracks fuel, distance, and expenses accurately.
 
