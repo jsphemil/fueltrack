@@ -4,6 +4,7 @@ import {
   checkOdometerOrder,
   parseFillInput,
   parseOdometerInput,
+  parseLowFuelInput,
   parseProfileInput,
   parseReserveInput,
   parseVehicleInput,
@@ -112,6 +113,16 @@ describe("parseProfileInput", () => {
   it("normalises whitespace and limits length", () => {
     expect(parseProfileInput({ name: "  Jane   Doe " })).toEqual({ ok: true, value: { name: "Jane Doe" } });
     expect(parseProfileInput({ name: "x".repeat(51) }).ok).toBe(false);
+  });
+});
+
+describe("parseLowFuelInput", () => {
+  it("accepts whole km in range or null to turn off", () => {
+    expect(parseLowFuelInput({ lowFuelKm: "30" })).toEqual({ ok: true, value: { lowFuelKm: 30 } });
+    expect(parseLowFuelInput({ lowFuelKm: null })).toEqual({ ok: true, value: { lowFuelKm: null } });
+    for (const lowFuelKm of [0, -5, 12.5, 501, "", "abc", undefined]) {
+      expect(parseLowFuelInput({ lowFuelKm }).ok).toBe(false);
+    }
   });
 });
 

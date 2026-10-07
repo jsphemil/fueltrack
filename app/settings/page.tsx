@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/api";
 import { clearFuelCache, useFuel } from "@/lib/fuel-context";
 import { supabase } from "@/lib/supabase";
 import { cardClass, dangerButtonClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, successTextClass } from "@/lib/ui";
-import { parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
+import { MAX_LOW_FUEL_KM, parseLowFuelInput, parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -19,6 +19,26 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const nameValue = name ?? me?.name ?? "";
+  const [lowFuel, setLowFuel] = useState<string | null>(null);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const lowFuelValue = lowFuel ?? (me?.lowFuelKm != null ? String(me.lowFuelKm) : "30");
+
+  async function saveReminder(lowFuelKm: string | null) {
+    const parsed = parseLowFuelInput({ lowFuelKm });
+    if (!parsed.ok) return setError(parsed.error);
+    if (parsed.value.lowFuelKm !== null) {
+      if (!("Notification" in window)) return setError("This browser can't show notifications.");
+      if ((await Notification.requestPermission()) !== "granted") {
+        return setError("Notifications are blocked. Allow them for FuelTrack in your phone or browser settings.");
+      }
+    }
+    const result = await apiRequest("/api/me", { method: "PATCH", body: parsed.value });
+    if (!result.ok) return setError(result.error);
+    setError("");
+    setLowFuel(null);
+    setReminderMessage(parsed.value.lowFuelKm === null ? "Reminder turned off." : "Reminder saved.");
+    await refresh();
+  }
 
   async function saveName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,6 +100,25 @@ export default function SettingsPage() {
           <button type="submit" className={`${primaryButtonClass} self-end`}>Save</button>
         </form>
         {message ? <p className={`mt-2 ${successTextClass}`}>{message}</p> : null}
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Low-fuel reminder</h2>
+        <p className={`mt-2 ${mutedTextClass}`}>
+          {me?.lowFuelKm != null ? `On: notifies when about ${me.lowFuelKm} km are left to reserve.` : "Off."} Checked when you open the app, once per tank on this phone.
+        </p>
+        <form onSubmit={(event) => { event.preventDefault(); void saveReminder(lowFuelValue); }} className="mt-4 flex gap-2" noValidate>
+          <div className="flex-1">
+            <Field label="Remind me at (km to reserve)">
+              <input value={lowFuelValue} inputMode="numeric" min={1} max={MAX_LOW_FUEL_KM} onChange={(event) => { setLowFuel(event.target.value); setReminderMessage(""); }} className={inputClass} />
+            </Field>
+          </div>
+          <button type="submit" className={`${primaryButtonClass} self-end`}>{me?.lowFuelKm != null ? "Save" : "Turn on"}</button>
+          {me?.lowFuelKm != null ? (
+            <button type="button" onClick={() => void saveReminder(null)} className={`${secondaryButtonClass} self-end`}>Turn off</button>
+          ) : null}
+        </form>
+        {reminderMessage ? <p className={`mt-2 ${successTextClass}`}>{reminderMessage}</p> : null}
       </section>
 
       <section className={cardClass}>

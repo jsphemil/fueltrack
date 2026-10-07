@@ -469,3 +469,9 @@ export function resolveReserveOdometer(fillOdometer: number, tripTenths: number 
   }
   return { odometer: fillOdometer, approx: true };
 }
+
+// Low-fuel reminder: the estimate says reserve is within thresholdKm.
+// "on-reserve" is excluded: the rider marked it, so they already know.
+export function isLowFuel(gauge: Gauge, thresholdKm: number | null) {
+  return thresholdKm !== null && gauge.status === "ok" && gauge.kmToReserve !== null && gauge.kmToReserve <= thresholdKm;
+}

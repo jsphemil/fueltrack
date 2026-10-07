@@ -13,6 +13,7 @@ datasource db {
 model User {
   id        String    @id // Supabase auth user id
   name      String?
+  lowFuelKm Int? // low-fuel reminder threshold in km; null = reminders off
   createdAt DateTime  @default(now())
   vehicles  Vehicle[]
 }

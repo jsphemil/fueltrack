@@ -98,6 +98,19 @@ export function parseProfileInput(body: Record<string, unknown> | null | undefin
   return { ok: true, value: { name } };
 }
 
+export const MAX_LOW_FUEL_KM = 500;
+
+// Low-fuel reminder threshold: whole km from 1 to MAX_LOW_FUEL_KM, or null to turn reminders off.
+export function parseLowFuelInput(body: Record<string, unknown> | null | undefined): ValidationResult<{ lowFuelKm: number | null }> {
+  const value = (body ?? {}).lowFuelKm;
+  if (value === null) return { ok: true, value: { lowFuelKm: null } };
+  const km = toNumber(value);
+  if (!Number.isInteger(km) || km < 1 || km > MAX_LOW_FUEL_KM) {
+    return { ok: false, error: `Reminder distance must be a whole number from 1 to ${MAX_LOW_FUEL_KM} km` };
+  }
+  return { ok: true, value: { lowFuelKm: km } };
+}
+
 export type VehicleInput = {
   name: string;
   kind: string;

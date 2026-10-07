@@ -28,7 +28,9 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 ## What to work on next
 
-- Pick from `ROADMAP.md` → Planned: low-fuel reminder notifications, service reminders.
+- Pick from `ROADMAP.md` → Planned: service reminders.
+- Low-fuel reminders run only when the app opens (no server push). True background push would need
+  Web Push (VAPID keys, a subscription table) plus a scheduled job.
 - `npm audit` reports dependency warnings; review them carefully. Never run `npm audit fix --force`,
   which can upgrade Next.js and break the app.
 - Any database change needs a new Prisma migration, applied with `npx prisma migrate deploy`
@@ -38,7 +40,8 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 | Area | Files |
 |---|---|
-| Calculation engine (cycles, gauge, stats) | `lib/engine.ts` + `tests/engine.test.ts` |
+| Calculation engine (cycles, gauge, stats, low-fuel check) | `lib/engine.ts` + `tests/engine.test.ts` |
+| Low-fuel reminders | `notifyLowFuel` in `lib/fuel-context.tsx`, Settings card, `User.lowFuelKm`, `notificationclick` in `public/sw.js` |
 | Input validation (shared by UI and API) | `lib/validation.ts` + `tests/validation.test.ts` |
 | Units (paise, ml, tenths of km) | `lib/units.ts` |
 | Server helpers (auth wrapper, summaries) | `lib/server.ts`, `lib/auth.ts`, `lib/prisma.ts` |
@@ -71,4 +74,4 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 - Follow `AGENTS.md`: pick tasks from `ROADMAP.md` → Planned. Commit and push after each logical
   step; run `npm run lint`, `npm run typecheck`, `npm test` before pushing.
 - After PR #50 is merged, start new work on a fresh branch from `master`.
-- Next planned items: low-fuel reminder notifications, service reminders (see `ROADMAP.md`).
+- Next planned item: service reminders (see `ROADMAP.md`).
