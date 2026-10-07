@@ -40,6 +40,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 * Installable PWA with "On reserve" and "Add fuel" home-screen shortcuts
 * App shell cached for offline opening
+* Installed app reloads itself once when a newer version is deployed
 
 ### Reminders
 

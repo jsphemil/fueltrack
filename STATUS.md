@@ -68,6 +68,9 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
   unknown-field errors, run `npx prisma generate` and delete `.next`.
 - **`next-env.d.ts` is generated** by Next.js on every `npm run dev`/`npm run build` and is not
   committed. If git ever blocks a branch switch on it: `git restore next-env.d.ts`.
+- **Installed app updates:** `components/ServiceWorker.tsx` compares `NEXT_PUBLIC_BUILD_ID` (commit SHA baked in
+  at build) with `/api/version` on open/foreground and reloads once if they differ (never on `/fill`
+  or `/quick/reserve`). Locally both are "dev", so it never fires.
 - **Figma** is on a Starter plan: one mode per variable collection.
 
 ## How to work on it
