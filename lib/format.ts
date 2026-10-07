@@ -32,6 +32,11 @@ export function formatDate(value: string | Date) {
   return new Date(value).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" });
 }
 
+// A calendar date stored as UTC midnight (e.g. a document expiry date).
+export function formatDateOnly(value: string) {
+  return new Date(value).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
 export function formatTime(value: string | Date) {
   return new Date(value).toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit" });
 }
@@ -66,6 +71,13 @@ export function toDateTimeLocalValue(value: string | Date) {
 // Plain number for prefilling inputs (no grouping separators).
 export function toInputNumber(value: number | null | undefined, divisor: number, decimals: number) {
   return typeof value === "number" ? String(Number((value / divisor).toFixed(decimals))) : "";
+}
+
+// "Expires today" / "Expires in 12 days" / "Expired 3 days ago".
+export function formatExpiry(daysLeft: number) {
+  if (daysLeft === 0) return "Expires today";
+  if (daysLeft < 0) return `Expired ${-daysLeft} day${daysLeft === -1 ? "" : "s"} ago`;
+  return `Expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
 }
 
 // "Oil change due in 80 km" / "Oil change overdue by 20 km".

@@ -494,3 +494,21 @@ export function serviceDueKm(
 export function isServiceDue(dueKm: number | null) {
   return dueKm !== null && dueKm <= SERVICE_SOON_KM;
 }
+
+// --- Document reminders ---------------------------------------------------------
+
+// Remind this many days before a document expires.
+export const DOCUMENT_REMIND_DAYS = [30, 7] as const;
+
+// Whole days from today (the phone's local date) to an expiry date "YYYY-MM-DD".
+export function daysUntil(expiresOn: string, today: Date = new Date()) {
+  const [year, month, day] = expiresOn.slice(0, 10).split("-").map(Number);
+  return Math.round((Date.UTC(year, month - 1, day) - Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) / 86_400_000);
+}
+
+// Reminder stage for a document: "expired", "7", "30" or null when not due yet.
+export function documentStage(daysLeft: number) {
+  if (daysLeft < 0) return "expired";
+  const stage = [...DOCUMENT_REMIND_DAYS].sort((a, b) => a - b).find((days) => daysLeft <= days);
+  return stage === undefined ? null : String(stage);
+}

@@ -46,6 +46,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 * Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
 * Service reminders: oil change interval per vehicle, due/overdue notice on Home and a notification within 100 km
+* Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
 
 ---
 
@@ -57,4 +58,22 @@ _Nothing in progress._
 
 ## Planned
 
-_Nothing planned._
+### Vehicle Manager
+
+* Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost
+* All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
+* Mileage drop alert: warn when recent km/l falls clearly below the usual figure
+* Yearly summary (km, spend, mileage) and CSV import to restore a backup
+
+### Usability
+
+* Customisation: choose Home tiles, default fill entry (amount or litres), reminder lead times
+* In-app guide: how FuelTrack works and tips to get accurate estimates
+
+### AI (free, on-device)
+
+* Photo to entry: read pump display / receipt and odometer from a photo with Transformers.js (Hugging Face models running in the app), always confirmed by the user
+
+### Android
+
+* Android app: start by packaging the PWA for the Play Store (Trusted Web Activity); native app later if needed

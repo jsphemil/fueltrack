@@ -353,3 +353,34 @@ export function checkOdometerOrder(params: {
   }
   return { ok: true, value: null };
 }
+
+// --- Documents ----------------------------------------------------------------
+
+export const DOCUMENT_KINDS = ["Insurance", "PUC", "RC", "Licence", "Other"] as const;
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export type DocumentInput = {
+  kind: string;
+  vehicleId: string | null;
+  expiresOn: Date; // UTC midnight of the expiry date
+  note: string | null;
+};
+
+export function parseDocumentInput(body: Record<string, unknown> | null | undefined): ValidationResult<DocumentInput> {
+  const source = body ?? {};
+  const kind = toTrimmedString(source.kind);
+  if (!(DOCUMENT_KINDS as readonly string[]).includes(kind)) return { ok: false, error: "Choose a document type" };
+
+  const vehicleId = isBlank(source.vehicleId) ? null : source.vehicleId;
+  if (vehicleId !== null && !isUuid(vehicleId)) return { ok: false, error: "Vehicle is invalid" };
+
+  const expiresText = toTrimmedString(source.expiresOn);
+  const expiresOn = new Date(`${expiresText}T00:00:00Z`);
+  if (!DATE_ONLY_PATTERN.test(expiresText) || Number.isNaN(expiresOn.getTime()) || expiresOn.toISOString().slice(0, 10) !== expiresText) {
+    return { ok: false, error: "Enter a valid expiry date" };
+  }
+
+  const note = parseNote(source.note);
+  if (!note.ok) return note;
+  return { ok: true, value: { kind, vehicleId, expiresOn, note: note.value } };
+}
