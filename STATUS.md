@@ -11,8 +11,7 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 ## Where things stand
 
-- **Code:** v2 is complete on branch `ccr-a171d3b4-eflee3`, open as **PR #50** into `master`
-  (https://github.com/jsphemil/fueltrack/pull/50). Not merged yet.
+- **Code:** v2 is merged into `master` (PR #50, https://github.com/jsphemil/fueltrack/pull/50).
 - **Checks:** lint, typecheck, 46 unit tests, 4 DB integration tests and the production build pass.
   The full flow was tested in Chromium against a local Postgres.
 - **Database (Supabase):** v1 migrations are applied. The v2 migration
@@ -60,6 +59,8 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
   then retry. If that doesn't clear it, restart the project (Settings → General).
 - **Prisma client must be regenerated after schema changes.** `npm run dev` does this; if you see
   unknown-field errors, run `npx prisma generate` and delete `.next`.
+- **`next-env.d.ts` is generated** by Next.js on every `npm run dev`/`npm run build` and is not
+  committed. If git ever blocks a branch switch on it: `git restore next-env.d.ts`.
 - **Figma** is on a Starter plan: one mode per variable collection.
 
 ## How to work on it
