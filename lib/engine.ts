@@ -475,3 +475,22 @@ export function resolveReserveOdometer(fillOdometer: number, tripTenths: number 
 export function isLowFuel(gauge: Gauge, thresholdKm: number | null) {
   return thresholdKm !== null && gauge.status === "ok" && gauge.kmToReserve !== null && gauge.kmToReserve <= thresholdKm;
 }
+
+// Remind this many km before the oil change is due.
+export const SERVICE_SOON_KM = 100;
+
+// Service reminder: km until the next oil change (negative = overdue), or
+// null when no interval is set. Counts from the start odometer until a
+// service is recorded.
+export function serviceDueKm(
+  vehicle: { startOdometer: number; serviceIntervalKm: number | null; lastServiceOdometer: number | null },
+  odometer: number
+) {
+  if (vehicle.serviceIntervalKm === null) return null;
+  const since = odometer - (vehicle.lastServiceOdometer ?? vehicle.startOdometer);
+  return Math.round(vehicle.serviceIntervalKm - since / 10);
+}
+
+export function isServiceDue(dueKm: number | null) {
+  return dueKm !== null && dueKm <= SERVICE_SOON_KM;
+}

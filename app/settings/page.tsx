@@ -105,7 +105,7 @@ export default function SettingsPage() {
       <section className={cardClass}>
         <h2 className="font-semibold text-foreground">Low-fuel reminder</h2>
         <p className={`mt-2 ${mutedTextClass}`}>
-          {me?.lowFuelKm != null ? `On: notifies when about ${me.lowFuelKm} km are left to reserve.` : "Off."} Checked when you open the app, once per tank on this phone.
+          {me?.lowFuelKm != null ? `On: notifies when about ${me.lowFuelKm} km are left to reserve.` : "Off."} Checked when you open the app, once per tank on this phone. Allowing notifications here also turns on oil change reminders.
         </p>
         <form onSubmit={(event) => { event.preventDefault(); void saveReminder(lowFuelValue); }} className="mt-4 flex gap-2" noValidate>
           <div className="flex-1">

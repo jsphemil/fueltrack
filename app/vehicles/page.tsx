@@ -7,7 +7,7 @@ import { Notice, Page, PageHeader } from "@/components/ui";
 import VehicleForm from "@/components/VehicleForm";
 import { apiRequest } from "@/lib/api";
 import { useFuel } from "@/lib/fuel-context";
-import { formatKm, formatKmPerL, formatLitres, formatNumber } from "@/lib/format";
+import { formatKm, formatKmPerL, formatLitres, formatNumber, formatServiceDue } from "@/lib/format";
 import type { VehicleSummary } from "@/lib/types";
 import { cardClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
 
@@ -108,6 +108,9 @@ export default function VehiclesPage() {
                 <div><dt className="text-xs text-muted">Tank</dt><dd className="font-medium text-foreground">{vehicle.tankCapacityMl !== null ? formatLitres(vehicle.tankCapacityMl, 1) : "Not set"}</dd></div>
                 <div><dt className="text-xs text-muted">Reserve</dt><dd className="font-medium text-foreground">{vehicle.reserveMl !== null ? formatLitres(vehicle.reserveMl, 1) : "Not set"}</dd></div>
               </dl>
+              {vehicle.serviceDueKm !== null ? (
+                <p className={`tabular mt-3 text-sm ${vehicle.serviceDueKm <= 0 ? "font-semibold text-danger" : "text-muted"}`}>{formatServiceDue(vehicle.serviceDueKm)}</p>
+              ) : null}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {!isActive && !vehicle.archived ? (

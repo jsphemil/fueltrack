@@ -93,7 +93,10 @@ describe("parseVehicleInput", () => {
   it("accepts a vehicle without tank info", () => {
     expect(parseVehicleInput(vehicle)).toEqual({
       ok: true,
-      value: { name: "Splendor", kind: "Motorcycle", startOdometer: 12000, tankCapacityMl: null, reserveMl: null },
+      value: {
+        name: "Splendor", kind: "Motorcycle", startOdometer: 12000, tankCapacityMl: null, reserveMl: null,
+        serviceIntervalKm: null, lastServiceOdometer: null,
+      },
     });
   });
 
@@ -113,6 +116,24 @@ describe("parseProfileInput", () => {
   it("normalises whitespace and limits length", () => {
     expect(parseProfileInput({ name: "  Jane   Doe " })).toEqual({ ok: true, value: { name: "Jane Doe" } });
     expect(parseProfileInput({ name: "x".repeat(51) }).ok).toBe(false);
+  });
+});
+
+describe("parseVehicleInput service reminder", () => {
+  const vehicle = { name: "Splendor", kind: "Motorcycle", startOdometerKm: "1200" };
+
+  it("stores the interval in km and the last service in tenths", () => {
+    expect(parseVehicleInput({ ...vehicle, serviceIntervalKm: "3000", lastServiceKm: "1500.5" })).toMatchObject({
+      ok: true,
+      value: { serviceIntervalKm: 3000, lastServiceOdometer: 15005 },
+    });
+  });
+
+  it("rejects intervals out of range or not whole", () => {
+    for (const serviceIntervalKm of ["99", "20001", "2500.5", "-3000", "abc"]) {
+      expect(parseVehicleInput({ ...vehicle, serviceIntervalKm }).ok).toBe(false);
+    }
+    expect(parseVehicleInput({ ...vehicle, serviceIntervalKm: "3000", lastServiceKm: "-1" }).ok).toBe(false);
   });
 });
 

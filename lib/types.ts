@@ -25,6 +25,8 @@ export type Vehicle = {
   startOdometer: number;
   tankCapacityMl: number | null;
   reserveMl: number | null;
+  serviceIntervalKm: number | null;
+  lastServiceOdometer: number | null; // tenths of km
   archived: boolean;
   createdAt: string;
 };
@@ -35,6 +37,7 @@ export type VehicleSummary = Vehicle & {
   lastFill: FuelEvent | null;
   lastPrice: number | null;
   openReserve: FuelEvent | null;
+  serviceDueKm: number | null; // km to next oil change; negative = overdue
   eventCount: number;
 };
 

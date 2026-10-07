@@ -7,6 +7,8 @@ import {
   currentOdometer,
   efficiency,
   isLowFuel,
+  isServiceDue,
+  serviceDueKm,
   kmPerDay,
   monthKey,
   resolveReserveOdometer,
@@ -204,6 +206,27 @@ describe("isLowFuel", () => {
   it("stays quiet on reserve and without an estimate", () => {
     expect(isLowFuel(calculateGauge(tank, [...events, reserve(7, null)], at(7, 1)), 500)).toBe(false);
     expect(isLowFuel(calculateGauge(noTank, [], at(0)), 500)).toBe(false);
+  });
+});
+
+describe("serviceDueKm", () => {
+  const bike = { startOdometer: 100000, serviceIntervalKm: 3000, lastServiceOdometer: null };
+
+  it("counts from the start odometer until a service is recorded", () => {
+    expect(serviceDueKm(bike, 120000)).toBe(1000); // 2000 km ridden of 3000
+    expect(serviceDueKm({ ...bike, lastServiceOdometer: 125000 }, 130005)).toBe(2500);
+  });
+
+  it("goes negative when overdue and is off without an interval", () => {
+    expect(serviceDueKm(bike, 131000)).toBe(-100);
+    expect(serviceDueKm({ ...bike, serviceIntervalKm: null }, 131000)).toBeNull();
+  });
+
+  it("flags due within 100 km", () => {
+    expect(isServiceDue(100)).toBe(true);
+    expect(isServiceDue(-5)).toBe(true);
+    expect(isServiceDue(101)).toBe(false);
+    expect(isServiceDue(null)).toBe(false);
   });
 });
 
