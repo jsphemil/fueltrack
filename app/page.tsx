@@ -43,7 +43,7 @@ function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
   }
 
   return (
-    <section className={`${cardClass} flex flex-col items-center text-center`}>
+    <section className={`${cardClass} flex flex-col items-center justify-center text-center`}>
       <Gauge fraction={fraction} onReserve={onReserve} />
       <p className={`tabular -mt-2 text-4xl font-bold tracking-tight ${onReserve ? "text-reserve" : "text-foreground"}`}>{headline}</p>
       <p className="mt-1 max-w-xs text-sm text-muted">{caption}</p>
@@ -183,7 +183,7 @@ export default function HomePage() {
             <StatTile
               label="On reserve"
               value={gauge.reserveRangeKm !== null ? `≈ ${formatNumber(gauge.reserveRangeKm, 0)} km` : "—"}
-              hint={gauge.reserveRangeKm !== null ? "Range once you switch" : "Add reserve litres"}
+              hint={gauge.reserveRangeKm !== null ? "Range once you switch" : activeVehicle.reserveMl !== null ? "Needs your mileage first" : "Add reserve litres in Vehicles"}
             />
             <StatTile
               label="Recent mileage"

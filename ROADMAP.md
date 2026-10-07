@@ -12,14 +12,6 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 ---
 
-## In Progress
-
-_Nothing in progress._
-
----
-
-## Planned
-
 ### v2 Foundation
 
 * Fresh database schema: single event log (fill, reserve, odometer) with exact integer units
@@ -50,6 +42,14 @@ _Nothing in progress._
 * App shell cached for offline opening
 
 ---
+
+## In Progress
+
+_Nothing in progress._
+
+---
+
+## Planned
 
 ### Future Enhancements
 

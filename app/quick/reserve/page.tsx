@@ -147,7 +147,7 @@ function QuickReserve() {
         ) : (
           <form onSubmit={saveOdometer} className="space-y-3" noValidate>
             <p className="text-sm text-subtle">
-              <strong>Riding?</strong> Reset your trip meter to 0 now. When you fill up, enter the trip reading and we&apos;ll work out exactly where reserve started.
+              <strong>Riding?</strong>{" "}Reset your trip meter to 0 now. When you fill up, enter the trip reading and we&apos;ll work out exactly where reserve started.
             </p>
             <Field label="Or add the odometer when you stop (optional)">
               <input

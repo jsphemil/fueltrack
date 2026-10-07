@@ -1,76 +1,72 @@
 # FuelTrack
 
-FuelTrack is a web app to track motorcycle fuel usage, mileage, range and spend using the reserve-to-reserve method.
+**The fuel gauge your bike doesn't have.** FuelTrack is for motorcycles and scooters without a fuel
+gauge. It tells you roughly how far you can ride before you hit reserve, using three things you
+already notice: when the bike goes on reserve, when you fill up, and the odometer.
 
-## Features
+## How to use it
 
-* Email and password login
-* Multiple vehicles per user
-* Fuel entry tracking with fill date (add, edit, delete)
-* Reserve-to-reserve mileage calculation
-* Range and next-reserve prediction
-* Monthly analytics, charts and calendar view
-* Light and dark theme
+1. **Bike sputters? Switch to reserve**, reset your trip meter to 0, and tap **On reserve** when it's
+   safe. One tap, no typing, works without signal. On an installed app, long-press the icon for the
+   shortcut.
+2. **At the pump, tap Add fuel.** Enter the odometer and any two of amount, price per litre and
+   litres. If you reset the trip meter, enter its reading so the app knows exactly where reserve
+   started.
+3. **Home shows the estimate**: "≈ 197 km to reserve", where reserve is expected, km you get on
+   reserve, and a fuel gauge. It sharpens with every reserve-to-reserve cycle.
 
-## How mileage is calculated
+## How the estimate works
 
-Mark a fill as **Filled at reserve** when the tank had dropped to reserve before filling.
-A *cycle* runs from one reserve fill to the next reserve fill:
+The tank level is only known at two moments: **on reserve** and **full tank**. Between two such
+moments, the fuel burned is the fuel you added (for reserve → reserve or full → full), so:
 
-* distance = odometer at the closing reserve fill − odometer at the opening reserve fill
-* litres = all fuel added from the opening reserve fill up to (not including) the closing one
-* mileage = distance ÷ litres
+`mileage = km between them ÷ litres added in between`
 
-Partial top-ups between reserve fills are therefore counted correctly. Average mileage is
-total cycle distance ÷ total cycle litres. Range is average mileage × litres added since the
-last reserve fill. All calculations live in `lib/mileage.ts` and are shared by the API and UI.
+Partial top-ups are counted, and with tank capacity and reserve set, mixed cycles (reserve → full,
+full → reserve) count too. Predictions use the distance-weighted mileage of your last 5 cycles. The
+km left to reserve is `(litres added since reserve − km ridden since ÷ mileage) × mileage`. If you
+haven't logged the odometer for a while, it is projected from your average km per day and marked as
+estimated. Everything is in `lib/engine.ts` and covered by tests in `tests/engine.test.ts`.
 
-## Tech Stack
+Money, litres and distance are stored as integers (paise, millilitres, tenths of a km) so totals stay
+exact.
 
-* Next.js (App Router) + React
-* Tailwind CSS
-* Supabase (Auth)
-* Postgres + Prisma
-* Recharts
-* Vercel
+## Tech stack
+
+Next.js (App Router) · React · Tailwind CSS · Supabase Auth · Postgres + Prisma · Recharts · Jest.
+Installable as a PWA (manifest, home-screen shortcuts, offline app shell); entries made offline wait
+in a local outbox and sync when you're back online.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in your values
-```
-
-Prisma reads `.env` (see `prisma.config.ts`), so put `DATABASE_URL` and `DIRECT_URL` there as well.
-`DATABASE_URL` is used by the app (Supabase transaction pooler, port 6543); `DIRECT_URL` is used
-only by migrations (Supabase session pooler, port 5432), because migrations don't work through the
-transaction pooler.
-
-Apply database migrations:
-
-```bash
+cp .env.example .env   # fill in your values
 npx prisma migrate deploy
-```
-
-If your database was created before the baseline migration existed (tables already present),
-mark the baseline as applied once before deploying:
-
-```bash
-npx prisma migrate resolve --applied 20260101000000_init
-npx prisma migrate deploy
-```
-
-Run the app:
-
-```bash
 npm run dev
 ```
+
+`.env` needs:
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase → Project Settings → API
+- `DATABASE_URL`: the app's connection (Supabase **transaction pooler**, port 6543, `?pgbouncer=true`)
+- `DIRECT_URL`: used only by migrations (Supabase **session pooler**, port 5432)
+
+Keep the database URLs in `.env` only. Next.js reads `.env.local` first, so a stale copy there
+overrides `.env` for the app but not for Prisma.
 
 ## Checks
 
 ```bash
 npm run lint
 npm run typecheck
-npm test
+npm test            # unit tests (engine, validation)
 npm run build
+```
+
+API integration tests run against a real Postgres database when `TEST_DATABASE_URL` is set. They
+delete data, so never point them at production:
+
+```bash
+TEST_DATABASE_URL=postgresql://postgres@localhost:5432/fueltrack_test npm test
 ```

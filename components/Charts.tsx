@@ -47,7 +47,7 @@ export function LineTrendChart<T>({ data, xKey, yKey, name, color = "var(--chart
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
           <Tooltip {...tooltipProps} formatter={(value: number) => formatValue(value)} />
-          <Line type="monotone" name={name} dataKey={yKey} stroke={color} strokeWidth={2} dot={{ r: 3, fill: color }} />
+          <Line type="monotone" name={name} dataKey={yKey} isAnimationActive={false} stroke={color} strokeWidth={2} dot={{ r: 3, fill: color }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -58,12 +58,12 @@ export function BarValueChart<T>({ data, xKey, yKey, name, color = "var(--chart-
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }} barCategoryGap="30%">
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis dataKey={xKey} {...axisProps} />
           <YAxis {...axisProps} />
           <Tooltip {...tooltipProps} formatter={(value: number) => formatValue(value)} />
-          <Bar name={name} dataKey={yKey} fill={color} radius={[4, 4, 0, 0]} maxBarSize={48} />
+          <Bar name={name} dataKey={yKey} isAnimationActive={false} fill={color} radius={[4, 4, 0, 0]} maxBarSize={48} />
         </BarChart>
       </ResponsiveContainer>
     </div>
