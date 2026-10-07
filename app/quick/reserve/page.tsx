@@ -114,9 +114,9 @@ function QuickReserve() {
       <section className={`${cardClass} text-center`}>
         <span className="relative mx-auto flex h-20 w-20 items-center justify-center">
           {/* Expanding rings behind the badge */}
-          <span className="ripple absolute inset-0 rounded-full bg-reserve" aria-hidden="true" />
-          <span className="ripple ripple-delayed absolute inset-0 rounded-full bg-reserve" aria-hidden="true" />
-          <span className="pop relative flex h-20 w-20 items-center justify-center rounded-full bg-reserve text-reserve-foreground">
+          <span className="ripple absolute inset-0 rounded-full bg-accent" aria-hidden="true" />
+          <span className="ripple ripple-delayed absolute inset-0 rounded-full bg-accent" aria-hidden="true" />
+          <span className="pop relative flex h-20 w-20 items-center justify-center rounded-full bg-accent text-accent-foreground">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path className="draw" d="m5 12.5 4.5 4.5L19 7.5" />
             </svg>

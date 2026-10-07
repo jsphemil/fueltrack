@@ -14,7 +14,7 @@ import { STARTING_POINT_LABEL } from "@/lib/labels";
 
 const KIND_META = {
   FILL: { icon: FuelIcon, label: "Fuel", tone: "bg-primary text-primary-foreground" },
-  RESERVE: { icon: ReserveIcon, label: "Reserve", tone: "bg-reserve text-reserve-foreground" },
+  RESERVE: { icon: ReserveIcon, label: "Reserve", tone: "bg-reserve/15 text-reserve" },
   ODOMETER: { icon: OdometerIcon, label: "Odometer", tone: "bg-surface-muted text-subtle" },
 } as const;
 

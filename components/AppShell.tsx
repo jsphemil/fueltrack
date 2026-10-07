@@ -40,13 +40,13 @@ function Splash() {
 function ActionBar({ className = "" }: { className?: string }) {
   const { activeVehicle } = useFuel();
   const gauge = activeVehicle?.gauge;
-  // The reserve button glows softly when you're close to (or on) reserve.
+  // The reserve button turns orange and glows when you're close to (or on) reserve.
   const low = gauge?.status === "on-reserve" || (gauge?.kmToReserve != null && gauge.kmToReserve < 30);
   return (
     <div className={`grid grid-cols-2 gap-3 ${className}`}>
       <Link
         href="/quick/reserve"
-        className={`flex h-14 items-center justify-center gap-2 rounded-2xl bg-reserve text-base font-semibold text-reserve-foreground shadow-sm transition active:scale-[0.98] ${low ? "reserve-glow" : ""}`}
+        className={`flex h-14 items-center justify-center gap-2 rounded-2xl text-base font-semibold shadow-sm transition active:scale-[0.98] ${low ? "reserve-glow bg-reserve text-reserve-foreground" : "bg-accent text-accent-foreground"}`}
       >
         <ReserveIcon size={20} />
         On reserve
@@ -81,7 +81,7 @@ function Chrome({ children }: { children: ReactNode }) {
     <div className="min-h-screen lg:flex">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface px-4 py-6 lg:flex">
         <Link href="/" className="flex items-center gap-2 px-3 text-lg font-bold text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-reserve text-reserve-foreground">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-accent-foreground">
             <FuelIcon size={18} />
           </span>
           FuelTrack
