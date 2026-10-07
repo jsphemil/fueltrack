@@ -19,7 +19,7 @@ function MiniGauge({ vehicle }: { vehicle: VehicleSummary }) {
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-surface-muted">
       {fraction !== null ? (
-        <div className={`h-full rounded-full ${onReserve || fraction < 0.15 ? "bg-reserve" : "bg-primary"}`} style={{ width: `${Math.max(4, fraction * 100)}%` }} />
+        <div className={`h-full rounded-full ${onReserve || fraction < 0.15 ? "bg-reserve" : "bg-accent"}`} style={{ width: `${Math.max(4, fraction * 100)}%` }} />
       ) : null}
     </div>
   );

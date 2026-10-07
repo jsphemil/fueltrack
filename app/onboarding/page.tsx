@@ -42,7 +42,7 @@ export default function OnboardingPage() {
   return (
     <Page narrow>
       <div className="flex items-center gap-2 pb-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-reserve text-reserve-foreground">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <FuelIcon size={20} />
         </span>
         <span className="text-lg font-bold text-foreground">FuelTrack</span>

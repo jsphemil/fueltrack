@@ -69,7 +69,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-reserve text-reserve-foreground">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
             <FuelIcon size={28} />
           </span>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground">FuelTrack</h1>
