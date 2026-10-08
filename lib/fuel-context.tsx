@@ -4,14 +4,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, u
 
 import { apiRequest } from "@/lib/api";
 import { daysUntil, documentStage, isLowFuel } from "@/lib/engine";
-import { formatDateOnly, formatExpiry, formatServiceDue } from "@/lib/format";
+import { formatDateOnly, formatExpiry, formatKmPerL, formatServiceDue } from "@/lib/format";
 import { flushOutbox, getOutbox, getServerOutbox, queueEvent, subscribeOutbox, type OutboxItem } from "@/lib/outbox";
 import type { Me, VehicleDocument, VehicleSummary } from "@/lib/types";
 
 const ACTIVE_VEHICLE_KEY = "fueltrack:activeVehicleId";
 // Last loaded data, so the app (and the reserve tap) works when opened offline.
 const CACHE_KEY = "fueltrack:cache";
-// "low:<vehicleId>" → last fill id, "service:<itemId>" → when it was last
+// "low:<vehicleId>" → last fill id, "mileage:<vehicleId>" → latest cycle,
+// "service:<itemId>" → when it was last
 // done and "doc:<documentId>" → expiry + stage already reminded about:
 // once per tank, once per service and once per reminder stage.
 const LOW_FUEL_KEY = "fueltrack:lowFuelNotified";
@@ -91,6 +92,15 @@ async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDoc
     if (isLowFuel(vehicle.gauge, thresholdKm)) {
       await show(`low:${vehicle.id}`, vehicle.lastFill?.id ?? "", `${vehicle.name}: low on fuel`, `About ${vehicle.gauge.kmToReserve} km to reserve. Fill up soon.`);
     }
+    if (vehicle.mileageDrop) {
+      const { recent, usual, dropPercent } = vehicle.mileageDrop;
+      await show(
+        `mileage:${vehicle.id}`,
+        vehicle.mileageDrop.cycleId,
+        `${vehicle.name}: mileage is down ${dropPercent}%`,
+        `${formatKmPerL(recent)} lately vs ${formatKmPerL(usual)} usually. Check tyre pressure, chain and air filter.`
+      );
+    }
     for (const service of vehicle.services.filter((status) => status.due)) {
       await show(`service:${service.itemId}`, `${service.lastOdometer}:${service.lastDate}`, `${vehicle.name}: ${service.name} due`, `${formatServiceDue(service)}.`);
     }
@@ -167,7 +177,7 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
       if (cached) {
         setMe(cached.me);
         // Data cached by an older build may lack newer fields.
-        setAllVehicles(cached.vehicles.map((vehicle) => ({ ...vehicle, services: vehicle.services ?? [], openIssues: vehicle.openIssues ?? [] })));
+        setAllVehicles(cached.vehicles.map((vehicle) => ({ ...vehicle, services: vehicle.services ?? [], openIssues: vehicle.openIssues ?? [], mileageDrop: vehicle.mileageDrop ?? null })));
         setDocuments(cached.documents ?? []);
         setLoading(false);
       }

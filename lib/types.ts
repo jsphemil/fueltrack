@@ -1,7 +1,7 @@
 // Shapes returned by the API (dates arrive as ISO strings).
-import type { Cycle, EventKind, Gauge, OwnershipCost, ServiceStatus, VehicleStats } from "@/lib/engine";
+import type { Cycle, EventKind, Gauge, MileageDrop, OwnershipCost, ServiceStatus, VehicleStats } from "@/lib/engine";
 
-export type { EventKind, Gauge, OwnershipCost, ServiceStatus, VehicleStats };
+export type { EventKind, Gauge, MileageDrop, OwnershipCost, ServiceStatus, VehicleStats };
 
 export type Expense = {
   id: string;
@@ -46,6 +46,7 @@ export type VehicleSummary = Vehicle & {
   openReserve: FuelEvent | null;
   services: ServiceStatus[]; // most urgent first
   openIssues: OpenIssue[]; // oldest first
+  mileageDrop: MileageDrop | null;
   eventCount: number;
 };
 

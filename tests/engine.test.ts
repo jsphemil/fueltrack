@@ -9,6 +9,7 @@ import {
   documentStage,
   efficiency,
   isLowFuel,
+  mileageDrop,
   addMonths,
   serviceStatus,
   serviceUrgency,
@@ -194,6 +195,32 @@ describe("calculateGauge", () => {
       reserve(8, 1800), fill(8, 1800, 8), reserve(12, 2200), fill(12, 2200, 8),
     ];
     expect(calculateGauge(noTank, many, at(12, 3)).confidence).toBe("high");
+  });
+});
+
+describe("mileageDrop", () => {
+  // Builds ok cycles of 500 km at the given km/l, oldest first.
+  const cycle = (kmPerL: number, n: number, status: "ok" | "implausible" = "ok") =>
+    ({
+      start: { id: `s${n}` }, end: { id: `e${n}` }, type: "RR", distance: 5000, addedMl: 0,
+      burnedMl: (500 / kmPerL) * 1000, kmPerL, status, approx: false,
+    }) as unknown as Parameters<typeof mileageDrop>[0][number];
+  const series = (values: number[]) => values.map((value, index) => cycle(value, index));
+
+  it("flags a clear drop in the latest cycles against the usual figure", () => {
+    expect(mileageDrop(series([50, 50, 50, 50, 40, 40]))).toEqual({ recent: 40, usual: 50, dropPercent: 20, cycleId: "e5" });
+  });
+
+  it("ignores small dips, improvements and a single bad cycle among the last two", () => {
+    expect(mileageDrop(series([50, 50, 50, 50, 46, 46]))).toBeNull(); // 8 % down
+    expect(mileageDrop(series([50, 50, 50, 50, 55, 55]))).toBeNull();
+    expect(mileageDrop(series([50, 50, 50, 50, 50, 38]))).toBeNull(); // latest two average ~43.2 km/l: 13.6 % down
+  });
+
+  it("needs at least four valid cycles and skips implausible ones", () => {
+    expect(mileageDrop(series([50, 50, 30]))).toBeNull();
+    const withBad = [cycle(50, 0), cycle(50, 1), cycle(2, 2, "implausible"), cycle(50, 3), cycle(40, 4), cycle(40, 5)];
+    expect(mileageDrop(withBad)).toMatchObject({ dropPercent: 20, cycleId: "e5" });
   });
 });
 

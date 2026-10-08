@@ -574,3 +574,32 @@ export function ownershipCost(
   const totalPaise = breakdown.reduce((sum, row) => sum + row.paise, 0);
   return { totalPaise, perKmPaise: distance > 0 && totalPaise > 0 ? round(totalPaise / (distance / 10), 2) : null, breakdown };
 }
+
+// --- Mileage drop alert ---------------------------------------------------------------
+
+export const MILEAGE_DROP_RECENT_CYCLES = 2; // judged on the latest few cycles, not one odd fill
+export const MILEAGE_DROP_BASELINE_CYCLES = 5; // "usual" = up to this many cycles before them
+export const MILEAGE_DROP_MIN_CYCLES = 4; // need a baseline of at least two cycles
+export const MILEAGE_DROP_THRESHOLD = 0.15;
+
+export type MileageDrop = {
+  recent: number; // km/l over the latest cycles
+  usual: number; // km/l over the cycles before
+  dropPercent: number;
+  cycleId: string; // end event of the latest cycle; changes when a new cycle completes
+};
+
+// Warns when the latest cycles burn clearly more fuel per km than usual, which
+// can point at tyre pressure, a dirty air filter, a dry chain or a fuel leak.
+export function mileageDrop(cycles: Cycle[]): MileageDrop | null {
+  const valid = cycles.filter((cycle) => cycle.status === "ok");
+  if (valid.length < MILEAGE_DROP_MIN_CYCLES) return null;
+
+  const latest = valid.slice(-MILEAGE_DROP_RECENT_CYCLES);
+  const before = valid.slice(0, -MILEAGE_DROP_RECENT_CYCLES);
+  const recent = efficiency(latest);
+  const usual = efficiency(before, MILEAGE_DROP_BASELINE_CYCLES);
+  if (recent === null || usual === null || recent >= usual * (1 - MILEAGE_DROP_THRESHOLD)) return null;
+
+  return { recent, usual, dropPercent: Math.round(((usual - recent) / usual) * 100), cycleId: latest[latest.length - 1].end.id };
+}

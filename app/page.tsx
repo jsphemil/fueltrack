@@ -212,6 +212,20 @@ export default function HomePage() {
         </Notice>
       ) : null}
 
+      {activeVehicle.mileageDrop ? (
+        <Notice
+          tone="info"
+          action={
+            <Link href="/stats" className="text-sm font-semibold text-foreground underline">
+              Stats
+            </Link>
+          }
+        >
+          Mileage is down {activeVehicle.mileageDrop.dropPercent}%: {formatKmPerL(activeVehicle.mileageDrop.recent)} lately vs{" "}
+          {formatKmPerL(activeVehicle.mileageDrop.usual)} usually. Check tyre pressure, chain and air filter.
+        </Notice>
+      ) : null}
+
       {activeVehicle.openIssues.length > 0 ? (
         <Notice
           tone="info"
