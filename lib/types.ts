@@ -1,4 +1,5 @@
 // Shapes returned by the API (dates arrive as ISO strings).
+import type { Preferences } from "@/lib/preferences";
 import type { Cycle, EventKind, Gauge, MileageDrop, OwnershipCost, ServiceStatus, VehicleStats } from "@/lib/engine";
 
 export type { EventKind, Gauge, MileageDrop, OwnershipCost, ServiceStatus, VehicleStats };
@@ -102,5 +103,6 @@ export type Me = {
   email: string | null;
   name: string | null;
   lowFuelKm: number | null; // reminder threshold; null = off
+  preferences: Preferences;
   vehicleCount: number;
 };

@@ -11,12 +11,13 @@ datasource db {
 // Integers keep money, fuel and distance exact.
 
 model User {
-  id        String     @id // Supabase auth user id
-  name      String?
-  lowFuelKm Int? // low-fuel reminder threshold in km; null = reminders off
-  createdAt DateTime   @default(now())
-  vehicles  Vehicle[]
-  documents Document[]
+  id          String     @id // Supabase auth user id
+  name        String?
+  lowFuelKm   Int? // low-fuel reminder threshold in km; null = reminders off
+  preferences Json? // customisation (see lib/preferences.ts); null = defaults
+  createdAt   DateTime   @default(now())
+  vehicles    Vehicle[]
+  documents   Document[]
 }
 
 model Vehicle {

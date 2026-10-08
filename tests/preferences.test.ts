@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { DEFAULT_PREFERENCES, mergePreferences } from "@/lib/preferences";
+import { DEFAULT_PREFERENCES, isDefaultPreferences, mergePreferences } from "@/lib/preferences";
 
 describe("mergePreferences", () => {
   it("falls back to defaults for missing or malformed data", () => {
@@ -15,5 +15,13 @@ describe("mergePreferences", () => {
       showLifetime: false,
       documentLead: "late",
     });
+  });
+});
+
+describe("isDefaultPreferences", () => {
+  it("tells defaults from changed settings", () => {
+    expect(isDefaultPreferences(DEFAULT_PREFERENCES)).toBe(true);
+    expect(isDefaultPreferences({ ...DEFAULT_PREFERENCES, showLifetime: false })).toBe(false);
+    expect(isDefaultPreferences({ ...DEFAULT_PREFERENCES, documentLead: "early" })).toBe(false);
   });
 });

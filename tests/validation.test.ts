@@ -8,6 +8,7 @@ import {
   parseExpenseInput,
   parseIssueInput,
   parseLowFuelInput,
+  parsePreferencesInput,
   parseProfileInput,
   parseServiceItemInput,
   parseServiceRecordInput,
@@ -218,6 +219,23 @@ describe("parseDocumentInput", () => {
     for (const expiresOn of ["", "2027-02-30", "31/03/2027", "2027-3-31"]) {
       expect(parseDocumentInput({ ...doc, expiresOn }).ok).toBe(false);
     }
+  });
+});
+
+describe("parsePreferencesInput", () => {
+  it("accepts a partial change, and null to reset", () => {
+    expect(parsePreferencesInput({ preferences: { showLifetime: false, documentLead: "late" } })).toEqual({ ok: true, value: { showLifetime: false, documentLead: "late" } });
+    expect(parsePreferencesInput({ preferences: {} })).toEqual({ ok: true, value: {} });
+    expect(parsePreferencesInput({ preferences: null })).toEqual({ ok: true, value: null });
+  });
+
+  it("rejects wrong types, unknown timings and non-objects, and ignores unknown keys", () => {
+    expect(parsePreferencesInput({ preferences: { showLifetime: "no" } }).ok).toBe(false);
+    expect(parsePreferencesInput({ preferences: { documentLead: "whenever" } }).ok).toBe(false);
+    expect(parsePreferencesInput({ preferences: "reset" }).ok).toBe(false);
+    expect(parsePreferencesInput({ preferences: [1] }).ok).toBe(false);
+    expect(parsePreferencesInput({}).ok).toBe(false);
+    expect(parsePreferencesInput({ preferences: { extra: 1, showLastFill: false } })).toEqual({ ok: true, value: { showLastFill: false } });
   });
 });
 

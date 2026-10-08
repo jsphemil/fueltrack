@@ -7,7 +7,7 @@ import { Field, Notice, Page, PageHeader } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
-import { DOCUMENT_LEADS, usePreferences } from "@/lib/preferences";
+import { DOCUMENT_LEADS } from "@/lib/preferences";
 import { formatDateOnly, formatExpiry } from "@/lib/format";
 import type { VehicleDocument } from "@/lib/types";
 import { cardClass, chipClass, errorTextClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
@@ -105,8 +105,8 @@ const stageTone: Record<string, string> = {
 };
 
 export default function DocumentsPage() {
-  const { documents, allVehicles, refresh } = useFuel();
-  const leadDays = DOCUMENT_LEADS[usePreferences().documentLead].days;
+  const { documents, allVehicles, refresh, preferences } = useFuel();
+  const leadDays = DOCUMENT_LEADS[preferences.documentLead].days;
   const [mode, setMode] = useState<{ type: "add" } | { type: "edit"; id: string } | null>(null);
   const [error, setError] = useState("");
 
