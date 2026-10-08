@@ -5,6 +5,7 @@ import { getUserFromRequest, type AuthenticatedUser } from "@/lib/auth";
 import {
   calculateCycles,
   calculateGauge,
+  mileageDrop,
   resolveReserveOdometer,
   serviceStatus,
   serviceUrgency,
@@ -103,7 +104,8 @@ export function summarizeVehicle(
 
   // Full-scale km for drawing the gauge: tank above reserve when known,
   // otherwise the longest reserve-to-reserve run seen.
-  const longestCycle = calculateCycles(engineVehicle, ordered)
+  const cycles = calculateCycles(engineVehicle, ordered);
+  const longestCycle = cycles
     .filter((cycle) => cycle.status === "ok")
     .reduce((max, cycle) => Math.max(max, cycle.distance / 10), 0);
   const rangeScaleKm =
@@ -125,6 +127,7 @@ export function summarizeVehicle(
       .map((item) => serviceStatus(item, item.records.map(({ record }) => record), gauge.odometer.odometer, now))
       .sort((a, b) => serviceUrgency(a) - serviceUrgency(b)),
     openIssues,
+    mileageDrop: mileageDrop(cycles),
     eventCount: ordered.length,
   };
 }

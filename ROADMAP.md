@@ -51,6 +51,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost (replaces the single oil change reminder)
 * Issues and repairs: note problems as they appear, keep them open until a repair visit fixes them; visits are Maintenance or Repair with separate cost totals
 * Service visits and expenses can be edited after saving
+* Mileage drop alert: Home notice and a notification when the latest 2 cycles are 15% or more below the usual mileage
 * All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
 
 ---
@@ -65,7 +66,6 @@ _Nothing in progress._
 
 ### Vehicle Manager
 
-* Mileage drop alert: warn when recent km/l falls clearly below the usual figure
 * Yearly summary (km, spend, mileage) and CSV import to restore a backup
 
 ### Usability
