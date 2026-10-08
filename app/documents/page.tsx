@@ -7,6 +7,7 @@ import { Field, Notice, Page, PageHeader } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
+import { DOCUMENT_LEADS, usePreferences } from "@/lib/preferences";
 import { formatDateOnly, formatExpiry } from "@/lib/format";
 import type { VehicleDocument } from "@/lib/types";
 import { cardClass, chipClass, errorTextClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
@@ -105,6 +106,7 @@ const stageTone: Record<string, string> = {
 
 export default function DocumentsPage() {
   const { documents, allVehicles, refresh } = useFuel();
+  const leadDays = DOCUMENT_LEADS[usePreferences().documentLead].days;
   const [mode, setMode] = useState<{ type: "add" } | { type: "edit"; id: string } | null>(null);
   const [error, setError] = useState("");
 
@@ -120,7 +122,7 @@ export default function DocumentsPage() {
     <Page narrow>
       <PageHeader
         title="Documents"
-        subtitle="Get reminded 30 and 7 days before anything expires."
+        subtitle={`Get reminded ${leadDays.join(" and ")} days before anything expires. Change this in Settings.`}
         actions={
           mode?.type !== "add" ? (
             <button type="button" onClick={() => setMode({ type: "add" })} className={primaryButtonClass}>
@@ -156,7 +158,7 @@ export default function DocumentsPage() {
           );
         }
         const daysLeft = daysUntil(document.expiresOn);
-        const stage = documentStage(daysLeft);
+        const stage = documentStage(daysLeft, leadDays);
         const owner = allVehicles.find((vehicle) => vehicle.id === document.vehicleId)?.name ?? "Personal";
         return (
           <section key={document.id} className={cardClass}>

@@ -543,10 +543,11 @@ export function daysUntil(expiresOn: string, today: Date = new Date()) {
   return Math.round((Date.UTC(year, month - 1, day) - Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) / 86_400_000);
 }
 
-// Reminder stage for a document: "expired", "7", "30" or null when not due yet.
-export function documentStage(daysLeft: number) {
+// Reminder stage for a document: "expired", the closest lead time still ahead
+// (e.g. "7" or "30"), or null when not due yet.
+export function documentStage(daysLeft: number, leadDays: readonly number[] = DOCUMENT_REMIND_DAYS) {
   if (daysLeft < 0) return "expired";
-  const stage = [...DOCUMENT_REMIND_DAYS].sort((a, b) => a - b).find((days) => daysLeft <= days);
+  const stage = [...leadDays].sort((a, b) => a - b).find((days) => daysLeft <= days);
   return stage === undefined ? null : String(stage);
 }
 

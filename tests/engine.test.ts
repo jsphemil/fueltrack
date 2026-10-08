@@ -292,6 +292,14 @@ describe("document reminders", () => {
     expect(documentStage(0)).toBe("7");
     expect(documentStage(-1)).toBe("expired");
   });
+
+  it("follows the chosen lead times", () => {
+    expect(documentStage(20, [7])).toBeNull();
+    expect(documentStage(7, [7])).toBe("7");
+    expect(documentStage(50, [60, 14])).toBe("60");
+    expect(documentStage(10, [60, 14])).toBe("14");
+    expect(documentStage(-3, [7])).toBe("expired");
+  });
 });
 
 describe("ownershipCost", () => {
