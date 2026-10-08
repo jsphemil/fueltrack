@@ -8,7 +8,7 @@ import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
 import { daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
-import { DOCUMENT_LEADS, usePreferences } from "@/lib/preferences";
+import { DOCUMENT_LEADS } from "@/lib/preferences";
 import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatExpiry, formatRelative, formatServiceDue } from "@/lib/format";
 import { useAnimatedNumber } from "@/lib/motion";
 import { newId } from "@/lib/outbox";
@@ -135,8 +135,7 @@ function OdometerCard({ vehicle }: { vehicle: VehicleSummary }) {
 }
 
 export default function HomePage() {
-  const { me, activeVehicle, allVehicles, documents, loading, error } = useFuel();
-  const preferences = usePreferences();
+  const { me, activeVehicle, allVehicles, documents, loading, error, preferences } = useFuel();
   const leadDays = DOCUMENT_LEADS[preferences.documentLead].days;
   // Documents come soonest expiry first, so the first due one is the most urgent.
   const dueDocuments = documents.filter((document) => documentStage(daysUntil(document.expiresOn), leadDays) !== null);

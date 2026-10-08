@@ -6,7 +6,7 @@ import { apiRequest } from "@/lib/api";
 import { daysUntil, documentStage, isLowFuel } from "@/lib/engine";
 import { formatDateOnly, formatExpiry, formatKmPerL, formatServiceDue } from "@/lib/format";
 import { flushOutbox, getOutbox, getServerOutbox, queueEvent, subscribeOutbox, type OutboxItem } from "@/lib/outbox";
-import { DOCUMENT_LEADS, getPreferences } from "@/lib/preferences";
+import { DEFAULT_PREFERENCES, DOCUMENT_LEADS, mergePreferences, type DocumentLead, type Preferences } from "@/lib/preferences";
 import type { Me, VehicleDocument, VehicleSummary } from "@/lib/types";
 
 const ACTIVE_VEHICLE_KEY = "fueltrack:activeVehicleId";
@@ -33,6 +33,9 @@ type FuelContextValue = {
   // Saves an entry through the offline outbox and refreshes once it syncs.
   saveEntry: (body: Record<string, unknown> & { id: string }) => Promise<void>;
   sync: () => Promise<void>;
+  preferences: Preferences;
+  // Saves customisation to the account (null resets to defaults). Returns an error message, or "" on success.
+  savePreferences: (patch: Partial<Preferences> | null) => Promise<string>;
 };
 
 const FuelContext = createContext<FuelContextValue | null>(null);
@@ -68,7 +71,7 @@ export function clearFuelCache() {
 // Shows a phone notification for each vehicle that is newly low on fuel or
 // due an oil change. Runs when the app loads data; it can't fire while the
 // app is closed. Permission is asked for in Settings (low-fuel reminder).
-async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDocument[], thresholdKm: number | null) {
+async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDocument[], thresholdKm: number | null, documentLead: DocumentLead) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   let notified: Record<string, string>;
   try {
@@ -108,7 +111,7 @@ async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDoc
   }
   for (const document of documents) {
     const daysLeft = daysUntil(document.expiresOn);
-    const stage = documentStage(daysLeft, DOCUMENT_LEADS[getPreferences().documentLead].days);
+    const stage = documentStage(daysLeft, DOCUMENT_LEADS[documentLead].days);
     if (stage === null) continue;
     const owner = vehicles.find((vehicle) => vehicle.id === document.vehicleId)?.name;
     const title = `${document.kind}${owner ? ` (${owner})` : ""}: ${formatExpiry(daysLeft).toLowerCase()}`;
@@ -200,9 +203,28 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
   }, [userId, refresh, sync]);
 
   const lowFuelKm = me?.lowFuelKm ?? null;
+  // Older cached profiles have no preferences yet.
+  const preferences = useMemo(() => mergePreferences(me?.preferences), [me]);
+  const documentLead = preferences.documentLead;
   useEffect(() => {
-    if (loaded) void notifyReminders(allVehicles.filter((vehicle) => !vehicle.archived), documents, lowFuelKm);
-  }, [loaded, allVehicles, documents, lowFuelKm]);
+    if (loaded) void notifyReminders(allVehicles.filter((vehicle) => !vehicle.archived), documents, lowFuelKm, documentLead);
+  }, [loaded, allVehicles, documents, lowFuelKm, documentLead]);
+
+  const savePreferences = useCallback(
+    async (patch: Partial<Preferences> | null) => {
+      const previous = me;
+      // Show the change straight away; undo it if the account can't be updated.
+      setMe((current) => (current ? { ...current, preferences: patch === null ? DEFAULT_PREFERENCES : mergePreferences({ ...current.preferences, ...patch }) } : current));
+      const result = await apiRequest("/api/me", { method: "PATCH", body: { preferences: patch } });
+      if (!result.ok) {
+        setMe(previous);
+        return result.status === 0 ? "You're offline. Try again when you have signal." : result.error;
+      }
+      await refresh();
+      return "";
+    },
+    [me, refresh]
+  );
 
   const setActiveVehicleId = useCallback((id: string) => {
     setActiveVehicleIdState(id);
@@ -224,8 +246,8 @@ export function FuelProvider({ userId, children }: { userId: string | null; chil
   const value = useMemo<FuelContextValue>(() => {
     const vehicles = allVehicles.filter((vehicle) => !vehicle.archived);
     const activeVehicle = vehicles.find((vehicle) => vehicle.id === activeVehicleId) ?? vehicles[0] ?? null;
-    return { me, vehicles, allVehicles, documents, activeVehicle, setActiveVehicleId, loading, loaded, error, refresh, outbox, saveEntry, sync };
-  }, [me, allVehicles, documents, activeVehicleId, setActiveVehicleId, loading, loaded, error, refresh, outbox, saveEntry, sync]);
+    return { me, vehicles, allVehicles, documents, activeVehicle, setActiveVehicleId, loading, loaded, error, refresh, outbox, saveEntry, sync, preferences, savePreferences };
+  }, [me, allVehicles, documents, activeVehicleId, setActiveVehicleId, loading, loaded, error, refresh, outbox, saveEntry, sync, preferences, savePreferences]);
 
   return <FuelContext.Provider value={value}>{children}</FuelContext.Provider>;
 }

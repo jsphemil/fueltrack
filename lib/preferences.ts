@@ -1,11 +1,6 @@
-"use client";
-
-// Per-phone display and reminder preferences, kept in localStorage. Nothing here
-// is business data: the server never needs it (reminders are shown by the app).
-
-import { useSyncExternalStore } from "react";
-
-const STORAGE_KEY = "fueltrack:preferences";
+// Customisation settings. Stored on the user's row (User.preferences) so they
+// follow the user across devices; null there means "all defaults". Pure module:
+// shared by the API, the validators and the app.
 
 // Days before a document expires at which to remind.
 export const DOCUMENT_LEADS = {
@@ -32,13 +27,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   documentLead: "standard",
 };
 
-const listeners = new Set<() => void>();
-let cache: Preferences | null = null;
+export const PREFERENCE_FLAGS = ["showLastFill", "showReserveRange", "showRecentMileage", "showLifetime"] as const;
 
 // Unknown or badly typed values fall back to the defaults.
 export function mergePreferences(stored: unknown): Preferences {
   const source = stored && typeof stored === "object" ? (stored as Record<string, unknown>) : {};
-  const flag = (key: "showLastFill" | "showReserveRange" | "showRecentMileage" | "showLifetime") =>
+  const flag = (key: (typeof PREFERENCE_FLAGS)[number]) =>
     typeof source[key] === "boolean" ? (source[key] as boolean) : DEFAULT_PREFERENCES[key];
   const lead = typeof source.documentLead === "string" && source.documentLead in DOCUMENT_LEADS ? (source.documentLead as DocumentLead) : DEFAULT_PREFERENCES.documentLead;
   return {
@@ -50,44 +44,6 @@ export function mergePreferences(stored: unknown): Preferences {
   };
 }
 
-function read(): Preferences {
-  try {
-    return mergePreferences(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null"));
-  } catch {
-    return DEFAULT_PREFERENCES;
-  }
-}
-
-export function getPreferences(): Preferences {
-  cache ??= read();
-  return cache;
-}
-
-export function setPreferences(patch: Partial<Preferences>) {
-  cache = mergePreferences({ ...getPreferences(), ...patch });
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-  } catch {
-    // The choice just won't survive a restart.
-  }
-  listeners.forEach((listener) => listener());
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  // Another tab or the installed app changed it.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== STORAGE_KEY) return;
-    cache = null;
-    listener();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-export function usePreferences() {
-  return useSyncExternalStore(subscribe, getPreferences, () => DEFAULT_PREFERENCES);
+export function isDefaultPreferences(preferences: Preferences) {
+  return (Object.keys(DEFAULT_PREFERENCES) as Array<keyof Preferences>).every((key) => preferences[key] === DEFAULT_PREFERENCES[key]);
 }

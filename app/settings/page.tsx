@@ -8,7 +8,7 @@ import { ThemeSelect } from "@/components/ThemeToggle";
 import { Field, Notice, Page, PageHeader } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { clearFuelCache, useFuel } from "@/lib/fuel-context";
-import { DOCUMENT_LEADS, setPreferences, usePreferences, type DocumentLead, type Preferences } from "@/lib/preferences";
+import { DOCUMENT_LEADS, isDefaultPreferences, type DocumentLead, type Preferences } from "@/lib/preferences";
 import { supabase } from "@/lib/supabase";
 import { cardClass, dangerButtonClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, successTextClass } from "@/lib/ui";
 import { MAX_LOW_FUEL_KM, parseLowFuelInput, parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
@@ -22,8 +22,7 @@ const HOME_TILES: Array<{ key: keyof Preferences & `show${string}`; label: strin
 
 export default function SettingsPage() {
   const router = useRouter();
-  const preferences = usePreferences();
-  const { me, refresh } = useFuel();
+  const { me, refresh, preferences, savePreferences } = useFuel();
   const [name, setName] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -59,6 +58,10 @@ export default function SettingsPage() {
     setError("");
     setMessage("Name saved.");
     await refresh();
+  }
+
+  async function changePreferences(patch: Partial<Preferences> | null) {
+    setError(await savePreferences(patch));
   }
 
   async function exportCsv() {
@@ -133,7 +136,7 @@ export default function SettingsPage() {
 
       <section className={cardClass}>
         <h2 className="font-semibold text-foreground">Home and reminders</h2>
-        <p className={`mt-2 ${mutedTextClass}`}>Saved on this phone only.</p>
+        <p className={`mt-2 ${mutedTextClass}`}>Saved to your account, so it follows you to other devices.</p>
         <fieldset className="mt-4">
           <legend className="mb-2 block text-sm font-medium text-subtle">Show on Home</legend>
           <div className="space-y-3">
@@ -142,7 +145,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences[tile.key]}
-                  onChange={(event) => setPreferences({ [tile.key]: event.target.checked })}
+                  onChange={(event) => void changePreferences({ [tile.key]: event.target.checked })}
                   className="h-5 w-5 accent-current"
                 />
                 {tile.label}
@@ -152,13 +155,21 @@ export default function SettingsPage() {
         </fieldset>
         <div className="mt-5">
           <Field label="Remind me about documents">
-            <select value={preferences.documentLead} onChange={(event) => setPreferences({ documentLead: event.target.value as DocumentLead })} className={inputClass}>
+            <select value={preferences.documentLead} onChange={(event) => void changePreferences({ documentLead: event.target.value as DocumentLead })} className={inputClass}>
               {(Object.keys(DOCUMENT_LEADS) as DocumentLead[]).map((key) => (
                 <option key={key} value={key}>{DOCUMENT_LEADS[key].label}</option>
               ))}
             </select>
           </Field>
         </div>
+        <button
+          type="button"
+          disabled={isDefaultPreferences(preferences)}
+          onClick={() => void changePreferences(null)}
+          className={`${secondaryButtonClass} mt-5`}
+        >
+          Reset to defaults
+        </button>
       </section>
 
       <section className={cardClass}>

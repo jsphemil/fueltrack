@@ -2,6 +2,7 @@
 // Inputs arrive in display units (km, litres, rupees) and are returned in
 // stored integer units (see lib/units.ts).
 
+import { DOCUMENT_LEADS, PREFERENCE_FLAGS, type DocumentLead, type Preferences } from "@/lib/preferences";
 import {
   amountFromVolume,
   kmToTenths,
@@ -514,4 +515,26 @@ export function parseExpenseInput(body: Record<string, unknown> | null | undefin
   const note = parseNote(source.note);
   if (!note.ok) return note;
   return { ok: true, value: { vehicleId: source.vehicleId, category, occurredOn: occurredOn.value, amountPaise: rupeesToPaise(amount), note: note.value } };
+}
+
+// --- Preferences ------------------------------------------------------------------
+
+// `preferences: null` resets everything to the defaults; an object changes only the keys it names.
+export function parsePreferencesInput(body: Record<string, unknown> | null | undefined): ValidationResult<Partial<Preferences> | null> {
+  const source = (body ?? {}).preferences;
+  if (source === null) return { ok: true, value: null };
+  if (!source || typeof source !== "object" || Array.isArray(source)) return { ok: false, error: "Preferences are invalid" };
+
+  const input = source as Record<string, unknown>;
+  const patch: Partial<Preferences> = {};
+  for (const key of PREFERENCE_FLAGS) {
+    if (input[key] === undefined) continue;
+    if (typeof input[key] !== "boolean") return { ok: false, error: "Preferences are invalid" };
+    patch[key] = input[key] as boolean;
+  }
+  if (input.documentLead !== undefined) {
+    if (typeof input.documentLead !== "string" || !(input.documentLead in DOCUMENT_LEADS)) return { ok: false, error: "Choose a reminder timing" };
+    patch.documentLead = input.documentLead as DocumentLead;
+  }
+  return { ok: true, value: patch };
 }
