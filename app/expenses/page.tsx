@@ -17,11 +17,13 @@ function localToday() {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-function ExpenseForm({ vehicleId, onSaved, onCancel }: { vehicleId: string; onSaved: () => void; onCancel: () => void }) {
-  const [category, setCategory] = useState<string>("Parts");
-  const [occurredOn, setOccurredOn] = useState(localToday());
-  const [amountRupees, setAmountRupees] = useState("");
-  const [note, setNote] = useState("");
+type ExpenseFormProps = { vehicleId: string; expense?: Expense; onSaved: () => void; onCancel: () => void };
+
+function ExpenseForm({ vehicleId, expense, onSaved, onCancel }: ExpenseFormProps) {
+  const [category, setCategory] = useState<string>(expense?.category ?? "Parts");
+  const [occurredOn, setOccurredOn] = useState(expense?.occurredOn.slice(0, 10) ?? localToday());
+  const [amountRupees, setAmountRupees] = useState(expense ? String(expense.amountPaise / 100) : "");
+  const [note, setNote] = useState(expense?.note ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,7 +33,7 @@ function ExpenseForm({ vehicleId, onSaved, onCancel }: { vehicleId: string; onSa
     const parsed = parseExpenseInput(body);
     if (!parsed.ok) return setError(parsed.error);
     setSaving(true);
-    const result = await apiRequest("/api/expenses", { method: "POST", body });
+    const result = await apiRequest(expense ? `/api/expenses/${expense.id}` : "/api/expenses", { method: expense ? "PATCH" : "POST", body });
     setSaving(false);
     if (!result.ok) return setError(result.error);
     onSaved();
@@ -65,7 +67,7 @@ function ExpenseForm({ vehicleId, onSaved, onCancel }: { vehicleId: string; onSa
       </Field>
       {error ? <p className={errorTextClass}>{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={saving} className={`${primaryButtonClass} flex-1`}>{saving ? "Saving..." : "Add expense"}</button>
+        <button type="submit" disabled={saving} className={`${primaryButtonClass} flex-1`}>{saving ? "Saving..." : expense ? "Save changes" : "Add expense"}</button>
         <button type="button" onClick={onCancel} disabled={saving} className={secondaryButtonClass}>Cancel</button>
       </div>
     </form>
@@ -75,6 +77,7 @@ function ExpenseForm({ vehicleId, onSaved, onCancel }: { vehicleId: string; onSa
 export default function ExpensesPage() {
   const { activeVehicle } = useFuel();
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState("");
   const vehicleId = activeVehicle?.id ?? null;
@@ -153,19 +156,36 @@ export default function ExpensesPage() {
           <p className={`mt-3 ${mutedTextClass}`}>Nothing yet. Add parts, insurance, parking, tolls and washes to see what the vehicle really costs on the Stats page.</p>
         ) : null}
         <ul className="mt-2 divide-y divide-border">
-          {expenses.map((expense) => (
-            <li key={expense.id} className="flex items-start justify-between gap-3 py-4">
-              <div className="min-w-0">
-                <p className="font-medium text-foreground">{expense.category}</p>
-                <p className="tabular text-xs text-muted">{formatDateOnly(expense.occurredOn)}</p>
-                {expense.note ? <p className="mt-1 text-sm text-subtle">{expense.note}</p> : null}
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <span className="tabular font-semibold text-foreground">{formatMoney(expense.amountPaise, true)}</span>
-                <button type="button" onClick={() => void remove(expense)} className="text-sm font-medium text-danger underline">Delete</button>
-              </div>
-            </li>
-          ))}
+          {expenses.map((expense) =>
+            editingId === expense.id ? (
+              <li key={expense.id} className="py-4">
+                <ExpenseForm
+                  vehicleId={activeVehicle.id}
+                  expense={expense}
+                  onSaved={() => {
+                    setEditingId(null);
+                    void load(activeVehicle.id);
+                  }}
+                  onCancel={() => setEditingId(null)}
+                />
+              </li>
+            ) : (
+              <li key={expense.id} className="flex items-start justify-between gap-3 py-4">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{expense.category}</p>
+                  <p className="tabular text-xs text-muted">{formatDateOnly(expense.occurredOn)}</p>
+                  {expense.note ? <p className="mt-1 text-sm text-subtle">{expense.note}</p> : null}
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="tabular font-semibold text-foreground">{formatMoney(expense.amountPaise, true)}</span>
+                  <div className="flex gap-3 text-sm">
+                    <button type="button" onClick={() => setEditingId(expense.id)} className="font-medium text-subtle underline">Edit</button>
+                    <button type="button" onClick={() => void remove(expense)} className="font-medium text-danger underline">Delete</button>
+                  </div>
+                </div>
+              </li>
+            )
+          )}
         </ul>
       </section>
     </Page>
