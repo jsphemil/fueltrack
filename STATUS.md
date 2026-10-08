@@ -1,6 +1,6 @@
 # FuelTrack — Project Status & Handoff
 
-_Last updated: 7 Oct 2026 (after go-live). Read this first in any new session._
+_Last updated: 8 Oct 2026 (owner pausing to use the app for a few weeks). Read this first in any new session._
 
 ## What the app is
 
@@ -11,20 +11,40 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 ## Where things stand
 
-**v2 is live** (go-live completed by the owner on 7 Oct 2026).
+**v2 is live** at https://fueltrack-five.vercel.app (go-live 7 Oct 2026) and has grown into a
+vehicle manager since. **Nothing is in progress; the owner is using the app for a few weeks and
+will come back with feedback.** Start from that feedback, then `ROADMAP.md` → Planned.
 
-- **Code:** v2 is merged into `master` (PR #50). Branch `master` is what Vercel deploys.
-- **Database (Supabase):** all migrations are applied, including `20261008090000_v2_fresh_start`.
-  Tables are `User`, `Vehicle`, `Event`, with RLS enabled. The v1 data was wiped as agreed.
+- **Code:** everything is merged into `master` (last PR #66). `master` is what Vercel deploys, and
+  every merge deploys to production. Work goes: feature branch → PR → Vercel preview passes → merge.
+- **Database (Supabase):** all migrations through `20261015090000_user_preferences` are applied.
+  Tables: `User`, `Vehicle`, `Event`, `Document`, `ServiceItem`, `ServiceRecord`,
+  `ServiceRecordItem`, `Issue`, `Expense`, all with RLS enabled (the app reaches them only through
+  Prisma). The v1 data was wiped at go-live as agreed.
 - **Deploy (Vercel):** production runs v2. The env vars `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `DATABASE_URL` (transaction pooler, rotated password) are set.
 - **Supabase Auth:** Site URL and redirect URLs point to the Vercel production URL (plus
   `http://localhost:3000`).
 - **Phone:** installed as a PWA from the production URL.
-- **Checks:** lint, typecheck, 46 unit tests, 4 DB integration tests and the production build pass.
+- **Checks:** lint, typecheck, 76 unit tests and the production build pass. The 4 DB integration
+  tests (`tests/api.test.ts`) are skipped unless a test database is configured, so API routes added
+  since go-live (documents, service, issues, expenses, preferences) have unit coverage of their
+  validation and logic but no integration test. Worth adding if the API starts to change a lot.
 - **Local setup (owner's Windows laptop, VS Code, PowerShell):** `.env` holds all four variables;
   `.env.local` holds only the two `NEXT_PUBLIC_…` keys.
 - **Design mockups:** Figma file "FuelTrack v2 — Mockups" and a Claude design canvas (reference only).
+
+## Built since go-live (all live)
+
+- **Reminders** (shown when the app opens, never while it is closed): low fuel, document expiry,
+  service items, mileage drop. A notification fires once per tank / stage / service / cycle.
+- **Vehicle manager:** documents, service log, issues and repairs, expenses with a cost of
+  ownership on Stats, edit for service visits and expenses.
+- **Usability:** in-app guide, customisation (Home tiles, document reminder timing) saved to the
+  account with Reset to defaults, auto-update of the installed app after a deploy.
+- **Theme:** minimal neutral greys with one ocean-blue accent. The owner rejected an all-blue
+  navy theme ("looks like an alien") and a black-and-orange dark mode: keep it calm, and keep orange
+  for reserve and warnings only. Colours are tokens in `app/globals.css`.
 
 ## Direction (keep in mind for every change)
 
@@ -36,10 +56,13 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 
 ## What to work on next
 
-- `ROADMAP.md` → In Progress / Planned: the "complete vehicle manager" plan, then customisation,
-  an in-app guide, on-device AI and an Android app.
-- Low-fuel reminders run only when the app opens (no server push). True background push would need
+- `ROADMAP.md` → Planned, deferred by the owner until after a few weeks of real use: yearly
+  summary + CSV import (backup restore), a default for the Add fuel form (amount or litres),
+  AI photo entry (free, on-device), the Android app.
+- Reminders run only when the app opens (no server push). True background push would need
   Web Push (VAPID keys, a subscription table) plus a scheduled job.
+- Not built: documents in the CSV export, editing issues, preferences saved on a phone before they
+  moved to the account were not carried over.
 - `npm audit` reports dependency warnings; review them carefully. Never run `npm audit fix --force`,
   which can upgrade Next.js and break the app.
 - Any database change needs a new Prisma migration, applied with `npx prisma migrate deploy`
@@ -55,13 +78,13 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 | Guide and preferences | `app/guide/page.tsx`, `lib/preferences.ts` (pure defaults/merge), stored in `User.preferences` and served by `/api/me` (PATCH `{preferences}`; `null` resets), card with Reset in `app/settings` |
 | Mileage drop alert | `mileageDrop` in `lib/engine.ts` (via `summarizeVehicle`), notice on `app/page.tsx`, notification in `lib/fuel-context.tsx` |
 | Service log | `app/service`, `app/api/service-items/**`, `app/api/service-records/**`, `app/api/vehicles/[id]/service-*`, `ServiceItem`/`ServiceRecord`/`ServiceRecordItem`/`Issue` tables, `app/api/issues/**`, `app/api/vehicles/[id]/issues`, `serviceStatus` in `lib/engine.ts` |
-| Low-fuel reminders | `notifyLowFuel` in `lib/fuel-context.tsx`, Settings card, `User.lowFuelKm`, `notificationclick` in `public/sw.js` |
+| Notifications | `notifyReminders` in `lib/fuel-context.tsx` (low fuel, mileage, service, documents), low-fuel card in `app/settings`, `User.lowFuelKm`, `notificationclick` in `public/sw.js` |
 | Input validation (shared by UI and API) | `lib/validation.ts` + `tests/validation.test.ts` |
 | Units (paise, ml, tenths of km) | `lib/units.ts` |
 | Server helpers (auth wrapper, summaries) | `lib/server.ts`, `lib/auth.ts`, `lib/prisma.ts` |
-| API routes | `app/api/me`, `app/api/vehicles/**`, `app/api/events/**`, `app/api/export` |
+| API routes | `app/api/me`, `app/api/vehicles/**`, `app/api/events/**`, `app/api/documents/**`, `app/api/service-items/**`, `app/api/service-records/**`, `app/api/issues/**`, `app/api/expenses/**`, `app/api/export`, `app/api/version` |
 | Client data + offline outbox | `lib/fuel-context.tsx`, `lib/outbox.ts`, `lib/api.ts`, `lib/hooks.ts` |
-| Pages | `app/page.tsx` (Home), `app/quick/reserve`, `app/fill`, `app/history`, `app/stats`, `app/vehicles`, `app/settings`, `app/onboarding`, `app/login` |
+| Pages | `app/page.tsx` (Home), `app/quick/reserve`, `app/fill`, `app/history`, `app/stats`, `app/vehicles`, `app/service`, `app/documents`, `app/expenses`, `app/guide`, `app/settings`, `app/onboarding`, `app/login` |
 | Shell, UI, motion | `components/AppShell.tsx`, `components/ui.tsx`, `components/Gauge.tsx`, `lib/motion.ts`, `app/globals.css` |
 | PWA | `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx`, `public/sw.js`, `components/ServiceWorker.tsx` |
 | Database | `prisma/schema.prisma`, `prisma/migrations/*`, `prisma.config.ts` |
@@ -87,10 +110,24 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 - **Deprecated columns:** `Vehicle.serviceIntervalKm` and `lastServiceOdometer` were copied into
   `ServiceItem` ("Engine oil") and are no longer read or written. Drop them in a later migration.
 - **Figma** is on a Starter plan: one mode per variable collection.
+- **Merging from Claude Code:** `gh pr merge` was sometimes refused in auto mode ("merge without
+  review"). In manual mode it works; otherwise hand the PR link to the owner.
+- **The Codex GitHub bot** used to comment on PRs; the owner removed it. No `.github` folder, CODEOWNERS
+  or branch protection exists.
+- **Windows tooling:** git prints "LF will be replaced by CRLF" warnings (harmless). In the Bash
+  tool, long inline `python - <<EOF` scripts can fail to parse: write the script to a file and run it.
+  Python needs `PYTHONUTF8=1` to write files containing `→`, `₹` or `·`.
+- **Migrations:** generate the SQL with `npx prisma migrate diff --from-config-datasource
+  --to-schema prisma/schema.prisma --script`, add `ENABLE ROW LEVEL SECURITY` for new tables, apply
+  with `npx prisma migrate deploy` before merging code that uses the change, then re-run the diff
+  and expect "empty migration".
 
 ## How to work on it
 
 - Follow `AGENTS.md`: pick tasks from `ROADMAP.md` → Planned. Commit and push after each logical
   step; run `npm run lint`, `npm run typecheck`, `npm test` before pushing.
-- After PR #50 is merged, start new work on a fresh branch from `master`.
-- Next: see `ROADMAP.md` → In Progress and Planned.
+- Start each piece of work on a fresh branch from `master` (`feature/...`), open a PR, wait for the
+  Vercel preview, merge, then check `https://fueltrack-five.vercel.app/api/version` returns the
+  merge commit.
+- The owner wants Claude to handle git, PRs, migrations and deployment, so they can focus on what
+  to improve. Ask before anything destructive.
