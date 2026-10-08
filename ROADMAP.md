@@ -35,7 +35,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Home gauge, add fuel, one-tap reserve with odometer filled later (trip meter supported)
 * Offline reserve tap with sync when back online
 * History grouped by cycle, stats, vehicles, settings
-* Minimal neutral theme with one ocean-blue accent (#0077b6), light and dark, AA contrast
+* Minimal neutral theme (greys, charcoal in dark mode) with one ocean-blue accent (#0077b6 light, #48cae4 dark), AA contrast; orange is kept for reserve and warnings only
 
 ### v2 Phone App
 
@@ -43,17 +43,24 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * App shell cached for offline opening
 * Installed app reloads itself once when a newer version is deployed
 
-### Reminders
+### Reminders (shown when the app opens, once each)
 
-* Low-fuel reminder notifications (user-set km threshold, shown when the app opens, once per tank)
-* Service reminders: oil change interval per vehicle, due/overdue notice on Home and a notification within 100 km
-* Document reminders: insurance, PUC, RC, licence expiry dates with reminders 30 and 7 days before
-* Service log: several service items (oil, chain, air filter, brake pads, spark plug, tyres) with km/time intervals and a history of services with cost (replaces the single oil change reminder)
-* Issues and repairs: note problems as they appear, keep them open until a repair visit fixes them; visits are Maintenance or Repair with separate cost totals
-* Service visits and expenses can be edited after saving
+* Low-fuel reminder with a user-set km threshold (once per tank)
+* Document reminders: insurance, PUC, RC, licence and other expiry dates; lead times chosen in Settings (60+14, 30+7 or 7 days)
+* Service reminders per item, due within 100 km or 14 days
 * Mileage drop alert: Home notice and a notification when the latest 2 cycles are 15% or more below the usual mileage
-* In-app guide (how it works, setup, habits, tips, reminders) and customisation saved to the account: Home tiles on/off, document reminder lead times, Reset to defaults
-* All expenses: repairs, parts, insurance, parking, tolls, washes by category; total cost of ownership and true cost per km
+
+### Vehicle Manager
+
+* Service log: service items (oil, chain, air filter, brake pads, spark plug, tyres...) with km and/or month intervals, and a history of visits with cost. Replaced the single oil change reminder; existing reminders were migrated
+* Issues and repairs: note problems, keep them open until a repair visit fixes them. Visits are Maintenance or Repair, with separate cost totals and a history filter
+* Expenses by category (parts, insurance, tax/RC, parking, toll, wash, accessories, fine, other) and a cost of ownership on Stats with an all-in cost per km
+* Service visits and expenses can be edited after saving
+
+### Usability
+
+* In-app guide (setup, habits, how estimates work, tips, reminders, costs)
+* Customisation saved to the account: Home tiles on/off, document reminder timing, Reset to defaults
 
 ---
 
