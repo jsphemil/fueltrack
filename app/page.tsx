@@ -8,6 +8,7 @@ import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
 import { daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
+import { DOCUMENT_LEADS, usePreferences } from "@/lib/preferences";
 import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatExpiry, formatRelative, formatServiceDue } from "@/lib/format";
 import { useAnimatedNumber } from "@/lib/motion";
 import { newId } from "@/lib/outbox";
@@ -135,8 +136,10 @@ function OdometerCard({ vehicle }: { vehicle: VehicleSummary }) {
 
 export default function HomePage() {
   const { me, activeVehicle, allVehicles, documents, loading, error } = useFuel();
+  const preferences = usePreferences();
+  const leadDays = DOCUMENT_LEADS[preferences.documentLead].days;
   // Documents come soonest expiry first, so the first due one is the most urgent.
-  const dueDocuments = documents.filter((document) => documentStage(daysUntil(document.expiresOn)) !== null);
+  const dueDocuments = documents.filter((document) => documentStage(daysUntil(document.expiresOn), leadDays) !== null);
 
   if (loading && !activeVehicle) {
     return (
@@ -245,26 +248,35 @@ export default function HomePage() {
         <div className="grid content-start gap-5">
           <OdometerCard vehicle={activeVehicle} />
           <div className="grid grid-cols-2 gap-3">
+            {preferences.showLastFill ? (
             <StatTile
               label="Last fill"
               value={lastFill ? formatLitres(lastFill.volumeMl, 1) : "—"}
               hint={lastFill ? `${formatMoney(lastFill.amountPaise, true)} · ${formatRelative(lastFill.occurredAt)}` : "No fills yet"}
             />
+            ) : null}
+            {preferences.showReserveRange ? (
             <StatTile
               label="On reserve"
               value={gauge.reserveRangeKm !== null ? `≈ ${formatNumber(gauge.reserveRangeKm, 0)} km` : "—"}
               hint={gauge.reserveRangeKm !== null ? "Range once you switch" : activeVehicle.reserveMl !== null ? "Needs your mileage first" : "Add reserve litres in Vehicles"}
             />
+            ) : null}
+            {preferences.showRecentMileage ? (
             <StatTile
               label="Recent mileage"
               value={formatKmPerL(gauge.efficiency)}
               hint={gauge.validCycles > 0 ? `${gauge.validCycles} reserve cycle${gauge.validCycles === 1 ? "" : "s"}` : "Needs 2 reserve marks"}
             />
-            <StatTile label="Lifetime" value={formatKmPerL(gauge.lifetimeEfficiency)} hint="Distance-weighted" />
+            ) : null}
+            {preferences.showLifetime ? <StatTile label="Lifetime" value={formatKmPerL(gauge.lifetimeEfficiency)} hint="Distance-weighted" /> : null}
           </div>
-          {lastFill ? (
+          {lastFill && preferences.showLastFill ? (
             <p className="text-xs text-muted">Last fill {formatDateTime(lastFill.occurredAt)} at {formatKm(lastFill.odometer)}.</p>
           ) : null}
+          <p className="text-xs text-muted">
+            <Link href="/guide" className="underline">How to get the most out of FuelTrack</Link>
+          </p>
         </div>
       </div>
     </Page>

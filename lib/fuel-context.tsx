@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/api";
 import { daysUntil, documentStage, isLowFuel } from "@/lib/engine";
 import { formatDateOnly, formatExpiry, formatKmPerL, formatServiceDue } from "@/lib/format";
 import { flushOutbox, getOutbox, getServerOutbox, queueEvent, subscribeOutbox, type OutboxItem } from "@/lib/outbox";
+import { DOCUMENT_LEADS, getPreferences } from "@/lib/preferences";
 import type { Me, VehicleDocument, VehicleSummary } from "@/lib/types";
 
 const ACTIVE_VEHICLE_KEY = "fueltrack:activeVehicleId";
@@ -107,7 +108,7 @@ async function notifyReminders(vehicles: VehicleSummary[], documents: VehicleDoc
   }
   for (const document of documents) {
     const daysLeft = daysUntil(document.expiresOn);
-    const stage = documentStage(daysLeft);
+    const stage = documentStage(daysLeft, DOCUMENT_LEADS[getPreferences().documentLead].days);
     if (stage === null) continue;
     const owner = vehicles.find((vehicle) => vehicle.id === document.vehicleId)?.name;
     const title = `${document.kind}${owner ? ` (${owner})` : ""}: ${formatExpiry(daysLeft).toLowerCase()}`;

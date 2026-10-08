@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -7,12 +8,21 @@ import { ThemeSelect } from "@/components/ThemeToggle";
 import { Field, Notice, Page, PageHeader } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { clearFuelCache, useFuel } from "@/lib/fuel-context";
+import { DOCUMENT_LEADS, setPreferences, usePreferences, type DocumentLead, type Preferences } from "@/lib/preferences";
 import { supabase } from "@/lib/supabase";
 import { cardClass, dangerButtonClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, successTextClass } from "@/lib/ui";
 import { MAX_LOW_FUEL_KM, parseLowFuelInput, parseProfileInput, PROFILE_NAME_MAX_LENGTH } from "@/lib/validation";
 
+const HOME_TILES: Array<{ key: keyof Preferences & `show${string}`; label: string }> = [
+  { key: "showLastFill", label: "Last fill" },
+  { key: "showReserveRange", label: "Range on reserve" },
+  { key: "showRecentMileage", label: "Recent mileage" },
+  { key: "showLifetime", label: "Lifetime mileage" },
+];
+
 export default function SettingsPage() {
   const router = useRouter();
+  const preferences = usePreferences();
   const { me, refresh } = useFuel();
   const [name, setName] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -119,6 +129,42 @@ export default function SettingsPage() {
           ) : null}
         </form>
         {reminderMessage ? <p className={`mt-2 ${successTextClass}`}>{reminderMessage}</p> : null}
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Home and reminders</h2>
+        <p className={`mt-2 ${mutedTextClass}`}>Saved on this phone only.</p>
+        <fieldset className="mt-4">
+          <legend className="mb-2 block text-sm font-medium text-subtle">Show on Home</legend>
+          <div className="space-y-3">
+            {HOME_TILES.map((tile) => (
+              <label key={tile.key} className="flex cursor-pointer items-center gap-3 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={preferences[tile.key]}
+                  onChange={(event) => setPreferences({ [tile.key]: event.target.checked })}
+                  className="h-5 w-5 accent-current"
+                />
+                {tile.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="mt-5">
+          <Field label="Remind me about documents">
+            <select value={preferences.documentLead} onChange={(event) => setPreferences({ documentLead: event.target.value as DocumentLead })} className={inputClass}>
+              {(Object.keys(DOCUMENT_LEADS) as DocumentLead[]).map((key) => (
+                <option key={key} value={key}>{DOCUMENT_LEADS[key].label}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="font-semibold text-foreground">Guide</h2>
+        <p className={`mt-2 ${mutedTextClass}`}>How the estimates work and how to keep them accurate.</p>
+        <Link href="/guide" className={`${secondaryButtonClass} mt-4`}>Read the guide</Link>
       </section>
 
       <section className={cardClass}>
