@@ -6,7 +6,7 @@ import { PlusIcon } from "@/components/Icons";
 import { Field, Notice, Page, PageHeader, VehicleChips } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { useFuel } from "@/lib/fuel-context";
-import { formatDateOnly, formatKm, formatMoney, formatServiceDue } from "@/lib/format";
+import { formatDateOnly, formatKm, formatMoney, formatServiceDue, toInputNumber } from "@/lib/format";
 import type { OpenIssue, ServiceKind, ServiceRecord, ServiceStatus, VehicleSummary } from "@/lib/types";
 import { cardClass, chipClass, errorTextClass, inputClass, mutedTextClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from "@/lib/ui";
 import { ISSUE_TITLE_MAX_LENGTH, NOTE_MAX_LENGTH, parseIssueInput, parseServiceItemInput, parseServiceRecordInput, SERVICE_NAME_MAX_LENGTH } from "@/lib/validation";
@@ -158,17 +158,32 @@ function ItemForm({ vehicle, item, onDone }: { vehicle: VehicleSummary; item?: S
 // Readings this far above the estimate are probably typos (an extra zero).
 const ODOMETER_CHECK_KM = 1000;
 
-type RecordFormProps = { vehicle: VehicleSummary; initialKind: ServiceKind; issueId?: string; onSaved: () => void; onCancel: () => void };
+type RecordFormProps = {
+  vehicle: VehicleSummary;
+  initialKind: ServiceKind;
+  issueId?: string;
+  record?: ServiceRecord; // edit when set
+  onSaved: () => void;
+  onCancel: () => void;
+};
 
-function RecordForm({ vehicle, initialKind, issueId, onSaved, onCancel }: RecordFormProps) {
+function RecordForm({ vehicle, initialKind, issueId, record, onSaved, onCancel }: RecordFormProps) {
   const { refresh } = useFuel();
-  const [kind, setKind] = useState<ServiceKind>(initialKind);
-  const [issueIds, setIssueIds] = useState<string[]>(issueId ? [issueId] : []);
-  const [occurredOn, setOccurredOn] = useState(localToday());
-  const [odometerKm, setOdometerKm] = useState("");
-  const [costRupees, setCostRupees] = useState("");
-  const [itemIds, setItemIds] = useState<string[]>(initialKind === "MAINTENANCE" ? vehicle.services.filter((status) => status.due).map((status) => status.itemId) : []);
-  const [note, setNote] = useState("");
+  const [kind, setKind] = useState<ServiceKind>(record?.kind ?? initialKind);
+  const [issueIds, setIssueIds] = useState<string[]>(record ? record.issues.map((issue) => issue.id) : issueId ? [issueId] : []);
+  const [occurredOn, setOccurredOn] = useState(record?.occurredOn.slice(0, 10) ?? localToday());
+  const [odometerKm, setOdometerKm] = useState(record ? toInputNumber(record.odometer, 10, 1) : "");
+  const [costRupees, setCostRupees] = useState(record?.costPaise != null ? String(record.costPaise / 100) : "");
+  const [itemIds, setItemIds] = useState<string[]>(
+    record
+      ? record.items.map((item) => item.id)
+      : initialKind === "MAINTENANCE"
+        ? vehicle.services.filter((status) => status.due).map((status) => status.itemId)
+        : []
+  );
+  const [note, setNote] = useState(record?.note ?? "");
+  // Issues still open, plus the ones this visit already fixed.
+  const fixableIssues = [...(record?.issues ?? []), ...vehicle.openIssues.filter((issue) => !record?.issues.some((fixed) => fixed.id === issue.id))];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -180,7 +195,7 @@ function RecordForm({ vehicle, initialKind, issueId, onSaved, onCancel }: Record
     const aboveKm = (parsed.value.odometer - vehicle.gauge.odometer.odometer) / 10;
     if (aboveKm > ODOMETER_CHECK_KM && !window.confirm(`That's ${Math.round(aboveKm).toLocaleString("en-IN")} km above the current odometer estimate. Save anyway?`)) return;
     setSaving(true);
-    const result = await apiRequest("/api/service-records", { method: "POST", body });
+    const result = await apiRequest(record ? `/api/service-records/${record.id}` : "/api/service-records", { method: record ? "PATCH" : "POST", body });
     setSaving(false);
     if (!result.ok) return setError(result.error);
     await refresh();
@@ -196,11 +211,11 @@ function RecordForm({ vehicle, initialKind, issueId, onSaved, onCancel }: Record
           </button>
         ))}
       </div>
-      {vehicle.openIssues.length > 0 ? (
+      {fixableIssues.length > 0 ? (
         <fieldset>
           <legend className="mb-1.5 block text-sm font-medium text-subtle">Issues fixed</legend>
           <div className="flex flex-wrap gap-2">
-            {vehicle.openIssues.map((issue) => (
+            {fixableIssues.map((issue) => (
               <button key={issue.id} type="button" aria-pressed={issueIds.includes(issue.id)} onClick={() => setIssueIds(toggle(issueIds, issue.id))} className={chipStyle(issueIds.includes(issue.id))}>
                 {issue.title}
               </button>
@@ -239,7 +254,7 @@ function RecordForm({ vehicle, initialKind, issueId, onSaved, onCancel }: Record
       </Field>
       {error ? <p className={errorTextClass}>{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={saving} className={`${primaryButtonClass} flex-1`}>{saving ? "Saving..." : kind === "REPAIR" ? "Save repair" : "Save service"}</button>
+        <button type="submit" disabled={saving} className={`${primaryButtonClass} flex-1`}>{saving ? "Saving..." : record ? "Save changes" : kind === "REPAIR" ? "Save repair" : "Save service"}</button>
         <button type="button" onClick={onCancel} disabled={saving} className={secondaryButtonClass}>Cancel</button>
       </div>
     </form>
@@ -248,7 +263,7 @@ function RecordForm({ vehicle, initialKind, issueId, onSaved, onCancel }: Record
 
 export default function ServicePage() {
   const { activeVehicle, refresh } = useFuel();
-  const [mode, setMode] = useState<{ type: "log"; kind: ServiceKind; issueId?: string } | { type: "add" } | { type: "issue" } | { type: "edit"; id: string } | null>(null);
+  const [mode, setMode] = useState<{ type: "log"; kind: ServiceKind; issueId?: string } | { type: "add" } | { type: "issue" } | { type: "edit"; id: string } | { type: "editVisit"; id: string } | null>(null);
   const [records, setRecords] = useState<ServiceRecord[]>([]);
   const [filter, setFilter] = useState<ServiceKind | "ALL">("ALL");
   const [error, setError] = useState("");
@@ -431,22 +446,40 @@ export default function ServicePage() {
         ) : null}
         {shown.length === 0 ? <p className={`mt-3 ${mutedTextClass}`}>{records.length === 0 ? "No visits logged yet." : "Nothing of this type yet."}</p> : null}
         <ul className="mt-2 divide-y divide-border">
-          {shown.map((record) => (
-            <li key={record.id} className="flex items-start justify-between gap-3 py-4">
-              <div className="min-w-0">
-                <p className="font-medium text-foreground">
-                  <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold ${record.kind === "REPAIR" ? "bg-reserve/20" : "bg-surface-muted"}`}>{KIND_LABELS[record.kind]}</span>
-                  {[...record.issues.map((issue) => issue.title), ...record.items.map((item) => item.name)].join(", ") || (record.kind === "REPAIR" ? "Repair" : "Service")}
-                </p>
-                <p className="tabular text-xs text-muted">
-                  {formatDateOnly(record.occurredOn)} · {formatKm(record.odometer)}
-                  {record.costPaise !== null ? ` · ${formatMoney(record.costPaise, true)}` : ""}
-                </p>
-                {record.note ? <p className="mt-1 text-sm text-subtle">{record.note}</p> : null}
-              </div>
-              <button type="button" onClick={() => void removeRecord(record)} className="shrink-0 text-sm font-medium text-danger underline">Delete</button>
-            </li>
-          ))}
+          {shown.map((record) =>
+            mode?.type === "editVisit" && mode.id === record.id ? (
+              <li key={record.id} className="py-4">
+                <RecordForm
+                  vehicle={activeVehicle}
+                  initialKind={record.kind}
+                  record={record}
+                  onSaved={() => {
+                    setMode(null);
+                    void load(activeVehicle.id);
+                  }}
+                  onCancel={() => setMode(null)}
+                />
+              </li>
+            ) : (
+              <li key={record.id} className="flex items-start justify-between gap-3 py-4">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">
+                    <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold ${record.kind === "REPAIR" ? "bg-reserve/20" : "bg-surface-muted"}`}>{KIND_LABELS[record.kind]}</span>
+                    {[...record.issues.map((issue) => issue.title), ...record.items.map((item) => item.name)].join(", ") || (record.kind === "REPAIR" ? "Repair" : "Service")}
+                  </p>
+                  <p className="tabular text-xs text-muted">
+                    {formatDateOnly(record.occurredOn)} · {formatKm(record.odometer)}
+                    {record.costPaise !== null ? ` · ${formatMoney(record.costPaise, true)}` : ""}
+                  </p>
+                  {record.note ? <p className="mt-1 text-sm text-subtle">{record.note}</p> : null}
+                </div>
+                <div className="flex shrink-0 gap-3 text-sm">
+                  <button type="button" onClick={() => setMode({ type: "editVisit", id: record.id })} className="font-medium text-subtle underline">Edit</button>
+                  <button type="button" onClick={() => void removeRecord(record)} className="font-medium text-danger underline">Delete</button>
+                </div>
+              </li>
+            )
+          )}
         </ul>
       </section>
     </Page>
