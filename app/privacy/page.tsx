@@ -60,7 +60,7 @@ export default function PrivacyPage() {
             <><strong>See and export:</strong> everything is in the app, and Settings has a CSV export of your entries.</>,
             <><strong>Correct:</strong> edit or delete any entry at any time.</>,
             <><strong>Delete your data:</strong> Settings &rarr; Delete all data removes your vehicles and every entry at once. Your sign-in stays so you can start again.</>,
-            <><strong>Delete your account:</strong> email {email} from your account&apos;s address and we will remove your sign-in as well.</>,
+            <><strong>Delete your account:</strong> Settings &rarr; Delete account removes your sign-in, vehicles and every entry, for good. You can also email {email} from your account&apos;s address and we will do it for you.</>,
           ]}
         />
         <p>These follow the rights in India&apos;s Digital Personal Data Protection Act, 2023: to access, correct and erase your data, and to raise a concern.</p>

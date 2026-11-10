@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { FuelIcon } from "@/components/Icons";
 import { Field } from "@/components/ui";
@@ -12,14 +12,24 @@ import { errorTextClass, inputClass, primaryButtonClass, secondaryButtonClass, s
 
 const MIN_PASSWORD_LENGTH = 6;
 
+// Search params need a Suspense boundary for the static build.
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const { session } = useSession();
+  const deleted = useSearchParams().has("deleted");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(deleted ? "Your account and all its data have been deleted." : "");
 
   useEffect(() => {
     if (session) router.replace("/");

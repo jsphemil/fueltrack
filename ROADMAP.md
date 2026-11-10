@@ -31,6 +31,8 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 ### Account
 
 * Forgot password: email reset link and a Set new password screen
+* Delete account in Settings: removes the sign-in, vehicles and every entry in one step (Delete all data still keeps the sign-in)
+* Public About page and Privacy policy, linked from sign-in, the menu and Settings
 
 ### v2 Design
 

@@ -91,6 +91,16 @@ export default function GuidePage() {
           ]}
         />
       </Section>
+
+      <Section title="Your data">
+        <Steps
+          items={[
+            <><strong>Delete all data</strong> (Settings) wipes your vehicles and entries but keeps your sign-in, to start fresh.</>,
+            <><strong>Delete account</strong> (Settings) removes your sign-in too, for good.</>,
+            <>What is stored and who can see it: the <Link href="/privacy" className="underline">Privacy policy</Link>.</>,
+          ]}
+        />
+      </Section>
     </Page>
   );
 }
