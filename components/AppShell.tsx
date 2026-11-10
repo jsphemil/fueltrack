@@ -271,6 +271,17 @@ function Chrome({ children }: { children: ReactNode }) {
       <Drawer open={menuOpen} onClose={closeMenu} pathname={pathname} />
 
       <main className="min-w-0 flex-1 pb-44 lg:pb-12">
+        {/* Desktop: who is signed in and Sign out, top right. Phones have it in the menu. */}
+        <div className="hidden items-center justify-end gap-3 px-6 pt-4 lg:flex">
+          <span className="truncate text-sm text-muted">{me?.email ?? ""}</span>
+          <button
+            type="button"
+            onClick={() => void signOut(router)}
+            className="flex h-9 items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+          >
+            <SignOutIcon size={16} /> Sign out
+          </button>
+        </div>
         {/* Keyed by screen so each new screen slides in. */}
         <div key={pathname} className="page-slide">{children}</div>
       </main>
