@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import {
-  BackIcon,
   BikeIcon,
   BookIcon,
   CloseIcon,
@@ -55,7 +54,7 @@ const NAV_GROUPS = [
   },
 ];
 const NAV = NAV_GROUPS.flatMap((group) => group.items);
-// Bottom tabs on phones. These are top-level screens (menu button); the rest get a back arrow.
+// Bottom tabs on phones; every other screen is in the menu.
 const TABS = NAV.filter((item) => ["/", "/history", "/stats", "/vehicles"].includes(item.href));
 // Screens that show one vehicle at a time, so the top bar offers the vehicle switcher.
 const VEHICLE_ROUTES = ["/", "/history", "/stats", "/service", "/expenses"];
@@ -194,30 +193,17 @@ function Drawer({ open, onClose, pathname }: { open: boolean; onClose: () => voi
   );
 }
 
-// Phone top bar: menu (top-level screens) or back arrow, screen title, vehicle switcher.
+// Phone top bar: menu button, screen title, vehicle switcher.
 function TopBar({ pathname, onMenu }: { pathname: string; onMenu: () => void }) {
-  const router = useRouter();
   const { vehicles, activeVehicle, setActiveVehicleId } = useFuel();
-  const topLevel = TABS.some((tab) => tab.href === pathname);
   const title = pathname === "/" ? "FuelTrack" : (NAV.find((item) => isActive(pathname, item.href))?.label ?? "FuelTrack");
   const showSwitcher = vehicles.length > 1 && VEHICLE_ROUTES.includes(pathname);
 
-  function goBack() {
-    if (window.history.length > 1) router.back();
-    else router.push("/");
-  }
-
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-surface/95 px-2 pt-[env(safe-area-inset-top)] backdrop-blur lg:hidden">
-      {topLevel ? (
-        <button type="button" onClick={onMenu} aria-label="Open menu" className="rounded-full p-2 text-foreground">
-          <MenuIcon size={22} />
-        </button>
-      ) : (
-        <button type="button" onClick={goBack} aria-label="Back" className="rounded-full p-2 text-foreground">
-          <BackIcon size={22} />
-        </button>
-      )}
+      <button type="button" onClick={onMenu} aria-label="Open menu" className="rounded-full p-2 text-foreground">
+        <MenuIcon size={22} />
+      </button>
       <span className="min-w-0 flex-1 truncate text-lg font-semibold text-foreground">{title}</span>
       {showSwitcher ? (
         <select

@@ -55,9 +55,6 @@ export const CheckIcon = (props: IconProps) => (
 export const MenuIcon = (props: IconProps) => (
   <Icon {...props}><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></Icon>
 );
-export const BackIcon = (props: IconProps) => (
-  <Icon {...props}><path d="M19 12H5" /><path d="m11 6-6 6 6 6" /></Icon>
-);
 export const CloseIcon = (props: IconProps) => (
   <Icon {...props}><path d="M6 6l12 12" /><path d="M18 6 6 18" /></Icon>
 );
