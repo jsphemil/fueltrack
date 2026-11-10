@@ -17,7 +17,7 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-const PUBLIC_ROUTES = ["/login"];
+const PUBLIC_ROUTES = ["/login", "/reset-password"];
 // Focused flows without navigation chrome.
 const FOCUS_ROUTES = ["/onboarding", "/quick/reserve", "/fill"];
 const NO_VEHICLE_ROUTES = ["/onboarding", "/settings"];

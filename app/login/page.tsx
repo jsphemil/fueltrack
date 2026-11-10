@@ -65,6 +65,22 @@ export default function LoginPage() {
     setSuccessMessage("Account created. Check your email to confirm it, then sign in.");
   }
 
+  async function handleForgotPassword() {
+    setErrorMessage("");
+    setSuccessMessage("");
+    if (!email.trim()) return setErrorMessage("Enter your email above, then tap Forgot password.");
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+
+    if (error) return setErrorMessage(error.message);
+    // Same message whether or not the account exists, so the form doesn't reveal who has one.
+    setSuccessMessage("If that email has an account, a reset link is on its way. Open it on this device.");
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
@@ -88,6 +104,9 @@ export default function LoginPage() {
           </button>
           <button type="button" onClick={() => void handleCreateAccount()} disabled={loading} className={`${secondaryButtonClass} w-full`}>
             Create account
+          </button>
+          <button type="button" onClick={() => void handleForgotPassword()} disabled={loading} className="w-full text-sm text-muted underline">
+            Forgot password?
           </button>
           {successMessage ? <p className={successTextClass}>{successMessage}</p> : null}
           {errorMessage ? <p className={errorTextClass}>{errorMessage}</p> : null}
