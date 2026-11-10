@@ -270,7 +270,8 @@ function Chrome({ children }: { children: ReactNode }) {
       <TopBar pathname={pathname} onMenu={() => setMenuOpen(true)} />
       <Drawer open={menuOpen} onClose={closeMenu} pathname={pathname} />
 
-      <main className="min-w-0 flex-1 pb-44 lg:pb-12">
+      {/* overflow-x-clip: the slide-in must never make the page wider than the screen (phones zoom out to fit). */}
+      <main className="min-w-0 flex-1 overflow-x-clip pb-44 lg:pb-12">
         {/* Desktop: who is signed in and Sign out, top right. Phones have it in the menu. */}
         <div className="hidden items-center justify-end gap-3 px-6 pt-4 lg:flex">
           <span className="truncate text-sm text-muted">{me?.email ?? ""}</span>
