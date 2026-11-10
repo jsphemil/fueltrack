@@ -66,7 +66,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 ## In Progress
 
-_Nothing in progress._
+* Nearest petrol pump button on Home while on reserve (opens Maps, no location permission)
 
 ---
 
@@ -75,10 +75,18 @@ _Nothing in progress._
 ### Vehicle Manager
 
 * Yearly summary (km, spend, mileage) and CSV import to restore a backup
+* Full JSON export (vehicles, events, documents, service, issues, expenses, preferences)
+* JSON import to restore that export (preview and confirm, no duplicates on repeat import)
 
 ### Usability
 
+* Gauge confidence tip: say what to log to make the estimate more certain
 * Default fill entry: choose whether Add fuel starts from amount or litres
+* Currency, km or miles, litres or US gallons (display only; storage stays in exact metric units)
+
+### Reminders
+
+* Background reminders with Web Push, so they arrive while the app is closed
 
 ### AI (free, on-device)
 

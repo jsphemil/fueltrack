@@ -67,6 +67,16 @@ function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
           <span className="rounded-full bg-surface-muted px-3 py-1 font-medium text-subtle">~{gauge.fillPercent}% tank</span>
         ) : null}
       </div>
+      {onReserve ? (
+        <a
+          href="https://www.google.com/maps/search/?api=1&query=petrol+pump"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${secondaryButtonClass} ${smallButtonClass} mt-4`}
+        >
+          Find nearest petrol pump
+        </a>
+      ) : null}
     </section>
   );
 }

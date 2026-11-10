@@ -71,7 +71,7 @@ export default function GuidePage() {
       <Section title="Tips for accurate numbers">
         <Steps
           items={[
-            <>Tap <strong>On reserve</strong> the moment you switch, not later. It is the anchor everything else is measured from.</>,
+            <>Tap <strong>On reserve</strong> the moment you switch, not later. It is the anchor everything else is measured from. While on reserve, Home shows a <strong>Find nearest petrol pump</strong> button that opens Maps.</>,
             <>Log fills the same day, with the real odometer. If you reset your trip meter at reserve, enter its reading when you fill.</>,
             <>Enter the odometer every few days, even when you do not fill. It takes ten seconds on Home.</>,
             <>Fix mistakes in <Link href="/history" className="underline">History</Link> with Edit or Delete on any entry. Mileage that looks impossible is ignored, not trusted.</>,
