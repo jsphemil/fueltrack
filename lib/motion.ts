@@ -20,6 +20,11 @@ export function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// A short buzz on key taps. Android only: iPhone browsers have no vibrate, so it does nothing there.
+export function haptic(pattern: number | number[] = 12) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(pattern);
+}
+
 // Runs a sequence of tweens [{ to, duration, easing }] starting from `from`.
 // Returns a cancel function.
 export function animateSequence(

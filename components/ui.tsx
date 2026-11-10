@@ -10,7 +10,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <header className="flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
+        <h1 className="page-title text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -86,7 +86,8 @@ export function VehicleChips() {
   if (vehicles.length < 2) return null;
 
   return (
-    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="tablist" aria-label="Vehicle">
+    // Phones switch vehicles from the top bar instead.
+    <div className="-mx-4 hidden gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0 lg:flex" role="tablist" aria-label="Vehicle">
       {vehicles.map((vehicle) => {
         const active = vehicle.id === activeVehicle?.id;
         return (
