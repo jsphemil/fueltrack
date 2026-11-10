@@ -4,6 +4,22 @@
 gauge. It tells you roughly how far you can ride before you hit reserve, using three things you
 already notice: when the bike goes on reserve, when you fill up, and the odometer.
 
+**Live:** https://fueltrack-five.vercel.app · [About](https://fueltrack-five.vercel.app/about) ·
+[Privacy policy](https://fueltrack-five.vercel.app/privacy)
+
+## Features
+
+- **Virtual fuel gauge:** km to reserve, where reserve is expected, km on reserve, and how confident
+  the estimate is (with a tip on what to log to improve it).
+- **One-tap On reserve**, works offline; odometer or trip meter added later.
+- **Real mileage and costs:** reserve-to-reserve and full-to-full cycles, cost per km, monthly spend.
+- **Reminders** (when the app opens): low fuel, document expiry, service items, mileage drop.
+- **Vehicle manager:** service log, issues and repairs, expenses, cost of ownership.
+- **Feels like a phone app:** installable PWA with shortcuts, a menu with every screen, and a
+  Find nearest petrol pump button while on reserve.
+
+Free, no ads, no tracking. Made by Melior Developments (meliordevelopments@gmail.com).
+
 ## How to use it
 
 1. **Bike sputters? Switch to reserve**, reset your trip meter to 0, and tap **On reserve** when it's

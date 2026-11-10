@@ -105,4 +105,5 @@ export type Me = {
   lowFuelKm: number | null; // reminder threshold; null = off
   preferences: Preferences;
   vehicleCount: number;
+  isAdmin?: boolean; // shows the Admin menu item
 };

@@ -15,10 +15,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const DESCRIPTION =
+  "The fuel gauge your bike doesn't have. Know how far you can ride before reserve, track real mileage and costs, and get reminders for service and documents.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fueltrack-five.vercel.app"),
   title: "FuelTrack",
-  description: "A fuel gauge for bikes that don't have one: know how far you can ride before reserve.",
+  description: DESCRIPTION,
   appleWebApp: { capable: true, title: "FuelTrack", statusBarStyle: "default" },
+  // Link previews (WhatsApp, Telegram and so on).
+  openGraph: {
+    title: "FuelTrack: the fuel gauge your bike doesn't have",
+    description: DESCRIPTION,
+    url: "/",
+    siteName: "FuelTrack",
+    type: "website",
+    images: [{ url: "/icon/512", width: 512, height: 512, alt: "FuelTrack" }],
+  },
 };
 
 export const viewport: Viewport = {

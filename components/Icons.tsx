@@ -70,7 +70,16 @@ export const WalletIcon = (props: IconProps) => (
 export const BookIcon = (props: IconProps) => (
   <Icon {...props}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z" /><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" /></Icon>
 );
-export const SignOutIcon = (props: IconProps) => (
+export const AdminIcon = (props: IconProps) => (
+  <Icon {...props}><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></Icon>
+);
+export const InfoIcon =(props: IconProps) => (
+  <Icon {...props}><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></Icon>
+);
+export const ShieldIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6Z" /><path d="m9 12 2 2 4-4" /></Icon>
+);
+export const SignOutIcon =(props: IconProps) => (
   <Icon {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></Icon>
 );
 export const CloudOffIcon =(props: IconProps) => (

@@ -1,27 +1,6 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
-import { Page, PageHeader } from "@/components/ui";
-import { cardClass } from "@/lib/ui";
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className={cardClass}>
-      <h2 className="font-semibold text-foreground">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-subtle">{children}</div>
-    </section>
-  );
-}
-
-function Steps({ items }: { items: ReactNode[] }) {
-  return (
-    <ul className="list-disc space-y-2 pl-5">
-      {items.map((item, index) => (
-        <li key={index}>{item}</li>
-      ))}
-    </ul>
-  );
-}
+import { Bullets as Steps, Page, PageHeader, TextSection as Section } from "@/components/ui";
 
 export default function GuidePage() {
   return (
@@ -109,6 +88,16 @@ export default function GuidePage() {
             <>Entries you make without signal are saved on the phone and sent when you are back online.</>,
             <>The app updates itself: open it after a new version and it reloads once.</>,
             <>Customise what Home shows in Settings. Export all your data as CSV there at any time.</>,
+          ]}
+        />
+      </Section>
+
+      <Section title="Your data">
+        <Steps
+          items={[
+            <><strong>Delete all data</strong> (Settings) wipes your vehicles and entries but keeps your sign-in, to start fresh.</>,
+            <><strong>Delete account</strong> (Settings) removes your sign-in too, for good.</>,
+            <>What is stored and who can see it: the <Link href="/privacy" className="underline">Privacy policy</Link>.</>,
           ]}
         />
       </Section>

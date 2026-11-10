@@ -91,6 +91,19 @@ export default function SettingsPage() {
     router.replace("/onboarding");
   }
 
+  async function deleteAccount() {
+    const typed = window.prompt("This permanently deletes your account: your sign-in, vehicles and every entry. It cannot be undone. Type DELETE to confirm.");
+    if (typed !== "DELETE") return;
+    setBusy(true);
+    const result = await apiRequest("/api/account", { method: "DELETE" });
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    clearFuelCache();
+    // The session no longer exists on the server, so only clear it on this device.
+    await supabase.auth.signOut({ scope: "local" });
+    router.replace("/login?deleted=1");
+  }
+
   async function signOut() {
     clearFuelCache();
     await supabase.auth.signOut();
@@ -203,6 +216,17 @@ export default function SettingsPage() {
             {busy ? "Deleting..." : "Delete all data"}
           </button>
         </div>
+        <div className="mt-6 border-t border-border pt-5">
+          <p className={mutedTextClass}>Delete your account: your sign-in, vehicles and every entry, for good.</p>
+          <button type="button" disabled={busy} onClick={() => void deleteAccount()} className={`${dangerButtonClass} mt-3`}>
+            {busy ? "Deleting..." : "Delete account"}
+          </button>
+        </div>
+        <p className={`mt-5 ${mutedTextClass}`}>
+          What we store and who can see it: <Link href="/privacy" className="underline">Privacy policy</Link>
+          {" · "}
+          <Link href="/about" className="underline">About</Link>
+        </p>
       </section>
     </Page>
   );

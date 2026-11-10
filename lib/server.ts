@@ -1,6 +1,7 @@
 // Server-only helpers shared by API routes.
 import type { Event, EventKind, Prisma, ServiceItem, Vehicle } from "@prisma/client";
 
+import { ERROR_KEEP_DAYS, errorMessage } from "@/lib/admin-stats";
 import { getUserFromRequest, type AuthenticatedUser } from "@/lib/auth";
 import {
   calculateCycles,
@@ -28,20 +29,35 @@ export function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
 }
 
+// Keeps an unexpected error for the admin page. Best effort: a failure to log
+// must never hide the original error.
+async function recordError(route: string, error: unknown, userId: string | null) {
+  try {
+    await prisma.errorLog.create({ data: { route, message: errorMessage(error), userId } });
+    // Errors are rare, so pruning here keeps the table to 30 days even if no one opens Admin.
+    await prisma.errorLog.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - ERROR_KEEP_DAYS * 24 * 60 * 60 * 1000) } } });
+  } catch (logError) {
+    console.error("Failed to record error", logError);
+  }
+}
+
 // Runs a handler for the signed-in user, turning unexpected errors into a 500.
 export async function withUser(
   request: Request,
   label: string,
   handler: (user: AuthenticatedUser) => Promise<Response>
 ) {
+  let userId: string | null = null;
   try {
     const auth = await getUserFromRequest(request);
     if (!auth.user) {
       return jsonError(auth.error, auth.status);
     }
+    userId = auth.user.id;
     return await handler(auth.user);
   } catch (error) {
     console.error(`Failed to ${label}`, error);
+    await recordError(label, error, userId);
     return jsonError(`Failed to ${label}`, 500);
   }
 }

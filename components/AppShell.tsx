@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import {
+  AdminIcon,
   BikeIcon,
   BookIcon,
   CloseIcon,
@@ -12,9 +13,11 @@ import {
   FuelIcon,
   HistoryIcon,
   HomeIcon,
+  InfoIcon,
   MenuIcon,
   ReserveIcon,
   SettingsIcon,
+  ShieldIcon,
   SignOutIcon,
   StatsIcon,
   WalletIcon,
@@ -50,19 +53,25 @@ const NAV_GROUPS = [
     items: [
       { href: "/settings", label: "Settings", icon: SettingsIcon },
       { href: "/guide", label: "Guide", icon: BookIcon },
+      { href: "/about", label: "About", icon: InfoIcon },
+      { href: "/privacy", label: "Privacy", icon: ShieldIcon },
     ],
   },
 ];
-const NAV = NAV_GROUPS.flatMap((group) => group.items);
+// Shown in the App group only to admins (the server checks again on every request).
+const ADMIN_ITEM = { href: "/admin", label: "Admin", icon: AdminIcon };
+const NAV = [...NAV_GROUPS.flatMap((group) => group.items), ADMIN_ITEM];
 // Bottom tabs on phones; every other screen is in the menu.
 const TABS = NAV.filter((item) => ["/", "/history", "/stats", "/vehicles"].includes(item.href));
 // Screens that show one vehicle at a time, so the top bar offers the vehicle switcher.
 const VEHICLE_ROUTES = ["/", "/history", "/stats", "/service", "/expenses"];
 
 const PUBLIC_ROUTES = ["/login", "/reset-password"];
+// Readable when signed out (bare page); signed in they keep the menu.
+const OPEN_ROUTES = ["/about", "/privacy"];
 // Focused flows without navigation chrome.
 const FOCUS_ROUTES = ["/onboarding", "/quick/reserve", "/fill"];
-const NO_VEHICLE_ROUTES = ["/onboarding", "/settings"];
+const NO_VEHICLE_ROUTES = ["/onboarding", "/settings", "/about", "/privacy", "/admin"];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -107,13 +116,14 @@ function ActionBar({ className = "" }: { className?: string }) {
 }
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { me } = useFuel();
   return (
     <nav className="flex flex-col gap-4">
       {NAV_GROUPS.map((group) => (
         <div key={group.title}>
           <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted">{group.title}</p>
           <div className="flex flex-col gap-0.5">
-            {group.items.map(({ href, label, icon: Icon }) => (
+            {(group.title === "App" && me?.isAdmin ? [...group.items, ADMIN_ITEM] : group.items).map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
@@ -300,12 +310,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { session, loading, userId } = useSession();
   const isPublic = PUBLIC_ROUTES.includes(pathname);
+  const isOpen = OPEN_ROUTES.includes(pathname);
 
   useEffect(() => {
-    if (!loading && !session && !isPublic) router.replace("/login");
-  }, [loading, session, isPublic, router]);
+    if (!loading && !session && !isPublic && !isOpen) router.replace("/login");
+  }, [loading, session, isPublic, isOpen, router]);
 
-  if (isPublic) return <>{children}</>;
+  if (isPublic || (isOpen && !loading && !session)) return <>{children}</>;
   if (loading || !session) return <Splash />;
 
   return (

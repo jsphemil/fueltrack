@@ -15,6 +15,7 @@ model User {
   name        String?
   lowFuelKm   Int? // low-fuel reminder threshold in km; null = reminders off
   preferences Json? // customisation (see lib/preferences.ts); null = defaults
+  isAdmin     Boolean    @default(false) // set by hand in SQL; opens /admin
   createdAt   DateTime   @default(now())
   vehicles    Vehicle[]
   documents   Document[]
@@ -162,4 +163,15 @@ model Expense {
   vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, occurredOn])
+}
+
+// Unexpected server errors, for the admin page. No request bodies; kept 30 days.
+model ErrorLog {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  route     String // what failed, e.g. "save entry"
+  message   String // truncated, see lib/admin.ts
+  userId    String? // who hit it, when signed in (no foreign key: survives account deletion until pruned)
+
+  @@index([createdAt])
 }
