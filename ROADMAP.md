@@ -28,6 +28,10 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 * Profile, vehicles, events (idempotent create), stats and CSV export endpoints
 
+### Account
+
+* Forgot password: email reset link and a Set new password screen
+
 ### v2 Design
 
 * Mobile-first app shell with bottom navigation and thumb-reach action bar
