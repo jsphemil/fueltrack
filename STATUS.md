@@ -57,17 +57,15 @@ app was considered and dropped (crowded market, name clashes).
 
 ## Direction (keep in mind for every change)
 
-- **Android app later.** Keep it reusable: business rules stay in pure functions (`lib/engine.ts`,
-  `lib/validation.ts`), all data goes through the JSON API with a bearer token (no server-rendered
-  data or cookie-only auth), and web-only features (notifications, service worker) stay optional.
-  First step will be packaging the PWA (Trusted Web Activity); a native app can reuse the API.
+- **No Android app.** Dropped on 10 Nov 2026 (crowded market, name clashes); the installed PWA is the
+  phone app. Business rules still stay in pure functions (`lib/engine.ts`, `lib/validation.ts`) and
+  all data goes through the JSON API with a bearer token.
 - **AI must be free.** Prefer on-device models (Transformers.js / Hugging Face) over paid APIs.
 
 ## What to work on next
 
-- `ROADMAP.md` → Planned, deferred by the owner until after a few weeks of real use: yearly
-  summary + CSV import (backup restore), a default for the Add fuel form (amount or litres),
-  AI photo entry (free, on-device), the Android app.
+- `ROADMAP.md` → Planned. On 10 Nov 2026 the owner judged the remaining items low value and
+  paused: the app is doing fine as it is. Only pick one up if the owner asks.
 - Reminders run only when the app opens (no server push). True background push would need
   Web Push (VAPID keys, a subscription table) plus a scheduled job.
 - Not built: documents in the CSV export, editing issues, preferences saved on a phone before they

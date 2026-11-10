@@ -97,7 +97,3 @@ _Nothing in progress._
 ### AI (free, on-device)
 
 * Photo to entry: read pump display / receipt and odometer from a photo with Transformers.js (Hugging Face models running in the app), always confirmed by the user
-
-### Android
-
-* Android app: start by packaging the PWA for the Play Store (Trusted Web Activity); native app later if needed
