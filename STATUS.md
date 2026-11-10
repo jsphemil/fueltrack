@@ -127,7 +127,9 @@ app was considered and dropped (crowded market, name clashes).
   tool, long inline `python - <<EOF` scripts can fail to parse: write the script to a file and run it.
   Python needs `PYTHONUTF8=1` to write files containing `→`, `₹` or `·`.
 - **Migrations:** generate the SQL with `npx prisma migrate diff --from-config-datasource
-  --to-schema prisma/schema.prisma --script`, add `ENABLE ROW LEVEL SECURITY` for new tables, apply
+  --to-schema prisma/schema.prisma --script`, add `ENABLE ROW LEVEL SECURITY` for new tables (RLS with no
+  policies is intended: the app reaches tables only through Prisma as `postgres`, so the public anon key
+  sees nothing; `_prisma_migrations` got RLS on 10 Nov 2026 after a Supabase advisor warning), apply
   with `npx prisma migrate deploy` before merging code that uses the change, then re-run the diff
   and expect "empty migration".
 
