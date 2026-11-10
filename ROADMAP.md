@@ -66,12 +66,13 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * In-app guide (setup, habits, how estimates work, tips, reminders, costs)
 * Customisation saved to the account: Home tiles on/off, document reminder timing, Reset to defaults
 * Find nearest petrol pump button on Home while on reserve (opens Maps, no location permission)
+* Phone navigation: top bar (menu button, title, vehicle switcher), menu with every screen, 4 bottom tabs, slide transitions, haptics
 
 ---
 
 ## In Progress
 
-* Phone navigation: top bar (menu or back, title, vehicle switcher), menu with every screen, 4 bottom tabs, slide transitions, haptics
+_Nothing in progress._
 
 ---
 

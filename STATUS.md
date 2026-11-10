@@ -1,6 +1,6 @@
 # FuelTrack — Project Status & Handoff
 
-_Last updated: 8 Oct 2026 (owner pausing to use the app for a few weeks). Read this first in any new session._
+_Last updated: 10 Nov 2026 (owner back from real use; working through feedback). Read this first in any new session._
 
 ## What the app is
 
@@ -12,10 +12,12 @@ Postgres via Prisma 7 (`@prisma/adapter-pg`) · Recharts · Jest. Installable PW
 ## Where things stand
 
 **v2 is live** at https://fueltrack-five.vercel.app (go-live 7 Oct 2026) and has grown into a
-vehicle manager since. **Nothing is in progress; the owner is using the app for a few weeks and
-will come back with feedback.** Start from that feedback, then `ROADMAP.md` → Planned.
+vehicle manager since. **Nothing is in progress.** After real use the owner asked for web
+improvements one at a time; the remaining list is `ROADMAP.md` → Planned (gauge confidence tip,
+default fill entry, JSON export/import, units and currency, Web Push reminders). A native Android
+app was considered and dropped (crowded market, name clashes).
 
-- **Code:** everything is merged into `master` (last PR #66). `master` is what Vercel deploys, and
+- **Code:** everything is merged into `master` (last PR #70). `master` is what Vercel deploys, and
   every merge deploys to production. Work goes: feature branch → PR → Vercel preview passes → merge.
 - **Database (Supabase):** all migrations through `20261015090000_user_preferences` are applied.
   Tables: `User`, `Vehicle`, `Event`, `Document`, `ServiceItem`, `ServiceRecord`,
@@ -41,7 +43,14 @@ will come back with feedback.** Start from that feedback, then `ROADMAP.md` → 
 - **Vehicle manager:** documents, service log, issues and repairs, expenses with a cost of
   ownership on Stats, edit for service visits and expenses.
 - **Usability:** in-app guide, customisation (Home tiles, document reminder timing) saved to the
-  account with Reset to defaults, auto-update of the installed app after a deploy.
+  account with Reset to defaults, auto-update of the installed app after a deploy, Find nearest
+  petrol pump button while on reserve.
+- **Navigation (phones):** top bar with a menu button on every screen, the screen title and a vehicle
+  switcher; slide-out menu with every screen grouped Fuel / Vehicle / App, theme and sign out; bottom
+  tabs Home, History, Stats, Vehicles. Screens slide in; short haptics on key buttons. Desktop keeps
+  the sidebar with the same groups. All in `components/AppShell.tsx`.
+- **Account:** Forgot password on sign-in sends a Supabase reset email; `/reset-password` sets the
+  new password. Needs `https://fueltrack-five.vercel.app/**` in Supabase Redirect URLs (set).
 - **Theme:** minimal neutral greys with one ocean-blue accent. The owner rejected an all-blue
   navy theme ("looks like an alien") and a black-and-orange dark mode: keep it calm, and keep orange
   for reserve and warnings only. Colours are tokens in `app/globals.css`.
@@ -84,7 +93,7 @@ will come back with feedback.** Start from that feedback, then `ROADMAP.md` → 
 | Server helpers (auth wrapper, summaries) | `lib/server.ts`, `lib/auth.ts`, `lib/prisma.ts` |
 | API routes | `app/api/me`, `app/api/vehicles/**`, `app/api/events/**`, `app/api/documents/**`, `app/api/service-items/**`, `app/api/service-records/**`, `app/api/issues/**`, `app/api/expenses/**`, `app/api/export`, `app/api/version` |
 | Client data + offline outbox | `lib/fuel-context.tsx`, `lib/outbox.ts`, `lib/api.ts`, `lib/hooks.ts` |
-| Pages | `app/page.tsx` (Home), `app/quick/reserve`, `app/fill`, `app/history`, `app/stats`, `app/vehicles`, `app/service`, `app/documents`, `app/expenses`, `app/guide`, `app/settings`, `app/onboarding`, `app/login` |
+| Pages | `app/page.tsx` (Home), `app/quick/reserve`, `app/fill`, `app/history`, `app/stats`, `app/vehicles`, `app/service`, `app/documents`, `app/expenses`, `app/guide`, `app/settings`, `app/onboarding`, `app/login`, `app/reset-password` |
 | Shell, UI, motion | `components/AppShell.tsx`, `components/ui.tsx`, `components/Gauge.tsx`, `lib/motion.ts`, `app/globals.css` |
 | PWA | `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx`, `public/sw.js`, `components/ServiceWorker.tsx` |
 | Database | `prisma/schema.prisma`, `prisma/migrations/*`, `prisma.config.ts` |
