@@ -33,6 +33,7 @@ export async function GET(request: Request) {
         prisma.errorLog.count({ where: { createdAt: { gte: new Date(now.getTime() - DAY_MS) } } }),
         prisma.errorLog.count(),
         prisma.errorLog.findMany({ orderBy: { createdAt: "desc" }, take: 20, select: { createdAt: true, route: true, message: true } }),
+        // ponytail: loads every event to compute mileage; fine for a few users, cache or precompute if it grows.
         prisma.vehicle.findMany({ include: { events: true } }),
       ]);
 

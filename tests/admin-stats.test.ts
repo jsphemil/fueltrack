@@ -6,8 +6,18 @@ const NOW = new Date("2026-11-10T12:00:00Z");
 const daysAgo = (days: number) => new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000);
 
 describe("errorMessage", () => {
-  it("masks emails and keeps one line", () => {
-    expect(errorMessage(new Error("No user\n  rider@example.com found"))).toBe("Error: No user [email] found");
+  it("masks emails", () => {
+    expect(errorMessage(new Error("No user rider@example.com found"))).toBe("Error: No user [email] found");
+  });
+
+  it("keeps only the first line, where Prisma puts no user data, plus the code", () => {
+    const prismaStyle = Object.assign(new Error("\nInvalid `prisma.event.create()` invocation:\n{ data: { note: \"my secret note\" } }"), {
+      name: "PrismaClientKnownRequestError",
+      code: "P2002",
+    });
+    const message = errorMessage(prismaStyle);
+    expect(message).toBe("PrismaClientKnownRequestError [P2002]:");
+    expect(message).not.toContain("secret");
   });
 
   it("caps the length", () => {

@@ -4,11 +4,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const ERROR_MESSAGE_MAX = 500;
 export const ERROR_KEEP_DAYS = 30;
 
-// One line, emails masked, at most ERROR_MESSAGE_MAX characters: error text can echo
-// what a user typed, and the log must not become a store of personal data.
+// The first line only (Prisma puts the submitted data on later lines), plus any error
+// code, emails masked, at most ERROR_MESSAGE_MAX characters: the log must not become a
+// store of what users typed.
 export function errorMessage(error: unknown): string {
-  const raw = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  const clean = raw.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, "[email]").replace(/\s+/g, " ").trim();
+  const code = typeof error === "object" && error !== null && "code" in error ? ` [${String((error as { code: unknown }).code)}]` : "";
+  const text = error instanceof Error ? `${error.name}${code}: ${error.message}` : String(error);
+  const firstLine = text.split("\n").find((line) => line.trim() !== "") ?? "";
+  const clean = firstLine.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, "[email]").replace(/\s+/g, " ").trim();
   return clean.length > ERROR_MESSAGE_MAX ? `${clean.slice(0, ERROR_MESSAGE_MAX - 1)}…` : clean;
 }
 
