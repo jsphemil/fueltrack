@@ -6,7 +6,7 @@ import { FormEvent, useState, type ReactNode } from "react";
 import Gauge from "@/components/Gauge";
 import { OdometerIcon } from "@/components/Icons";
 import { Notice, Page, StatTile, SyncStatus, VehicleChips } from "@/components/ui";
-import { daysUntil, documentStage } from "@/lib/engine";
+import { confidenceTip, daysUntil, documentStage } from "@/lib/engine";
 import { useFuel } from "@/lib/fuel-context";
 import { DOCUMENT_LEADS } from "@/lib/preferences";
 import { formatDateTime, formatKm, formatKmPerL, formatLitres, formatMoney, formatNumber, formatExpiry, formatRelative, formatServiceDue } from "@/lib/format";
@@ -27,6 +27,8 @@ function KmCounter({ km }: { km: number }) {
 function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
   const { gauge, rangeScaleKm } = vehicle;
   const onReserve = gauge.status === "on-reserve";
+  // Shown only alongside the confidence label.
+  const tip = gauge.status === "ok" || onReserve ? confidenceTip(gauge) : null;
   const fraction =
     gauge.fillPercent !== null && vehicle.reserveMl !== null && vehicle.tankCapacityMl !== null
       ? (gauge.fuelAboveReserveMl ?? 0) / (vehicle.tankCapacityMl - vehicle.reserveMl)
@@ -67,6 +69,7 @@ function GaugeCard({ vehicle }: { vehicle: VehicleSummary }) {
           <span className="rounded-full bg-surface-muted px-3 py-1 font-medium text-subtle">~{gauge.fillPercent}% tank</span>
         ) : null}
       </div>
+      {tip ? <p className="mt-2 max-w-xs text-xs text-muted">{tip}</p> : null}
       {onReserve ? (
         <a
           href="https://www.google.com/maps/search/?api=1&query=petrol+pump"
