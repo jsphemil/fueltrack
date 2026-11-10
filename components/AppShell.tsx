@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import {
+  AdminIcon,
   BikeIcon,
   BookIcon,
   CloseIcon,
@@ -57,7 +58,9 @@ const NAV_GROUPS = [
     ],
   },
 ];
-const NAV = NAV_GROUPS.flatMap((group) => group.items);
+// Shown in the App group only to admins (the server checks again on every request).
+const ADMIN_ITEM = { href: "/admin", label: "Admin", icon: AdminIcon };
+const NAV = [...NAV_GROUPS.flatMap((group) => group.items), ADMIN_ITEM];
 // Bottom tabs on phones; every other screen is in the menu.
 const TABS = NAV.filter((item) => ["/", "/history", "/stats", "/vehicles"].includes(item.href));
 // Screens that show one vehicle at a time, so the top bar offers the vehicle switcher.
@@ -68,7 +71,7 @@ const PUBLIC_ROUTES = ["/login", "/reset-password"];
 const OPEN_ROUTES = ["/about", "/privacy"];
 // Focused flows without navigation chrome.
 const FOCUS_ROUTES = ["/onboarding", "/quick/reserve", "/fill"];
-const NO_VEHICLE_ROUTES = ["/onboarding", "/settings", "/about", "/privacy"];
+const NO_VEHICLE_ROUTES = ["/onboarding", "/settings", "/about", "/privacy", "/admin"];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -113,13 +116,14 @@ function ActionBar({ className = "" }: { className?: string }) {
 }
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { me } = useFuel();
   return (
     <nav className="flex flex-col gap-4">
       {NAV_GROUPS.map((group) => (
         <div key={group.title}>
           <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted">{group.title}</p>
           <div className="flex flex-col gap-0.5">
-            {group.items.map(({ href, label, icon: Icon }) => (
+            {(group.title === "App" && me?.isAdmin ? [...group.items, ADMIN_ITEM] : group.items).map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}

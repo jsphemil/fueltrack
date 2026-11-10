@@ -31,6 +31,7 @@ export default function PrivacyPage() {
             <><strong>Your account:</strong> your email address and name (if you add one). Your password is never stored as text: the sign-in service keeps only a one-way scrambled form (a hash) that cannot be turned back into the password.</>,
             <><strong>What you log:</strong> vehicles, fills, reserve marks, odometer readings, notes, service items and visits, issues, expenses, document types with their expiry dates, and your settings.</>,
             <><strong>Technical logs:</strong> like any website, our hosting and sign-in providers record requests (time, IP address, browser or device) to keep the service running and secure. These are kept only briefly.</>,
+            <><strong>Error records:</strong> when something fails on our side, we note what failed, when, and your account ID (not what you typed), to fix it. Kept for 30 days.</>,
           ]}
         />
         <p>We do not collect your location, contacts, photos or payment details. The &ldquo;Find nearest petrol pump&rdquo; button simply opens Google Maps; FuelTrack does not see where you are.</p>
@@ -49,8 +50,10 @@ export default function PrivacyPage() {
 
       <TextSection title="Who can see it">
         <p>
-          You, when signed in. Other users cannot see your data. As the developer, we can technically access the database that
-          runs the app. We look at individual data only to fix a problem you report or when you ask us to.
+          You, when signed in. Other users cannot see your data. As the developer, we use an admin page that shows only totals
+          and, per account, the email address, sign-up and last sign-in dates, and how many vehicles and entries it has; never the
+          entries themselves. We can technically access the database that runs the app, and look at individual data only to fix
+          a problem you report or when you ask us to.
         </p>
       </TextSection>
 
@@ -67,7 +70,7 @@ export default function PrivacyPage() {
       </TextSection>
 
       <TextSection title="How long we keep it">
-        <p>Until you delete it or your account. Deleted data is removed from the live database straight away.</p>
+        <p>Until you delete it or your account. Deleted data is removed from the live database straight away. Error records are deleted after 30 days.</p>
       </TextSection>
 
       <TextSection title="Children">

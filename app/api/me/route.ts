@@ -10,9 +10,9 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   return withUser(request, "load profile", async (user) => {
-    const record = await prisma.user.findUnique({ where: { id: user.id }, select: { name: true, lowFuelKm: true, preferences: true } });
+    const record = await prisma.user.findUnique({ where: { id: user.id }, select: { name: true, lowFuelKm: true, preferences: true, isAdmin: true } });
     const vehicleCount = await prisma.vehicle.count({ where: { userId: user.id } });
-    return Response.json({ user: { id: user.id, email: user.email ?? null, name: record?.name ?? null, lowFuelKm: record?.lowFuelKm ?? null, preferences: mergePreferences(record?.preferences), vehicleCount } });
+    return Response.json({ user: { id: user.id, email: user.email ?? null, name: record?.name ?? null, lowFuelKm: record?.lowFuelKm ?? null, preferences: mergePreferences(record?.preferences), vehicleCount, isAdmin: record?.isAdmin ?? false } });
   });
 }
 
