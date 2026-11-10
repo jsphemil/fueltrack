@@ -33,6 +33,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 * Forgot password: email reset link and a Set new password screen
 * Delete account in Settings: removes the sign-in, vehicles and every entry in one step (Delete all data still keeps the sign-in)
 * Public About page and Privacy policy, linked from sign-in, the menu and Settings
+* Admin dashboard (admins only): usage, users as counts only, app health with a 30-day error log, fuel totals
 
 ### v2 Design
 
@@ -75,7 +76,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 ## In Progress
 
-* Privacy and admin: About page and Privacy policy (public), Delete account (data and login), Admin dashboard (usage, users as counts only, app health with an error log, fuel totals)
+_Nothing in progress._
 
 ---
 

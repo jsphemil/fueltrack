@@ -21,18 +21,18 @@ improvements one at a time; the remaining list is `ROADMAP.md` → Planned (gaug
 default fill entry, JSON export/import, units and currency, Web Push reminders). A native Android
 app was considered and dropped (crowded market, name clashes).
 
-- **Code:** everything is merged into `master` (last PR #70). `master` is what Vercel deploys, and
+- **Code:** everything is merged into `master` (last PR #76). `master` is what Vercel deploys, and
   every merge deploys to production. Work goes: feature branch → PR → Vercel preview passes → merge.
-- **Database (Supabase):** all migrations through `20261015090000_user_preferences` are applied.
+- **Database (Supabase):** all migrations through `20261110090000_admin_error_log` are applied.
   Tables: `User`, `Vehicle`, `Event`, `Document`, `ServiceItem`, `ServiceRecord`,
-  `ServiceRecordItem`, `Issue`, `Expense`, all with RLS enabled (the app reaches them only through
+  `ServiceRecordItem`, `Issue`, `Expense`, `ErrorLog`, all with RLS enabled (the app reaches them only through
   Prisma). The v1 data was wiped at go-live as agreed.
 - **Deploy (Vercel):** production runs v2. The env vars `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `DATABASE_URL` (transaction pooler, rotated password) are set.
 - **Supabase Auth:** Site URL and redirect URLs point to the Vercel production URL (plus
   `http://localhost:3000`).
 - **Phone:** installed as a PWA from the production URL.
-- **Checks:** lint, typecheck, 76 unit tests and the production build pass. The 4 DB integration
+- **Checks:** lint, typecheck, 85 unit tests and the production build pass. The 4 DB integration
   tests (`tests/api.test.ts`) are skipped unless a test database is configured, so API routes added
   since go-live (documents, service, issues, expenses, preferences) have unit coverage of their
   validation and logic but no integration test. Worth adding if the API starts to change a lot.
@@ -55,6 +55,17 @@ app was considered and dropped (crowded market, name clashes).
   the sidebar with the same groups. All in `components/AppShell.tsx`.
 - **Account:** Forgot password on sign-in sends a Supabase reset email; `/reset-password` sets the
   new password. Needs `https://fueltrack-five.vercel.app/**` in Supabase Redirect URLs (set).
+  **Delete account** (Settings, `DELETE /api/account`) removes the `User` row (data cascades) and the
+  `auth.users` row in one transaction; Delete all data keeps the sign-in.
+- **About and Privacy:** public `/about` and `/privacy` (effective 10 Nov 2026, contact
+  meliordevelopments@gmail.com, constant `CONTACT_EMAIL` in `lib/labels.ts`). Update the policy and its
+  date whenever what is stored, or who sees it, changes.
+- **Admin:** `/admin` (menu item only for admins) and `GET /api/admin/overview`, gated by
+  `withAdmin` in `lib/admin.ts` (404 unless `User.isAdmin`). Shows usage, users as counts only, health
+  (build, DB size, errors) and fuel totals. `isAdmin` is set by hand in SQL: jsphemil@gmail.com is the
+  admin (meliordevelopments@gmail.com is a normal test account). "Delete all data" removes the User
+  row, so the flag must be set again after it. Unexpected API errors go to `ErrorLog` (first line and
+  code only, emails masked, pruned after 30 days) via `withUser` in `lib/server.ts`.
 - **Theme:** minimal neutral greys with one ocean-blue accent. The owner rejected an all-blue
   navy theme ("looks like an alien") and a black-and-orange dark mode: keep it calm, and keep orange
   for reserve and warnings only. Colours are tokens in `app/globals.css`.
