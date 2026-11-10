@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { useFuel } from "@/lib/fuel-context";
 import { removeQueued } from "@/lib/outbox";
-import { chipClass, hintClass, labelClass } from "@/lib/ui";
+import { cardClass, chipClass, hintClass, labelClass } from "@/lib/ui";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
@@ -15,6 +15,26 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
+  );
+}
+
+// A titled card of reading text (Guide, About, Privacy).
+export function TextSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className={cardClass}>
+      <h2 className="font-semibold text-foreground">{title}</h2>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-subtle">{children}</div>
+    </section>
+  );
+}
+
+export function Bullets({ items }: { items: ReactNode[] }) {
+  return (
+    <ul className="list-disc space-y-2 pl-5">
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </ul>
   );
 }
 

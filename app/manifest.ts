@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "FuelTrack",
     short_name: "FuelTrack",
-    description: "A fuel gauge for bikes that don't have one.",
+    description: "The fuel gauge your bike doesn't have: range to reserve, real mileage, costs and reminders.",
     start_url: "/",
     display: "standalone",
     background_color: "#f7f8f9",

@@ -2,6 +2,10 @@
 
 _Last updated: 10 Nov 2026 (owner back from real use; working through feedback). Read this first in any new session._
 
+**Owner's notes:** Obsidian, Reflections vault, `Notes/FuelTrack/` (`FuelTrack.md` hub and
+`Usage Observations — FuelTrack.md`, the tracker of observations and requests). Read the tracker
+before starting work; move handled items to its Done section after shipping.
+
 ## What the app is
 
 FuelTrack v2 is a fuel tracker for bikes and scooters **without a fuel gauge**. It estimates how far

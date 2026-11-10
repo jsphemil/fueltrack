@@ -1,27 +1,6 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
-import { Page, PageHeader } from "@/components/ui";
-import { cardClass } from "@/lib/ui";
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className={cardClass}>
-      <h2 className="font-semibold text-foreground">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-subtle">{children}</div>
-    </section>
-  );
-}
-
-function Steps({ items }: { items: ReactNode[] }) {
-  return (
-    <ul className="list-disc space-y-2 pl-5">
-      {items.map((item, index) => (
-        <li key={index}>{item}</li>
-      ))}
-    </ul>
-  );
-}
+import { Bullets as Steps, Page, PageHeader, TextSection as Section } from "@/components/ui";
 
 export default function GuidePage() {
   return (

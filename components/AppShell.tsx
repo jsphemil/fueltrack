@@ -12,9 +12,11 @@ import {
   FuelIcon,
   HistoryIcon,
   HomeIcon,
+  InfoIcon,
   MenuIcon,
   ReserveIcon,
   SettingsIcon,
+  ShieldIcon,
   SignOutIcon,
   StatsIcon,
   WalletIcon,
@@ -50,6 +52,8 @@ const NAV_GROUPS = [
     items: [
       { href: "/settings", label: "Settings", icon: SettingsIcon },
       { href: "/guide", label: "Guide", icon: BookIcon },
+      { href: "/about", label: "About", icon: InfoIcon },
+      { href: "/privacy", label: "Privacy", icon: ShieldIcon },
     ],
   },
 ];
@@ -60,9 +64,11 @@ const TABS = NAV.filter((item) => ["/", "/history", "/stats", "/vehicles"].inclu
 const VEHICLE_ROUTES = ["/", "/history", "/stats", "/service", "/expenses"];
 
 const PUBLIC_ROUTES = ["/login", "/reset-password"];
+// Readable when signed out (bare page); signed in they keep the menu.
+const OPEN_ROUTES = ["/about", "/privacy"];
 // Focused flows without navigation chrome.
 const FOCUS_ROUTES = ["/onboarding", "/quick/reserve", "/fill"];
-const NO_VEHICLE_ROUTES = ["/onboarding", "/settings"];
+const NO_VEHICLE_ROUTES = ["/onboarding", "/settings", "/about", "/privacy"];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -300,12 +306,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { session, loading, userId } = useSession();
   const isPublic = PUBLIC_ROUTES.includes(pathname);
+  const isOpen = OPEN_ROUTES.includes(pathname);
 
   useEffect(() => {
-    if (!loading && !session && !isPublic) router.replace("/login");
-  }, [loading, session, isPublic, router]);
+    if (!loading && !session && !isPublic && !isOpen) router.replace("/login");
+  }, [loading, session, isPublic, isOpen, router]);
 
-  if (isPublic) return <>{children}</>;
+  if (isPublic || (isOpen && !loading && !session)) return <>{children}</>;
   if (loading || !session) return <Splash />;
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { FuelIcon } from "@/components/Icons";
@@ -111,6 +112,11 @@ export default function LoginPage() {
           {successMessage ? <p className={successTextClass}>{successMessage}</p> : null}
           {errorMessage ? <p className={errorTextClass}>{errorMessage}</p> : null}
         </form>
+        <p className="mt-6 text-center text-sm text-muted">
+          <Link href="/about" className="underline">About</Link>
+          {" · "}
+          <Link href="/privacy" className="underline">Privacy</Link>
+        </p>
       </div>
     </main>
   );

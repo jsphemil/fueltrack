@@ -203,6 +203,11 @@ export default function SettingsPage() {
             {busy ? "Deleting..." : "Delete all data"}
           </button>
         </div>
+        <p className={`mt-5 ${mutedTextClass}`}>
+          What we store and who can see it: <Link href="/privacy" className="underline">Privacy policy</Link>
+          {" · "}
+          <Link href="/about" className="underline">About</Link>
+        </p>
       </section>
     </Page>
   );

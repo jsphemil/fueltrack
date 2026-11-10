@@ -73,7 +73,7 @@ ride before you hit reserve, from reserve moments, fills and odometer readings.
 
 ## In Progress
 
-_Nothing in progress._
+* Privacy and admin: About page and Privacy policy (public), Delete account (data and login), Admin dashboard (usage, users as counts only, app health with an error log, fuel totals)
 
 ---
 
