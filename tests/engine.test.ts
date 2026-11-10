@@ -4,6 +4,7 @@ import {
   calculateCycles,
   calculateGauge,
   calculateStats,
+  confidenceTip,
   currentOdometer,
   daysUntil,
   documentStage,
@@ -195,6 +196,28 @@ describe("calculateGauge", () => {
       reserve(8, 1800), fill(8, 1800, 8), reserve(12, 2200), fill(12, 2200, 8),
     ];
     expect(calculateGauge(noTank, many, at(12, 3)).confidence).toBe("high");
+  });
+});
+
+describe("confidenceTip", () => {
+  const odo = (estimated: boolean) => ({ odometer: 0, estimated, lastReadingAt: null });
+
+  it("says nothing at high confidence", () => {
+    expect(confidenceTip({ confidence: "high", validCycles: 4, odometer: odo(false) })).toBeNull();
+  });
+
+  it("counts the cycles still needed", () => {
+    expect(confidenceTip({ confidence: "medium", validCycles: 1, odometer: odo(false) })).toBe("2 more reserve cycles for high confidence.");
+    expect(confidenceTip({ confidence: "medium", validCycles: 2, odometer: odo(false) })).toBe("1 more reserve cycle for high confidence.");
+  });
+
+  it("asks for an odometer reading when it is estimated", () => {
+    expect(confidenceTip({ confidence: "medium", validCycles: 3, odometer: odo(true) })).toBe(
+      "Update the odometer for high confidence. It's estimated from your daily average."
+    );
+    expect(confidenceTip({ confidence: "medium", validCycles: 1, odometer: odo(true) })).toBe(
+      "Update the odometer and complete 2 more reserve cycles for high confidence."
+    );
   });
 });
 

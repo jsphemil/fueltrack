@@ -48,6 +48,8 @@ export type Cycle<T extends EngineEvent = EngineEvent> = {
 export const MIN_KM_PER_L = 5;
 export const MAX_KM_PER_L = 150;
 export const RECENT_CYCLES = 5;
+// Valid cycles needed (with a fresh odometer reading) for "High confidence".
+export const HIGH_CONFIDENCE_CYCLES = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function time(value: Date | string) {
@@ -273,7 +275,7 @@ export function calculateGauge(
   if (ordered.length === 0) return base;
 
   base.confidence =
-    validCycles >= 3 && !odometer.estimated ? "high" : validCycles >= 1 ? "medium" : "low";
+    validCycles >= HIGH_CONFIDENCE_CYCLES && !odometer.estimated ? "high" : validCycles >= 1 ? "medium" : "low";
 
   // A reserve mark with nothing filled since means the bike is on reserve now
   // (whether or not its odometer reading is known yet).
@@ -336,6 +338,20 @@ export function calculateGauge(
     fuelAboveReserveMl: Math.max(0, Math.round(fuelAboveReserveMl)),
     fillPercent,
   };
+}
+
+// What the rider can log to reach high confidence; null when already there.
+export function confidenceTip(gauge: Pick<Gauge, "confidence" | "validCycles" | "odometer">): string | null {
+  if (gauge.confidence === "high") return null;
+  const cyclesNeeded = Math.max(0, HIGH_CONFIDENCE_CYCLES - gauge.validCycles);
+  const cycles = `${cyclesNeeded} more reserve cycle${cyclesNeeded === 1 ? "" : "s"}`;
+  if (gauge.odometer.estimated && cyclesNeeded > 0) {
+    return `Update the odometer and complete ${cycles} for high confidence.`;
+  }
+  if (gauge.odometer.estimated) {
+    return "Update the odometer for high confidence. It's estimated from your daily average.";
+  }
+  return cyclesNeeded > 0 ? `${cycles[0].toUpperCase()}${cycles.slice(1)} for high confidence.` : null;
 }
 
 // --- Stats ------------------------------------------------------------------
