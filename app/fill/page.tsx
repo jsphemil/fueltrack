@@ -8,6 +8,7 @@ import { Field, Page, PageHeader } from "@/components/ui";
 import { apiRequest } from "@/lib/api";
 import { useFuel } from "@/lib/fuel-context";
 import { formatKm, formatLitres, formatMoney, formatRelative, formatTime, toDateTimeLocalValue, toInputNumber } from "@/lib/format";
+import { haptic } from "@/lib/motion";
 import { newId, queueEvent } from "@/lib/outbox";
 import type { FuelEvent, TimelineCycle } from "@/lib/types";
 import { amountFromVolume, litresToMl, priceFromAmount, rupeesToPaise, volumeFromAmount } from "@/lib/units";
@@ -132,6 +133,7 @@ function FillForm() {
     setSaving(true);
     await saveEntry(body);
     setSaving(false);
+    haptic();
     router.push("/");
   }
 

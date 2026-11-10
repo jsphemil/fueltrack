@@ -52,6 +52,30 @@ export const PlusIcon = (props: IconProps) => (
 export const CheckIcon = (props: IconProps) => (
   <Icon {...props}><path d="m5 12.5 4.5 4.5L19 7.5" /></Icon>
 );
-export const CloudOffIcon = (props: IconProps) => (
+export const MenuIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></Icon>
+);
+export const BackIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M19 12H5" /><path d="m11 6-6 6 6 6" /></Icon>
+);
+export const CloseIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M6 6l12 12" /><path d="M18 6 6 18" /></Icon>
+);
+export const WrenchIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3-6.5-6.5L6 9l1.7 1.3a4 4 0 0 0 5-5L11 4l2-2Z" /></Icon>
+);
+export const DocumentIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h6" /></Icon>
+);
+export const WalletIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" /><path d="M21 9h-5a3 3 0 0 0 0 6h5Z" /></Icon>
+);
+export const BookIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z" /><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" /></Icon>
+);
+export const SignOutIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></Icon>
+);
+export const CloudOffIcon =(props: IconProps) => (
   <Icon {...props}><path d="m2 2 20 20" /><path d="M5.8 8.2A5 5 0 0 0 7 18h10.5" /><path d="M20.4 16.4A4 4 0 0 0 17.5 9h-1A7 7 0 0 0 9.6 5" /></Icon>
 );
